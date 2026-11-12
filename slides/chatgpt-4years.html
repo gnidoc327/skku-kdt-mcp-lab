@@ -731,6 +731,19 @@ bash setup.sh</pre>
 </section>
 
 <section class="slide">
+  <h2>잠깐, 중요한 것은 속력이 아니라 방향</h2>
+  <div class="cols" style="grid-template-columns:400px 1fr; margin-top:18px; gap:44px; flex:none">
+    <img src="img/meme-vector.png" alt="포스트잇 두 장. 위: 인생은 속도가 아닌 방향이다. 아래: 속도는 속력과 방향을 합친 벡터값입니다. 방향을 이미 내포하고 있죠. 속력으로 고쳐야 합니다." style="width:400px; display:block; box-shadow:0 0 0 1px var(--rule)">
+    <ul class="plain" style="gap:13px">
+      <li style="font-size:19px">Vector(벡터)<span>크기와 방향을 함께 가진 값. 속력은 크기만, 속도는 크기와 방향</span></li>
+      <li style="font-size:19px">Embedding도 Vector입니다<span>숫자 1,024개가 어느 쪽을 가리키는지가 그 글의 뜻. 앞 장의 "남자에서 여자로 가는 화살표"가 바로 방향</span></li>
+      <li style="font-size:19px">그래서 방향만 비교합니다<span>Cosine(코사인) 유사도. 두 화살표의 각도가 같으면 1, 직각이면 0. 글이 길든 짧든 같은 쪽을 가리키면 비슷한 글</span></li>
+    </ul>
+  </div>
+  <footer class="foot"><div class="src">출처: 사진은 인터넷 유머 (원출처 미상) / <a href="https://en.wikipedia.org/wiki/Cosine_similarity" target="_blank" rel="noopener">Wikipedia, Cosine similarity</a></div><span>2023년</span><div class="ribbon"><span class="on">Chat</span><span>Multimodal</span><span>Reasoning</span><span>Agent</span></div><span class="pg"></span></footer>
+</section>
+
+<section class="slide">
   <h2>Embedding은 왜 비슷한 것을 찾나</h2>
   <p class="small" style="margin-top:4px; font-size:18.5px">글을 좌표(숫자 묶음)로 바꾸는데, 뜻이 비슷한 글은 가까운 곳에 놓이도록 학습시켰기 때문입니다. 검색은 "가장 가까운 점 찾기"가 됩니다.</p>
   <div class="cols" style="grid-template-columns:0.9fr 1.1fr; margin-top:14px; gap:34px; flex:none">
