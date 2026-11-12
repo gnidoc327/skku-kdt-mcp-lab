@@ -1569,6 +1569,37 @@ bash setup.sh</pre>
 </section>
 
 <section class="slide">
+  <h2>추론과 노력, 예시로 보면</h2>
+  <div class="cols" style="grid-template-columns:1fr 1fr; margin-top:14px; gap:36px; flex:none">
+    <div>
+      <h3 style="font-size:20px; margin-bottom:8px">추론: 답하기 전에 풀이를 적는다</h3>
+      <div class="trace" aria-label="추론 예시">
+        <div class="q">체중 18kg 아이. 하루 40mg/kg를 세 번에 나눠 먹임. 시럽은 5mL에 250mg. 한 번에 몇 mL?</div>
+        <div class="row ob"><b>추론 없이</b><span>"14.4mL입니다." 세 번으로 나누는 단계를 빼먹음</span></div>
+        <div class="row th"><b>풀이 1</b><span>하루 양: 18 × 40 = 720mg</span></div>
+        <div class="row th"><b>풀이 2</b><span>한 번 양: 720 ÷ 3 = 240mg</span></div>
+        <div class="row th"><b>풀이 3</b><span>시럽으로: 240 ÷ 250 × 5 = 4.8mL</span></div>
+        <div class="row fi"><b>답</b><span>"한 번에 4.8mL입니다."</span></div>
+      </div>
+    </div>
+    <div>
+      <h3 style="font-size:20px; margin-bottom:8px">노력: 같은 일을 얼마나 꼼꼼히</h3>
+      <table class="tbl compact" style="margin-top:0; font-size:14.5px">
+        <colgroup><col style="width:70px"><col></colgroup>
+        <thead><tr><th></th><th>"처방 기록 500건에서 용량이 이상한 것을 찾아 줘"</th></tr></thead>
+        <tbody>
+          <tr><td>low</td><td>앞부분을 훑어 눈에 띄는 2건을 알려 주고 끝. 도구 2번, 30초</td></tr>
+          <tr class="q"><td>high</td><td>500건을 다 읽고, 약마다 정상 범위를 계산하고, 의심 7건을 원본과 다시 대조한 뒤 근거와 함께 보고. 도구 20번 넘게, 5분</td></tr>
+        </tbody>
+      </table>
+      <p class="small" style="margin-top:10px; font-size:15.5px">노력은 반복 그 자체가 아니라 다이얼입니다. 생각의 길이, 도구를 부르는 횟수, 확인하는 횟수를 한꺼번에 올리고 내립니다.</p>
+    </div>
+  </div>
+  <p class="punch" style="margin-top:12px">AI가 정말 추론하느냐는 아직 논쟁 중입니다. 원리는 여전히 다음 말 고르기지만, 풀이를 먼저 적게 하면 여러 단계 문제를 훨씬 잘 풉니다. 그래도 계산은 도구에 맡기고 사람이 확인합니다.</p>
+  <footer class="foot"><div class="src">출처: <a href="https://arxiv.org/abs/2201.11903" target="_blank" rel="noopener">Wei et al., Chain-of-Thought (2022)</a> / <a href="https://arxiv.org/abs/2506.06941" target="_blank" rel="noopener">Apple, The Illusion of Thinking (2025)</a> / <a href="https://deepmind.google/discover/blog/advanced-version-of-gemini-with-deep-think-officially-achieves-gold-medal-standard-at-the-international-mathematical-olympiad/" target="_blank" rel="noopener">Google DeepMind, 수학올림피아드 금메달 수준 (2025)</a> / 두 예시는 설명용</div><span>2026년</span><div class="ribbon"><span>Chat</span><span>Multimodal</span><span>Reasoning</span><span class="on">Agent</span></div><span class="pg"></span></footer>
+</section>
+
+<section class="slide">
   <h2>2026, AI가 과학에서 벌인 일</h2>
   <table class="tbl four even" style="margin-top:16px; font-size:15.5px">
     <colgroup><col style="width:170px"><col style="width:560px"><col></colgroup>
@@ -1579,7 +1610,8 @@ bash setup.sh</pre>
       <tr><td>단백질</td><td>AlphaFold가 구조 예측으로 노벨상(2024). 지금은 세상에 없던 단백질을 설계하는 단계</td><td>설계한 단백질이 실제 약이 되려면 여전히 실험과 임상이 필요</td></tr>
     </tbody>
   </table>
-  <p class="punch">AI가 "답을 찾는 도구"에서 "새로운 것을 발견하는 동료"로 넘어가는 중입니다. 다만 화제가 된 발표일수록 누가 검증했는지를 봐야 합니다.</p>
+  <p class="punch" style="margin-top:14px">AI가 "답을 찾는 도구"에서 "새로운 것을 발견하는 동료"로 넘어가는 중입니다. 다만 화제가 된 발표일수록 누가 검증했는지를 봐야 합니다.</p>
+  <p class="vids" style="margin-top:10px">영상으로 보기 <a href="https://www.youtube.com/watch?v=d7hGpiHLSRI" target="_blank" rel="noopener">초파리에게 운전 가르치기 <small>코딩애플 · 5분 58초, 앞 2분만</small></a><a href="https://www.youtube.com/watch?v=DH1fPxZbecw" target="_blank" rel="noopener">디지털 초파리, 뇌를 복제했더니 <small>KNN 뉴스 · 1분 34초</small></a></p>
   <footer class="foot"><div class="src">출처: <a href="https://weekly.khan.co.kr/article/202609082212001" target="_blank" rel="noopener">주간경향, 디지털 초파리</a> / <a href="https://www.aitimes.com/news/articleView.html?idxno=215207" target="_blank" rel="noopener">AI타임스, 가상 초파리</a> / <a href="https://techcrunch.com/2026/05/20/openai-claims-it-solved-an-80-year-old-math-problem-for-real-this-time/" target="_blank" rel="noopener">TechCrunch, 에르되시 문제</a> / <a href="https://theconversation.com/an-ai-solution-to-an-80-year-old-problem-has-shocked-mathematicians-283686" target="_blank" rel="noopener">The Conversation</a></div><span>2026년</span><div class="ribbon"><span>Chat</span><span>Multimodal</span><span>Reasoning</span><span class="on">Agent</span></div><span class="pg"></span></footer>
 </section>
 
