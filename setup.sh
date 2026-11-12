@@ -41,6 +41,6 @@ echo "5/5 동작 확인"
 .venv/bin/python check.py
 
 echo
-echo "준비 끝. 브라우저에 JupyterLab이 열리면 example/step0 부터 순서대로 실행하세요."
+echo "준비 끝. 브라우저에 JupyterLab이 열리면 0_check_setup 부터 번호 순서대로 실행하세요."
 echo "끝낼 때는 이 터미널에서 Ctrl+C 를 두 번 누릅니다."
 if [ -z "$NO_LAUNCH" ]; then exec .venv/bin/jupyter lab --notebook-dir=example; fi

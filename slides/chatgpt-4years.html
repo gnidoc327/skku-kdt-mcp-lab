@@ -391,6 +391,9 @@ a:focus-visible, button:focus-visible { outline: 3px solid var(--eosin); outline
 .vs a.yt::after { content: "▶"; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 64px; height: 64px; border-radius: 50%; background: rgba(20, 23, 28, .72); color: #fff; font-size: 24px; display: grid; place-items: center; padding-left: 4px; box-sizing: border-box; }
 .vs figcaption { font-size: 15.5px; color: var(--muted); margin-top: 8px; line-height: 1.45; }
 .vs figcaption b { color: var(--ink); font-size: 17px; }
+/* 한글 단어 중간에서 줄바꿈하지 않기 */
+.slide { word-break: keep-all; overflow-wrap: break-word; }
+.slide pre, .slide code, .slide .ids { word-break: normal; overflow-wrap: normal; }
 </style>
 </head>
 <body>
@@ -658,7 +661,7 @@ bash setup.sh</pre>
 
 <section class="slide">
   <h2>2023, 당당한 거짓말의 해</h2>
-  <div class="cols" style="grid-template-columns:1fr 1.15fr; margin-top:26px; gap:44px">
+  <div class="cols" style="grid-template-columns:1fr 1.15fr; margin-top:26px; gap:44px; flex:none">
     <div class="meme">
       <div class="who">ChatGPT (GPT-3.5), 2023년 2월</div>
       <div class="ask">질문: 조선왕조실록에 기록된 세종대왕의 맥북프로 던짐 사건에 대해 알려줘</div>
@@ -672,7 +675,7 @@ bash setup.sh</pre>
       <li><b>Gemini 시연 영상</b><span>12월, 실시간으로 보고 듣고 답하는 것처럼 보였지만 편집본. Google도 "편집한 것 맞다"고 인정 (2024년 장에서 자세히)</span></li>
     </ul>
   </div>
-  <p class="vids">영상으로 보기 <a href="https://www.youtube.com/watch?v=UIZAiXYceBI" target="_blank" rel="noopener">논란이 된 Gemini 시연 영상 <small>Google 공식 · 6분 22초, 앞 1분만</small></a><span>AI만 거짓말한 것이 아니라, AI를 파는 회사도 과장했습니다.</span></p>
+  <p class="vids" style="margin-top:18px">영상으로 보기 <a href="https://www.youtube.com/watch?v=UIZAiXYceBI" target="_blank" rel="noopener">논란이 된 Gemini 시연 영상 <small>Google 공식 · 6분 22초, 앞 1분만</small></a><span>AI만 거짓말한 것이 아니라, AI를 파는 회사도 과장했습니다.</span></p>
   <footer class="foot"><div class="src">출처: <a href="https://www.aitimes.com/news/articleView.html?idxno=155764" target="_blank" rel="noopener">AI타임스, Gemini 시연 영상 논란</a> / <a href="https://www.lawtimes.co.kr/news/articleView.html?idxno=193383" target="_blank" rel="noopener">법률신문, 세종대왕 맥북</a> / <a href="https://www.npr.org/2023/02/09/1155650909/google-chatbot--error-bard-shares" target="_blank" rel="noopener">NPR, Bard 오답</a> / <a href="https://fortune.com/2023/02/17/microsoft-chatgpt-bing-romantic-love/" target="_blank" rel="noopener">Fortune, Bing Sydney</a> / <a href="https://www.lawnext.com/2023/06/court-imposes-sanctions-on-lawyers-who-filed-bogus-cases-after-relying-on-chatgpt-for-legal-research.html" target="_blank" rel="noopener">LawNext, Mata v. Avianca</a></div><span>2023년</span><div class="ribbon"><span class="on">Chat</span><span>Multimodal</span><span>Reasoning</span><span>Agent</span></div><span class="pg"></span></footer>
 </section>
 
@@ -1873,7 +1876,7 @@ bash setup.sh</pre>
 </section>
 
 <section class="slide">
-  <h2>AWS의 도전: CodeWhisperer에서 Q, 그리고 Kiro</h2>
+  <h2>AWS의 도전: CodeWhisperer, Q, Kiro</h2>
   <div class="cols" style="grid-template-columns:1.25fr 1fr; margin-top:16px; gap:36px; flex:none">
     <table class="tbl compact" style="margin-top:0; font-size:15px; align-self:start">
       <colgroup><col style="width:92px"><col></colgroup>
@@ -1913,7 +1916,7 @@ bash setup.sh</pre>
     <div>
       <h3 style="font-size:20px; margin-bottom:8px">필요해서 만들었다가 공개해 표준이 된 것</h3>
       <table class="tbl compact" style="margin-top:0; font-size:14.5px">
-        <colgroup><col style="width:150px"><col style="width:92px"><col></colgroup>
+        <colgroup><col style="width:142px"><col style="width:132px"><col></colgroup>
         <tbody>
           <tr><td>PyTorch</td><td>Meta, 2017</td><td>AI 연구용 도구. 지금 거의 모든 모델이 이것으로 만들어짐</td></tr>
           <tr><td>Whisper</td><td>OpenAI, 2022</td><td>음성을 글로 바꾸는 모델. 회의록과 자막 서비스의 기반</td></tr>
@@ -1930,7 +1933,7 @@ bash setup.sh</pre>
 </section>
 
 <section class="slide">
-  <h2>Token Economy(토큰 이코노미): 왜 지금 화두인가</h2>
+  <h2>Token Economy: 왜 지금 화두인가</h2>
   <div class="cols" style="grid-template-columns:1.25fr 1fr; margin-top:34px">
     <ul class="plain">
       <li>Token<span>모델이 글을 읽고 쓰는 조각 단위. 영어 1단어는 약 1.3Token이고, 한국어는 같은 내용에 Token이 더 많이 드는 편</span></li>
@@ -2164,7 +2167,7 @@ bash setup.sh</pre>
 </section>
 
 <section class="slide">
-  <h2>개인의 AX: 동네 치과 원장의 Local LLM(로컬 LLM)</h2>
+  <h2>개인의 AX: 치과 원장의 Local LLM</h2>
   <div class="cols" style="grid-template-columns:1.3fr 1fr; margin-top:30px; gap:44px">
     <ul class="plain" style="gap:14px">
       <li>누가<span>생물학을 전공한 치과 원장. Claude, Codex 같은 Coding Agent(코딩 에이전트)를 전화, 포털, 음성, 인프라 역할별로 띄워 직접 개발</span></li>
@@ -2185,6 +2188,7 @@ bash setup.sh</pre>
 <section class="slide">
   <h2>치과 원장의 구성을 AWS로 바꾸면</h2>
   <table class="tbl wide" style="margin-top:16px; font-size:16px">
+    <colgroup><col style="width:250px"><col style="width:340px"><col></colgroup>
     <thead><tr><th>치과 원장이 직접 한 것</th><th>AWS에서는</th><th>달라지는 점</th></tr></thead>
     <tbody>
       <tr class="new"><td>장비 12대에 모델 설치</td><td>Amazon Bedrock</td><td>장비 없이 Claude, GPT, Nova, Llama를 호출. 쓴 Token만큼 과금</td></tr>
@@ -2216,7 +2220,7 @@ bash setup.sh</pre>
     </tbody>
   </table>
   <p class="punch" style="margin-top:8px; padding-top:10px; padding-bottom:10px">단가는 작아도 곱하면 커집니다. Guardrails는 글자 수만큼 붙어서, 싼 모델을 쓰면 모델값보다 Guardrail값이 더 큽니다.</p>
-  <p class="vids" style="margin-top:8px">직접 계산하기 <a href="https://calculator.aws/" target="_blank" rel="noopener">AWS Pricing Calculator <small>내 사용량을 넣으면 월 예상 금액</small></a><a href="https://aws.amazon.com/bedrock/pricing/" target="_blank" rel="noopener">Bedrock 요금표 <small>모델, Guardrails, Knowledge Bases</small></a><a href="https://aws.amazon.com/bedrock/agentcore/pricing/" target="_blank" rel="noopener">AgentCore 요금표 <small>Runtime, Gateway, Policy</small></a></p>
+  <p class="vids" style="margin-top:8px">직접 계산하기 <a href="https://calculator.aws/" target="_blank" rel="noopener">AWS Pricing Calculator <small>월 예상 금액 계산</small></a><a href="https://aws.amazon.com/bedrock/pricing/" target="_blank" rel="noopener">Bedrock 요금표 <small>모델, Guardrails</small></a><a href="https://aws.amazon.com/bedrock/agentcore/pricing/" target="_blank" rel="noopener">AgentCore 요금표 <small>Runtime, Policy</small></a></p>
   <footer class="foot"><div class="src">출처: <a href="https://aws.amazon.com/bedrock/pricing/" target="_blank" rel="noopener">AWS, Bedrock 요금</a> / <a href="https://aws.amazon.com/bedrock/agentcore/pricing/" target="_blank" rel="noopener">AWS, AgentCore 요금</a> / <a href="https://aws.amazon.com/s3/pricing/" target="_blank" rel="noopener">AWS, S3 요금</a> / <a href="https://aws.amazon.com/transcribe/pricing/" target="_blank" rel="noopener">AWS, Transcribe 요금</a> / 2026년 11월 12일, 미국 Region 기준</div><span>2026년</span><div class="ribbon"><span>Chat</span><span>Multimodal</span><span>Reasoning</span><span class="on">Agent</span></div><span class="pg"></span></footer>
 </section>
 
@@ -2242,7 +2246,7 @@ bash setup.sh</pre>
 
 <section class="slide">
   <h2>AI가 바이오헬스에서 하는 일</h2>
-  <div class="cols" style="margin-top:36px">
+  <div class="cols" style="margin-top:36px; flex:none">
     <ul class="plain">
       <li>구조 예측에서 설계로<span>AlphaFold 2·3, ESM3를 지나 새 단백질을 생성하는 단계(Chai, Latent Labs 등)</span></li>
       <li>AI 발굴 신약의 임상 진입<span>Insilico Medicine 폐섬유증 후보 물질, 임상 2a상 결과 발표</span></li>
@@ -2254,7 +2258,7 @@ bash setup.sh</pre>
       <li>연구 Agent<span>문헌 조사, 가설 수립, 실험 설계를 Agent가 맡는 흐름. 2026년의 핵심 트렌드</span></li>
     </ul>
   </div>
-  <p class="vids">영상으로 보기 <a href="https://www.youtube.com/watch?v=5taSpEDZAJU" target="_blank" rel="noopener">AlphaFold가 뭐길래 <small>YTN 사이언스 · 1분 47초</small></a></p>
+  <p class="vids" style="margin-top:18px">영상으로 보기 <a href="https://www.youtube.com/watch?v=5taSpEDZAJU" target="_blank" rel="noopener">AlphaFold가 뭐길래 <small>YTN 사이언스 · 1분 47초</small></a></p>
   <footer class="foot"><div class="src">출처: <a href="https://aws.amazon.com/blogs/machine-learning/applying-multimodal-biological-foundation-models-across-therapeutics-and-patient-care/" target="_blank" rel="noopener">AWS ML Blog, BioFM</a> / <a href="https://www.nobelprize.org/prizes/chemistry/2024/summary/" target="_blank" rel="noopener">Nobel Prize 2024</a></div><span>2026년 바이오헬스</span><div class="ribbon"><span>Chat</span><span>Multimodal</span><span>Reasoning</span><span class="on">Agent</span></div><span class="pg"></span></footer>
 </section>
 
@@ -2421,11 +2425,11 @@ bash setup.sh</pre>
     <thead><tr><th>Step</th><th>노트북</th><th>해 보는 것</th></tr></thead>
     <tbody>
       <tr><td>Step 0</td><td>0_check_setup</td><td>Ollama 연결과 모델 확인, 설정 저장</td></tr>
-      <tr><td>Step 1</td><td>0_embedding_similarity</td><td>"숙제"로 "과제"를 찾기. 키워드 검색과 비교하고 의미 지도를 그림</td></tr>
-      <tr><td>Step 2</td><td>0_vector_db</td><td>Vector DB에 저장하고 의미와 꼬리표로 찾기</td></tr>
-      <tr><td>Step 3</td><td>0_rag</td><td>병원 안내문으로 RAG. 문서 없이 물었을 때 지어내는 것과 비교</td></tr>
-      <tr><td>Step 4-0</td><td>0_mcp_server</td><td>Memory MCP 서버의 도구 목록을 받고 직접 호출</td></tr>
-      <tr class="q"><td>Step 4-1</td><td>1_agent_with_mcp</td><td>로컬 LLM이 스스로 MCP 도구를 고르는 Agent. for문 하나</td></tr>
+      <tr><td>Step 1</td><td>1_embedding_similarity</td><td>"숙제"로 "과제"를 찾기. 키워드 검색과 비교하고 의미 지도를 그림</td></tr>
+      <tr><td>Step 2</td><td>2_vector_db</td><td>Vector DB에 저장하고 의미와 꼬리표로 찾기</td></tr>
+      <tr><td>Step 3</td><td>3_rag</td><td>병원 안내문으로 RAG. 문서 없이 물었을 때 지어내는 것과 비교</td></tr>
+      <tr><td>Step 4</td><td>4_mcp_server</td><td>Memory MCP 서버의 도구 목록을 받고 직접 호출</td></tr>
+      <tr class="q"><td>Step 5</td><td>5_agent_with_mcp</td><td>로컬 LLM이 스스로 MCP 도구를 고르는 Agent. for문 하나</td></tr>
     </tbody>
   </table>
   <p class="punch" style="margin-top:14px">오늘 강의의 순서 그대로입니다. Embedding, Vector DB, RAG, MCP, Agent를 한 단계씩 쌓아 올립니다.</p>
@@ -2466,7 +2470,7 @@ cd mcp-lab
 bash setup.sh
 <span class="c"># "✅ 성공"이 나오고 브라우저에 JupyterLab이 열리면 준비 끝</span>
 
-<span class="c"># 3. 왼쪽 목록에서 step0 노트북부터 Shift + Enter</span>
+<span class="c"># 3. 왼쪽 목록에서 0_check_setup 부터 번호 순서대로 Shift + Enter</span>
 <span class="c">#    다음에 다시 열 때도: cd mcp-lab 후 bash setup.sh</span></pre>
     <ul class="plain" style="gap:14px">
       <li>Ollama는 앱으로<span>Docker 안에 설치하면 맥 GPU를 못 써서 매우 느립니다</span></li>
@@ -2505,7 +2509,7 @@ def recall(query: str, k: int = 5) -&gt; list[dict]:
       <li>@server.tool()<span>이 한 줄로 함수가 AI가 부를 수 있는 Tool(도구)이 됩니다</span></li>
       <li>docstring이 설명서<span>함수 설명과 파라미터를 AI가 읽고 언제 쓸지 판단합니다</span></li>
       <li>요약 기능은 없음<span>list_memories로 기간의 기억을 넘기면 요약은 LLM이 합니다</span></li>
-      <li>전체 80줄<span>lab/memory_mcp.py. forget, 날짜 필터까지 포함</span></li>
+      <li>전체 80줄<span>저장소의 memory_mcp.py. forget과 날짜 필터까지 포함</span></li>
     </ul>
   </div>
   <footer class="foot"><div class="src">출처: <a href="https://github.com/modelcontextprotocol/python-sdk" target="_blank" rel="noopener">MCP Python SDK</a> / <a href="https://docs.trychroma.com" target="_blank" rel="noopener">Chroma</a> / <a href="https://ollama.com/library/bge-m3" target="_blank" rel="noopener">Ollama, bge-m3</a></div><span>실습</span><span class="pg"></span></footer>
@@ -2540,18 +2544,22 @@ def find_similar(path: str, k: int = 5) -&gt; dict:
 </section>
 
 <section class="slide">
-  <h2>Claude에 연결하고 말 걸기</h2>
+  <h2>Kiro나 Claude에 연결하고 말 걸기</h2>
   <div class="cols" style="grid-template-columns:1.3fr 1fr; margin-top:20px; gap:36px">
-    <pre class="code"><span class="c"># Claude Code</span>
+    <pre class="code"><span class="c"># Kiro: 설정 파일에 자동으로 추가 (기존 설정은 백업)</span>
 cd mcp-lab
-claude mcp add memory -- \
-  "$(pwd)/.venv/bin/python" "$(pwd)/memory_mcp.py"
+.venv/bin/python connect_kiro.py
+<span class="c"># Kiro가 자동으로 다시 연결합니다. 채팅창에서 바로 말 걸기</span>
 
-<span class="c"># Claude Desktop: 설정 파일에 자동으로 추가 (기존 설정은 백업)</span>
+<span class="c"># Claude Desktop</span>
 .venv/bin/python connect_claude_desktop.py
 <span class="c"># 실행한 뒤 Claude Desktop을 ⌘Q로 끄고 다시 켜기</span>
 
-<span class="c"># 직접 넣는다면 claude_desktop_config.json 에</span>
+<span class="c"># Claude Code</span>
+claude mcp add memory -- \
+  "$(pwd)/.venv/bin/python" "$(pwd)/memory_mcp.py"
+
+<span class="c"># 직접 넣는다면 ~/.kiro/settings/mcp.json 에</span>
 { "mcpServers": { "memory": {
     "command": "/절대경로/mcp-lab/.venv/bin/python",
     "args": ["/절대경로/mcp-lab/memory_mcp.py"] } } }</pre>
@@ -2563,7 +2571,7 @@ claude mcp add memory -- \
       <li><b>사진 검색</b><span>"폐 아래쪽이 하얗게 보이는 사진 찾아서 첫 번째 보여 줘"</span></li>
     </ul>
   </div>
-  <footer class="foot"><div class="src">출처: <a href="https://docs.anthropic.com/en/docs/claude-code/mcp" target="_blank" rel="noopener">Claude Code, MCP</a> / <a href="https://modelcontextprotocol.io" target="_blank" rel="noopener">Model Context Protocol</a></div><span>실습</span><span class="pg"></span></footer>
+  <footer class="foot"><div class="src">출처: <a href="https://kiro.dev/docs/mcp/configuration/" target="_blank" rel="noopener">Kiro, MCP 설정</a> / <a href="https://docs.anthropic.com/en/docs/claude-code/mcp" target="_blank" rel="noopener">Claude Code, MCP</a> / <a href="https://modelcontextprotocol.io" target="_blank" rel="noopener">Model Context Protocol</a></div><span>실습</span><span class="pg"></span></footer>
 </section>
 
 <section class="slide">
@@ -2607,9 +2615,10 @@ claude mcp add memory -- \
   <table class="tbl wide" style="margin-top:14px; font-size:16px">
     <thead><tr><th>방법</th><th>비용</th><th>메모</th></tr></thead>
     <tbody>
+      <tr><td>Kiro + 실습 MCP</td><td>Kiro 요금제의 Credit 안에서</td><td>수강생에게 제공된 Kiro에 connect_kiro.py로 연결. Kiro 안의 모델이 도구를 고름</td></tr>
       <tr><td>Claude Code + 구독</td><td>Pro 요금제 안에서 추가 비용 없음</td><td>시연 1~3. 사용량 한도가 있음</td></tr>
       <tr><td>Claude Code + Bedrock</td><td>쓴 만큼. 시연의 네 단계를 Sonnet 5.5로 하면 약 $0.15</td><td>회사 AWS 계정으로 결제. 데이터가 계정 밖으로 안 나감. 길게 쓰면 금방 늘어남</td></tr>
-      <tr class="new"><td>노트북 Step 4-1 + Ollama</td><td>0원. 수업 기본</td><td>내 맥북의 llama3.2:3b가 도구를 고름. 가볍고 빠르지만 필요 없는 도구를 부르기도 함</td></tr>
+      <tr class="new"><td>노트북 Step 5 + Ollama</td><td>0원. 수업 기본</td><td>내 맥북의 llama3.2:3b가 도구를 고름. 가볍고 빠르지만 필요 없는 도구를 부르기도 함</td></tr>
       <tr><td>Claude Code + Ollama</td><td>0원</td><td>내 맥북의 gemma4:e4b(Google Open Weight). 데이터가 밖으로 안 나감. 시연 4에서 같은 4단계 동작 확인, 가끔 다시 시켜야 함</td></tr>
       <tr><td>OpenCode + Ollama</td><td>0원. 설정이 더 필요</td><td>Code Mode 끄기, AGENTS.md 필요. 부록 시연 6에서 동작 확인, 이미지 결과에서 헷갈림</td></tr>
     </tbody>
@@ -2742,7 +2751,7 @@ claude mcp add memory -- \
 </section>
 
 <section class="slide closing">
-  <p class="q">모델 이름은 매달 바뀝니다. 남는 것은 <b>Token을 아끼는 설계</b>, <b>Feedback Loop(피드백 루프)</b>, 그리고 <b>내 데이터를 다루는 능력</b>입니다.</p>
+  <p class="q">모델 이름은 매달 바뀝니다. 남는 것은 <b>Token을 아끼는 설계</b>, <b>Feedback Loop</b>, 그리고 <b>내 데이터를 다루는 능력</b>입니다.</p>
   <p class="lede" style="margin-top:28px">바이오헬스의 지금은 AI가, 5~10년 뒤는 양자가 바꿀 겁니다. 양자가 쓸모 있어질 때 준비된 사람은 지금 AI와 데이터를 다룰 줄 아는 사람입니다.</p>
   <footer class="foot"><span>ChatGPT 이후 4년</span><span class="pg"></span></footer>
 </section>
@@ -2755,7 +2764,7 @@ claude mcp add memory -- \
 </section>
 
 <section class="slide">
-  <h2>LangChain 생태계: LangChain, LangGraph, LangSmith</h2>
+  <h2>LangChain 생태계: 세 가지 도구</h2>
   <div class="cols" style="grid-template-columns:1.5fr 1fr; margin-top:14px; gap:44px">
     <ul class="events tight">
       <li><b>LangChain</b><span>AI 앱을 만드는 레고 블록. 모델, 지시문, 도구를 이어 붙임</span></li>
@@ -2855,7 +2864,7 @@ claude mcp add memory -- \
 </section>
 
 <section class="slide">
-  <h2>Feedback Loop(피드백 루프): 쓸수록 좋아지는 구조</h2>
+  <h2>Feedback Loop: 쓸수록 좋아지는 구조</h2>
   <div class="loop">
     <div><div class="n">1</div><b>배포</b><span>사용자가 실제로 사용</span></div>
     <div><div class="n">2</div><b>관측</b><span>로그, Tracing(트레이싱)으로 대화와 도구 호출 기록</span></div>
@@ -2873,7 +2882,7 @@ claude mcp add memory -- \
 </section>
 
 <section class="slide">
-  <h2>Skill(스킬)과 Plugin(플러그인): Agent를 확장하는 방법</h2>
+  <h2>Skill과 Plugin: Agent를 확장하는 방법</h2>
   <div class="cols" style="grid-template-columns:1.2fr 1fr; margin-top:26px; gap:44px">
     <ul class="events tight">
       <li><b>규칙 파일</b><span>CLAUDE.md, AGENTS.md. 프로젝트마다 지켜야 할 규칙을 Agent에게 전달</span></li>
@@ -2963,7 +2972,7 @@ claude mcp add memory -- \
 </section>
 
 <section class="slide">
-  <h2>2026 개발자 담론: Vibe Coding(바이브 코딩) 다음은</h2>
+  <h2>2026 개발자 담론: Vibe Coding 다음은</h2>
   <div class="cols3 tight">
     <div><h3>Agentic Engineering(에이전틱 엔지니어링)</h3>
       <ul class="plain">
@@ -3188,7 +3197,7 @@ while :; do cat PROMPT.md | agent ; done</pre>
 </section>
 
 <section class="slide">
-  <h2>맥북에서 무료로: 로컬 Open Source(오픈소스) 스택</h2>
+  <h2>맥북에서 무료로: 로컬 Open Source 스택</h2>
   <table class="tbl four" style="margin-top:16px; font-size:16px">
     <thead><tr><th>역할</th><th>맥북 로컬 (무료)</th><th>AWS로 옮기면</th><th>메모</th></tr></thead>
     <tbody>
@@ -3418,7 +3427,7 @@ claude --model <span class="k">gemma4-agent</span></pre>
         <li style="font-size:18px">AWS로<span>Bedrock, S3 Vectors, AgentCore Gateway로 옮기기</span></li>
       </ul></div>
   </div>
-  <footer class="foot"><div class="src">출처: 발표자 실습 코드 (lecture-2026-11-12/lab)</div><span>부록 · 실습</span><span class="pg"></span></footer>
+  <footer class="foot"><div class="src">출처: 발표자 작성 실습 코드 (<a href="https://github.com/gnidoc327/skku-kdt-mcp-lab" target="_blank" rel="noopener">GitHub, skku-kdt-mcp-lab</a>)</div><span>부록 · 실습</span><span class="pg"></span></footer>
 </section>
 
 <section class="slide">

@@ -51,22 +51,30 @@ jupyter lab --notebook-dir=example    # 실행
 
 **3단계. 노트북을 순서대로 실행**
 
-왼쪽 파일 목록에서 `step0`부터 엽니다. 셀을 하나씩 선택하고 **Shift + Enter**를 누르면 실행됩니다. `# TODO`가 적힌 곳은 내용을 바꿔서 다시 실행해 보세요.
+왼쪽 파일 목록에서 `0_check_setup`부터 번호 순서대로 엽니다. 셀을 하나씩 선택하고 **Shift + Enter**를 누르면 실행됩니다. `# TODO`가 적힌 곳은 내용을 바꿔서 다시 실행해 보세요.
 
-| Step | 노트북 | 내용 |
+| 순서 | 노트북 | 내용 |
 |---|---|---|
-| **Step 0** | `step0/0_check_setup.ipynb` | Ollama 연결과 모델 확인(없으면 내려받기), 설정 저장 |
-| **Step 1** | `step1/0_embedding_similarity.ipynb` | Embedding으로 뜻이 비슷한 글 찾기, 키워드 검색과 비교, 의미 지도 그리기 |
-| **Step 2** | `step2/0_vector_db.ipynb` | Vector DB(Chroma)에 저장하고 의미와 꼬리표로 찾기 |
-| **Step 3** | `step3/0_rag.ipynb` | RAG: 문서를 찾아서 LLM에게 함께 보여 주기. RAG 없이 물었을 때와 비교 |
-| **Step 4-0** | `step4/0_mcp_server.ipynb` | Memory MCP 서버에 연결해 도구 목록을 받고 직접 호출 |
-| **Step 4-1** | `step4/1_agent_with_mcp.ipynb` | Agent: 로컬 LLM이 스스로 MCP 도구를 고르게 하기 (`for`문 하나) |
+| **0** | `0_check_setup.ipynb` | Ollama 연결과 모델 확인(없으면 내려받기), 설정 저장 |
+| **1** | `1_embedding_similarity.ipynb` | Embedding으로 뜻이 비슷한 글 찾기, 키워드 검색과 비교, 의미 지도 그리기 |
+| **2** | `2_vector_db.ipynb` | Vector DB(Chroma)에 저장하고 의미와 꼬리표로 찾기 |
+| **3** | `3_rag.ipynb` | RAG: 문서를 찾아서 LLM에게 함께 보여 주기. RAG 없이 물었을 때와 비교 |
+| **4** | `4_mcp_server.ipynb` | Memory MCP 서버에 연결해 도구 목록을 받고 직접 호출 |
+| **5** | `5_agent_with_mcp.ipynb` | Agent: 로컬 LLM이 스스로 MCP 도구를 고르게 하기 (`for`문 하나) |
 
-전부 내 맥북 안에서 돌아가므로 API 키도 요금도 없습니다. 모델을 내려받는 Step 0만 인터넷이 필요합니다.
+전부 내 맥북 안에서 돌아가므로 API 키도 요금도 없습니다.
 
-**4단계. (선택) 같은 MCP 서버를 Claude에 연결**
+**4단계. (선택) 같은 MCP 서버를 Kiro나 Claude에 연결**
 
-노트북에서 만든 `memory_mcp.py`를 그대로 Claude에 붙입니다. 노트북에서 저장한 기억을 Claude가 꺼냅니다.
+노트북에서 쓴 `memory_mcp.py`를 그대로 AI 도구에 붙입니다. 노트북에서 저장한 기억을 그 AI가 꺼냅니다. 쓰는 도구 하나만 고르면 됩니다.
+
+Kiro:
+
+```bash
+.venv/bin/python connect_kiro.py
+```
+
+Kiro의 사용자 설정(`~/.kiro/settings/mcp.json`)에 추가됩니다. Kiro는 설정 파일이 바뀌면 자동으로 다시 연결합니다. 안 보이면 명령 팔레트(⌘⇧P)에서 "MCP"를 검색해 설정을 열어 보세요.
 
 Claude Desktop 앱:
 
@@ -74,7 +82,7 @@ Claude Desktop 앱:
 .venv/bin/python connect_claude_desktop.py
 ```
 
-실행한 뒤 Claude Desktop을 완전히 종료(⌘Q)했다가 다시 켭니다. 기존 설정은 `.bak` 파일로 백업됩니다.
+실행한 뒤 Claude Desktop을 완전히 종료(⌘Q)했다가 다시 켭니다.
 
 Claude Code:
 
@@ -82,7 +90,7 @@ Claude Code:
 claude mcp add memory -- "$(pwd)/.venv/bin/python" "$(pwd)/memory_mcp.py"
 ```
 
-Claude 대화창에 그대로 입력해 보세요.
+세 경우 모두 기존 설정은 `.bak` 파일로 백업됩니다(Claude Code 제외). 연결한 뒤 채팅창에 그대로 입력해 보세요.
 
 ```
 이거 기억해 줘: 다음 주 화요일까지 RAG 과제 제출
@@ -100,8 +108,9 @@ Claude 대화창에 그대로 입력해 보세요.
 | `command not found: git` | 뜨는 설치 창에서 "설치"를 누르고, 끝나면 2단계 다시 |
 | `Python 3.10 이상이 필요합니다` | https://www.python.org/downloads/ 에서 설치하고 2단계 다시 |
 | 노트북 셀이 `[*]`에서 오래 멈춤 | 모델을 처음 부르는 중입니다. 1~2분 기다리면 됩니다 |
-| `config.json이 없습니다` | `step0` 노트북을 먼저 끝까지 실행 |
+| `config.json이 없습니다` | `0_check_setup` 노트북을 먼저 끝까지 실행 |
 | Claude에 도구가 안 보임 | Claude Desktop을 ⌘Q로 완전히 끄고 다시 켜기 |
+| Kiro에 도구가 안 보임 | 명령 팔레트(⌘⇧P)에서 "MCP" 검색 → 사용자 MCP 설정 열기. `memory`가 있는지 확인하고 저장 |
 
 아래부터는 자세한 설명과 심화 내용입니다.
 
