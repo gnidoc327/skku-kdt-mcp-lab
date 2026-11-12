@@ -1,10 +1,10 @@
 #!/bin/bash
-# 실습 준비를 한 번에: Ollama 확인 → 가상환경 → JupyterLab 설치 → 동작 확인 → JupyterLab 실행
+# 실습 준비를 한 번에: Ollama 확인 → 가상환경 → JupyterLab 설치 → 모델 내려받기 → 동작 확인 → JupyterLab 실행
 # 사용법: bash setup.sh     (다음에 다시 열 때도 같은 명령)
 set -e
 cd "$(dirname "$0")"
 
-echo "1/4 Ollama 확인"
+echo "1/5 Ollama 확인"
 if ! command -v ollama >/dev/null; then
   echo "❌ Ollama가 없습니다. https://ollama.com/download 에서 앱을 설치하고 한 번 실행한 뒤 다시 해 주세요."
   exit 1
@@ -14,7 +14,7 @@ if ! ollama list >/dev/null 2>&1; then
   exit 1
 fi
 
-echo "2/4 Python 가상환경(.venv) 준비"
+echo "2/5 Python 가상환경(.venv) 준비"
 if [ ! -x .venv/bin/python ]; then
   PY=""
   for c in python3.13 python3.12 python3.11 python3.10 python3; do
@@ -28,11 +28,16 @@ if [ ! -x .venv/bin/python ]; then
   "$PY" -m venv .venv
 fi
 
-echo "3/4 JupyterLab과 실습 패키지 설치 (처음 한 번만, 1~2분)"
+echo "3/5 JupyterLab과 실습 패키지 설치 (처음 한 번만, 1~2분)"
 .venv/bin/python -m pip install -q --disable-pip-version-check jupyterlab ipykernel "mcp>=2.3" "chromadb>=0.5" "ollama>=0.4" numpy matplotlib
 
-echo "4/4 동작 확인 (Embedding 모델 bge-m3, 약 1.2GB를 처음 한 번 내려받습니다)"
-ollama pull bge-m3 >/dev/null 2>&1 || ollama pull bge-m3
+echo "4/5 모델 내려받기 (처음 한 번만, 합쳐서 약 6.5GB. Wi-Fi에 따라 10~30분)"
+for m in bge-m3 gemma3:4b llama3.2:3b; do
+  echo "   - $m"
+  ollama pull "$m"
+done
+
+echo "5/5 동작 확인"
 .venv/bin/python check.py
 
 echo

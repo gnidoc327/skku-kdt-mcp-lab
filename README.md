@@ -12,6 +12,10 @@
                                       └──▶ Chroma (Vector DB, 내 컴퓨터 폴더에 저장)
 ```
 
+## 발표 자료
+
+강의 슬라이드는 [`slides/chatgpt-4years.html`](slides/chatgpt-4years.html)에 있습니다. 저장소를 받은 뒤 파일을 더블클릭해 브라우저로 열고, 화살표 키(← →)로 넘깁니다. `F`를 누르면 전체 화면입니다.
+
 ## 빠른 시작: 그대로 복사해 붙여 넣기
 
 실습은 **Jupyter Notebook(브라우저)** 으로 합니다. 터미널(Spotlight에서 "터미널" 검색)을 열고, 회색 상자를 통째로 복사해 붙여 넣은 뒤 Enter를 누르면 됩니다.
@@ -27,6 +31,8 @@ git clone https://github.com/gnidoc327/skku-kdt-mcp-lab.git mcp-lab
 cd mcp-lab
 bash setup.sh
 ```
+
+모델을 합쳐서 약 6.5GB 내려받기 때문에 Wi-Fi에 따라 10~30분 걸립니다. **수업 첫 시간에 먼저 실행해 두고** 강의를 들으면 실습 시간에 바로 시작할 수 있습니다. 중간에 끊겨도 다시 실행하면 이어서 받습니다.
 
 `✅ 성공`이 나온 뒤 브라우저에 JupyterLab이 열리면 준비 끝입니다. 다음에 다시 열 때도 `cd mcp-lab` 후 `bash setup.sh`를 실행하면 됩니다.
 
@@ -49,7 +55,7 @@ jupyter lab --notebook-dir=example    # 실행
 
 | Step | 노트북 | 내용 |
 |---|---|---|
-| **Step 0** | `step0/0_check_setup.ipynb` | Ollama 연결 확인, 모델 내려받기(약 6.5GB), 설정 저장 |
+| **Step 0** | `step0/0_check_setup.ipynb` | Ollama 연결과 모델 확인(없으면 내려받기), 설정 저장 |
 | **Step 1** | `step1/0_embedding_similarity.ipynb` | Embedding으로 뜻이 비슷한 글 찾기, 키워드 검색과 비교, 의미 지도 그리기 |
 | **Step 2** | `step2/0_vector_db.ipynb` | Vector DB(Chroma)에 저장하고 의미와 꼬리표로 찾기 |
 | **Step 3** | `step3/0_rag.ipynb` | RAG: 문서를 찾아서 LLM에게 함께 보여 주기. RAG 없이 물었을 때와 비교 |
