@@ -1873,6 +1873,30 @@ bash setup.sh</pre>
 </section>
 
 <section class="slide">
+  <h2>AWS의 도전: CodeWhisperer에서 Q, 그리고 Kiro</h2>
+  <div class="cols" style="grid-template-columns:1.25fr 1fr; margin-top:16px; gap:36px; flex:none">
+    <table class="tbl compact" style="margin-top:0; font-size:15px; align-self:start">
+      <colgroup><col style="width:92px"><col></colgroup>
+      <tbody>
+        <tr><td>2022.06</td><td>CodeWhisperer(코드위스퍼러). GitHub Copilot에 맞선 코드 자동 완성</td></tr>
+        <tr><td>2023.11</td><td>Amazon Q 발표. 이듬해 CodeWhisperer를 Amazon Q Developer로 이름을 바꿔 통합</td></tr>
+        <tr><td>2024~25</td><td>Q Developer CLI. 터미널에서 쓰는 Agent</td></tr>
+        <tr class="q"><td>2025.07</td><td>Kiro(키로) 공개. 무엇을 만들지 스펙부터 쓰게 하는 편집기. CLI도 Kiro CLI로 이름 변경</td></tr>
+        <tr><td>2026.05</td><td>Amazon Q Developer 신규 가입 종료. Kiro 하나로 합침</td></tr>
+        <tr><td>2026.11</td><td>오래 돌아가는 Agent인 Kiro Crew bots 발표. Stack Overflow 조사의 편집기 순위는 27위</td></tr>
+      </tbody>
+    </table>
+    <ul class="plain" style="gap:11px">
+      <li style="font-size:17.5px">왜 자리를 못 잡나<span>이름과 제품이 자주 바뀜. 최고 모델을 직접 만들지 않아 Kiro 안에서도 주로 Claude가 돎</span></li>
+      <li style="font-size:17.5px">그래도 AWS는 지지 않음<span>Anthropic에 80억 달러 투자. Claude Code도 Codex도 회사에서는 Bedrock에 연결해 씀</span></li>
+      <li style="font-size:17.5px">여러분에게는<span>AWS로 일하면 Kiro를 만날 가능성이 높음. 이름은 또 바뀔 수 있으니 방식(스펙을 쓰고 Agent에게 맡기기)을 익히면 됨</span></li>
+    </ul>
+  </div>
+  <p class="punch" style="margin-top:14px">도구 경쟁에서는 밀리고 있지만, 어떤 도구가 이기든 그 밑의 계산은 AWS가 팝니다. 금광에서 곡괭이를 파는 자리입니다.</p>
+  <footer class="foot"><div class="src">출처: <a href="https://www.theregister.com/ai-and-ml/2026/11/05/aws-kiro-aims-to-solve-identity-crisis-by-adding-another-identity-bot-orchestrator/5307965" target="_blank" rel="noopener">The Register, Kiro (2026.11.05)</a> / <a href="https://kiro.dev/blog/introducing-kiro/" target="_blank" rel="noopener">Kiro 공개 (2025.07)</a> / <a href="https://aws.amazon.com/blogs/aws/amazon-q-developer-now-generally-available-includes-new-capabilities-to-reimagine-developer-experience/" target="_blank" rel="noopener">AWS, Amazon Q Developer (2024.04)</a> / <a href="https://www.aboutamazon.com/news/company-news/amazon-anthropic-ai-investment" target="_blank" rel="noopener">Amazon, Anthropic 투자</a></div><span>2026년</span><div class="ribbon"><span>Chat</span><span>Multimodal</span><span>Reasoning</span><span class="on">Agent</span></div><span class="pg"></span></footer>
+</section>
+
+<section class="slide">
   <h2>AI가 코드를 너무 빨리 써서, Git이 버티지 못했다</h2>
   <div class="cols" style="grid-template-columns:1fr 1.1fr; margin-top:16px; gap:36px; flex:none">
     <div>
