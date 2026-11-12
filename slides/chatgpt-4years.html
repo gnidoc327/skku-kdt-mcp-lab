@@ -932,8 +932,26 @@ bash setup.sh</pre>
     <figure><img class="low" src="img/demo-input-lowres.png" alt="같은 엑스레이를 28×28 픽셀로 줄인 그림">
       <figcaption><b>3. 큰 사진은 줄여서 넣는다</b>조각보다 작은 것은 뭉개집니다 (설명용으로 과장)</figcaption></figure>
   </div>
-  <p class="punch" style="margin-top:16px">일부만 보는 게 아니라 전체를 낮은 해상도의 조각 그림으로 봅니다. 그래서 작은 병변은 그 부위를 잘라서 따로 넣거나, 판독은 전용 모델에 맡깁니다.</p>
+  <p class="punch" style="margin-top:16px">일부만 보는 게 아니라 전체를 낮은 해상도의 조각 그림으로 봅니다. 그래서 의료 영상은 다루는 요령이 따로 있습니다 (다음 장).</p>
   <footer class="foot"><div class="src">출처: <a href="https://arxiv.org/abs/2010.11929" target="_blank" rel="noopener">Dosovitskiy et al., ViT (An Image is Worth 16x16 Words)</a> / <a href="https://docs.anthropic.com/en/docs/build-with-claude/vision" target="_blank" rel="noopener">Anthropic, Vision (이미지 크기)</a> / 그림: 실습용 합성 엑스레이</div><span>2024년</span><div class="ribbon"><span>Chat</span><span class="on">Multimodal</span><span class="on">Reasoning</span><span>Agent</span></div><span class="pg"></span></footer>
+</section>
+
+<section class="slide">
+  <h2>엑스레이와 MRI로 RAG를 만든다면</h2>
+  <table class="tbl compact" style="margin-top:14px; font-size:15px; flex:none; table-layout:fixed; width:100%">
+    <colgroup><col style="width:330px"><col></colgroup>
+    <thead><tr><th>생기는 문제</th><th>대응</th></tr></thead>
+    <tbody>
+      <tr><td>작은 병변이 뭉개진다</td><td>통째로 넣지 않고 보고 싶은 부위를 잘라서 크게 넣기. 사진을 여러 조각으로 나눠 넣고 전체 축소본을 함께</td></tr>
+      <tr class="q"><td>LLM이 쓴 설명문으로는 검색이 부정확</td><td>사진을 직접 벡터로 바꾸는 의료 영상 전용 모델 쓰기. BiomedCLIP, RAD-DINO, MedSigLIP, 또는 내가 학습한 분류 모델</td></tr>
+      <tr><td>JPG로 바꾸면 미세한 음영이 사라진다</td><td>원본(DICOM)에서 폐, 뼈처럼 보고 싶은 밝기 범위만 펼친 그림을 여러 장 만들어 넣기. CT와 MRI는 단면마다 따로</td></tr>
+      <tr><td>사진만으로는 찾기 어렵다</td><td>판독문, 촬영 부위, 나이대를 꼬리표로 함께 저장. 꼬리표로 먼저 거르고 그 안에서 비슷한 사진 찾기</td></tr>
+      <tr><td>LLM이 그럴듯하게 진단을 지어낸다</td><td>판단은 검증된 전용 모델이, LLM은 비슷한 사례를 찾아 설명만. 어디를 보고 판단했는지 함께 보여 주고 사람이 확인</td></tr>
+      <tr><td>환자 정보가 들어 있다</td><td>파일 속 이름과 사진에 박힌 글자를 지우기. 공개 데이터셋으로 시작하고 병원 데이터는 규정에 따라</td></tr>
+    </tbody>
+  </table>
+  <p class="punch" style="margin-top:14px">LLM은 눈이 아니라 설명하는 입으로 씁니다. 보는 일은 의료 영상 전용 모델에 맡기고, 찾은 사례와 근거를 LLM이 정리하게 합니다. 오늘 시연이 이 구조입니다.</p>
+  <footer class="foot"><div class="src">출처: <a href="https://huggingface.co/microsoft/BiomedCLIP-PubMedBERT_256-vit_base_patch16_224" target="_blank" rel="noopener">Microsoft, BiomedCLIP</a> / <a href="https://huggingface.co/microsoft/rad-dino" target="_blank" rel="noopener">Microsoft, RAD-DINO</a> / <a href="https://developers.google.com/health-ai-developer-foundations/medsiglip" target="_blank" rel="noopener">Google, MedSigLIP</a> / <a href="https://aws.amazon.com/healthimaging/" target="_blank" rel="noopener">AWS HealthImaging</a> / <a href="https://platform.claude.com/docs/en/build-with-claude/vision" target="_blank" rel="noopener">Anthropic, Vision</a></div><span>2024년</span><div class="ribbon"><span>Chat</span><span class="on">Multimodal</span><span class="on">Reasoning</span><span>Agent</span></div><span class="pg"></span></footer>
 </section>
 
 <section class="slide">
