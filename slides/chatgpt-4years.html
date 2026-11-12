@@ -500,7 +500,7 @@ bash setup.sh</pre>
       <colgroup><col style="width:88px"><col></colgroup>
       <tbody>
         <tr><td>2019.09</td><td>KoBERT(코버트) 공개. 국내 최초 한국어 딥러닝 언어모델, 고객센터 챗봇에 적용</td></tr>
-        <tr><td>2020.04</td><td>KoGPT2(코지피티투) 공개. 국내 최초 오픈소스 한국어 GPT-2, AWS 연구진과 협력</td></tr>
+        <tr><td>2020.04</td><td>KoGPT2 공개. 국내 최초 오픈소스 한국어 GPT-2, AWS 연구진과 협력</td></tr>
         <tr><td>2020.12</td><td>KoBART(코바트) 공개. 요약·번역에 강한 한국어 모델</td></tr>
         <tr><td>2021</td><td>초거대 경쟁 시작. 네이버 HyperCLOVA(5월), 카카오브레인 KoGPT(11월), SKT KoGPT2 2.0(5월)</td></tr>
         <tr><td>2022.05</td><td>SKT 에이닷. GPT-3 기반 한국어 AI 서비스</td></tr>
@@ -1223,7 +1223,7 @@ bash setup.sh</pre>
 </section>
 
 <section class="slide">
-  <h2>MoE(엠오이): 전문가 여럿 중 몇 명만 일한다</h2>
+  <h2>MoE: 전문가 여럿 중 몇 명만 일한다</h2>
   <div class="cols" style="grid-template-columns:0.95fr 1.05fr; margin-top:16px; gap:36px; flex:none">
     <div><svg viewBox="0 0 490 330" width="100%" role="img" aria-label="Router가 질문을 보고 전문가 여덟 중 둘만 골라 계산하는 그림" style="background:#F6F8FC; display:block"><defs><marker id="ma" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#1F4ED8"/></marker></defs><text x="245" y="26" font-size="14" text-anchor="middle" fill="#5D6573">"이 파이썬 코드로 혈압 평균을 구해 줘"</text><rect x="150" y="40" width="190" height="52" fill="#E2F3EF" stroke="#0E8A74" stroke-width="1.5"/><text x="245" y="63" font-size="16" font-weight="700" text-anchor="middle" fill="#14171C">Router(접수 창구)</text><text x="245" y="82" font-size="12.5" text-anchor="middle" fill="#5D6573">누구에게 보낼지 고른다</text><line x1="225" y1="92" x2="185" y2="146" stroke="#1F4ED8" stroke-width="2" marker-end="url(#ma)"/><line x1="262" y1="92" x2="300" y2="146" stroke="#1F4ED8" stroke-width="2" marker-end="url(#ma)"/><rect x="14" y="150" width="106" height="48" fill="#EEF0F3" stroke="#D8DCE3"/><text x="67" y="180" font-size="15.5" font-weight="700" text-anchor="middle" fill="#8A93A3">문법 전문가</text><rect x="132" y="150" width="106" height="48" fill="#1F4ED8" stroke="#1F4ED8"/><text x="185" y="180" font-size="15.5" font-weight="700" text-anchor="middle" fill="#fff">코드 전문가</text><rect x="250" y="150" width="106" height="48" fill="#1F4ED8" stroke="#1F4ED8"/><text x="303" y="180" font-size="15.5" font-weight="700" text-anchor="middle" fill="#fff">의학 전문가</text><rect x="368" y="150" width="106" height="48" fill="#EEF0F3" stroke="#D8DCE3"/><text x="421" y="180" font-size="15.5" font-weight="700" text-anchor="middle" fill="#8A93A3">수학 전문가</text><rect x="14" y="212" width="106" height="48" fill="#EEF0F3" stroke="#D8DCE3"/><text x="67" y="242" font-size="15.5" font-weight="700" text-anchor="middle" fill="#8A93A3">역사 전문가</text><rect x="132" y="212" width="106" height="48" fill="#EEF0F3" stroke="#D8DCE3"/><text x="185" y="242" font-size="15.5" font-weight="700" text-anchor="middle" fill="#8A93A3">번역 전문가</text><rect x="250" y="212" width="106" height="48" fill="#EEF0F3" stroke="#D8DCE3"/><text x="303" y="242" font-size="15.5" font-weight="700" text-anchor="middle" fill="#8A93A3">법률 전문가</text><rect x="368" y="212" width="106" height="48" fill="#EEF0F3" stroke="#D8DCE3"/><text x="421" y="242" font-size="15.5" font-weight="700" text-anchor="middle" fill="#8A93A3">요리 전문가</text><text x="245" y="296" font-size="13.5" text-anchor="middle" fill="#14171C">여덟 명이 다 대기하지만, 이번에 일하는 것은 두 명</text><text x="245" y="317" font-size="12.5" text-anchor="middle" fill="#8A93A3">설명용 그림. 실제 전문가는 사람이 이름 붙인 분야가 아니라 학습으로 나뉨</text></svg></div>
     <div>
@@ -2009,7 +2009,7 @@ bash setup.sh</pre>
       <thead><tr><th>제품</th><th>특징</th></tr></thead>
       <tbody>
         <tr><td>OpenRouter</td><td>가입해서 쓰는 서비스. 키 하나로 400개 넘는 모델, 결제도 한 곳. 2026년 5월 기업가치 13억 달러</td></tr>
-        <tr><td>LiteLLM<br>(라이트엘엘엠)</td><td>오픈소스. 내 서버에 직접 설치해서 데이터가 다른 회사를 거치지 않음</td></tr>
+        <tr><td>LiteLLM</td><td>오픈소스. 내 서버에 직접 설치해서 데이터가 다른 회사를 거치지 않음</td></tr>
         <tr><td>Cloudflare, Vercel AI Gateway</td><td>클라우드 회사가 운영. 캐시와 사용량 화면 제공</td></tr>
         <tr class="q"><td>AWS Bedrock</td><td>이름은 달라도 같은 역할. API 하나로 여러 회사 모델, AWS 권한과 기록, 서울 Region</td></tr>
       </tbody>
@@ -2055,7 +2055,7 @@ bash setup.sh</pre>
 </section>
 
 <section class="slide">
-  <h2>HBM(에이치비엠): 메모리가 귀해진 이유</h2>
+  <h2>HBM: 메모리가 귀해진 이유</h2>
   <div class="cols" style="grid-template-columns:1fr 1.05fr; margin-top:18px; gap:38px; flex:none">
     <div><svg viewBox="0 0 470 280" width="100%" role="img" aria-label="GPU 바로 옆에 메모리 칩을 여러 층으로 쌓아 수직으로 연결한 HBM 구조" style="background:#F6F8FC; display:block"><rect x="40" y="150" width="170" height="78" fill="#14171C"/><text x="125" y="196" font-size="20" font-weight="700" fill="#fff" text-anchor="middle">GPU</text><rect x="250" y="58" width="170" height="14" fill="#1F4ED8"/><rect x="250" y="77" width="170" height="14" fill="#1F4ED8"/><rect x="250" y="96" width="170" height="14" fill="#1F4ED8"/><rect x="250" y="115" width="170" height="14" fill="#1F4ED8"/><rect x="250" y="134" width="170" height="14" fill="#1F4ED8"/><rect x="250" y="153" width="170" height="14" fill="#1F4ED8"/><rect x="250" y="172" width="170" height="14" fill="#1F4ED8"/><rect x="250" y="191" width="170" height="14" fill="#1F4ED8"/><rect x="250" y="210" width="170" height="14" fill="#8A93A3"/><line x1="278" y1="54" x2="278" y2="232" stroke="#fff" stroke-width="3"/><line x1="316" y1="54" x2="316" y2="232" stroke="#fff" stroke-width="3"/><line x1="354" y1="54" x2="354" y2="232" stroke="#fff" stroke-width="3"/><line x1="392" y1="54" x2="392" y2="232" stroke="#fff" stroke-width="3"/><rect x="24" y="232" width="420" height="16" fill="#C5CCD6"/><text x="234" y="268" font-size="13" fill="#5D6573" text-anchor="middle">같은 기판 위에 나란히 붙임 (첨단 패키징)</text><text x="335" y="42" font-size="15" font-weight="700" fill="#1F4ED8" text-anchor="middle">HBM: 메모리 칩을 8~16층으로</text><text x="125" y="138" font-size="13.5" fill="#5D6573" text-anchor="middle">계산하는 칩</text><path d="M212 190 H246" stroke="#0E8A74" stroke-width="3"/><path d="M246 190l-8-5v10z" fill="#0E8A74"/><path d="M212 190l8-5v10z" fill="#0E8A74"/></svg></div>
     <ul class="plain" style="gap:11px">
@@ -2134,7 +2134,7 @@ bash setup.sh</pre>
     </table>
     <ul class="plain" style="gap:11px">
       <li style="font-size:18px">왜 원자력인가<span>데이터센터는 24시간 같은 양을 씀. 원전은 밤낮없이 일정하고 탄소를 내지 않음</span></li>
-      <li style="font-size:18px">SMR(에스엠알)<span>Small Modular Reactor. 공장에서 만들어 옮기는 작은 원전. 대부분 2030년대 목표라 아직은 약속 단계</span></li>
+      <li style="font-size:18px">SMR<span>Small Modular Reactor. 공장에서 만들어 옮기는 작은 원전. 대부분 2030년대 목표라 아직은 약속 단계</span></li>
       <li style="font-size:18px">왜 옆에 짓나<span>전력망에 연결하려면 몇 년을 기다려야 함. 변압기도 부족</span></li>
       <li style="font-size:18px">논란<span>주변 지역 전기요금 상승, 가스 발전기 매연, 물 사용</span></li>
     </ul>
