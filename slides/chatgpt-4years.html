@@ -436,7 +436,7 @@ bash setup.sh</pre>
     <div><div class="n">2023</div><b>경쟁과 플랫폼</b><span>LLaMA 유출과 Fine-tuning, Hallucination, Jailbreak, Word2Vec과 Embedding, RAG와 Vector DB, 병원 양자컴퓨터</span></div>
     <div><div class="n">2024</div><b>Multimodal과 추론</b><span>검색을 붙이자 생긴 실수, Gemini 홍보 영상 논란, 멀티모달의 원리, API·MCP·A2A와 Multi-Agent, AlphaFold 노벨상, 양자컴퓨터와 Willow</span></div>
     <div><div class="n">2025</div><b>Agent 원년</b><span>DeepSeek 쇼크와 MoE, 양자 3배 ETP 상폐, 양자 오류 정정 경쟁, Agent 사고와 Guardrail</span></div>
-    <div><div class="n">2026</div><b>기업 속으로</b><span>AI 투자 경쟁과 소버린 AI, 독파모와 프런티어 AI, 증류 의혹과 AI가 AI를 가르치는 법, 분야별 모델과 노력 수준, 과학·콘텐츠·영상의 AI, 멈춘 버그바운티, 큰 모델의 흡수와 표준, Token 단가와 AI Gateway, HBM·나노 공정·전력, 치과 원장의 Local LLM과 AWS 비용 비교, 바이오 서비스</span></div>
+    <div><div class="n">2026</div><b>기업 속으로</b><span>AI 투자 경쟁과 소버린 AI, 독파모와 프런티어 AI, 증류 의혹과 AI가 AI를 가르치는 법, 분야별 모델과 노력 수준, 과학·콘텐츠·영상의 AI, 멈춘 버그바운티, 비어 가는 Stack Overflow, 큰 모델의 흡수와 표준, Token 단가와 AI Gateway, HBM·나노 공정·전력, 치과 원장의 Local LLM과 AWS 비용 비교, 바이오 서비스</span></div>
     <div><div class="n">Q&amp;A</div><b>사전 질문과 실습</b><span>바이오헬스 질문은 각 연도 안에서 답하고, Memory MCP를 직접 만들어 Claude에 붙여 보고, RAG 프로젝트 꿀팁으로 마무리합니다. 더 자세한 내용은 부록에</span></div>
   </div>
   <footer class="foot"><span>ChatGPT 이후 4년</span><span class="pg"></span></footer>
@@ -1738,6 +1738,30 @@ bash setup.sh</pre>
     </tbody>
   </table>
   <footer class="foot"><div class="src">출처: <a href="https://www.technologyreview.com/2022/11/18/1063487/meta-large-language-model-ai-only-survived-three-days-gpt-3-science/" target="_blank" rel="noopener">MIT Tech Review, Galactica</a> / <a href="https://www.digitalapplied.com/blog/ai-product-failures-2026-sora-humane-rabbit-lessons" target="_blank" rel="noopener">Digital Applied, AI 제품 실패</a> / <a href="https://www.axios.com/2026/03/24/openai-discontinue-sora-video-app" target="_blank" rel="noopener">Axios, Sora 종료</a> / <a href="https://www.cnbc.com/2026/08/11/manus-china-meta-acquisition.html" target="_blank" rel="noopener">CNBC, Manus</a> / <a href="https://biz.heraldcorp.com/article/10911808" target="_blank" rel="noopener">헤럴드경제, Pickle</a></div><span>2026년</span><div class="ribbon"><span>Chat</span><span>Multimodal</span><span>Reasoning</span><span class="on">Agent</span></div><span class="pg"></span></footer>
+</section>
+
+<section class="slide">
+  <h2>AI가 답해 주자, 묻던 곳이 비어 간다</h2>
+  <div class="cols" style="grid-template-columns:1fr 1.05fr; margin-top:18px; gap:44px; flex:none">
+    <div>
+      <p class="small" style="margin-bottom:12px; font-size:16.5px">Stack Overflow에 한 달 동안 올라온 새 질문 수. 개발자들이 모르는 것을 묻던 사이트입니다.</p>
+      <div class="bars sm" role="img" aria-label="Stack Overflow 월간 질문 수. 2014년 3월 약 20만 7천, 2022년 월평균 약 10만 8천, 2025년 월평균 약 9천, 2026년 9월 969">
+        <div class="bar"><div class="when">2014.03</div><div class="track"><div class="fill" style="width:78%"></div><div class="val">20만 7천</div></div></div>
+        <div class="bar"><div class="when">2022 평균</div><div class="track"><div class="fill" style="width:40.7%"></div><div class="val">10만 8천</div></div></div>
+        <div class="bar"><div class="when">2025 평균</div><div class="track"><div class="fill" style="width:3.4%"></div><div class="val">약 9천</div></div></div>
+        <div class="bar"><div class="when">2026.09</div><div class="track"><div class="fill" style="width:0.6%"></div><div class="val">969</div></div></div>
+      </div>
+      <p class="mini" style="margin-top:10px">2022년 11월 ChatGPT 공개 뒤 급락. 감소는 그 전부터 시작됐다는 분석도 있습니다. 개발자들이 공개 데이터로 집계한 수치입니다.</p>
+    </div>
+    <ul class="plain" style="gap:11px">
+      <li style="font-size:18px">왜 안 묻나<span>에러를 붙여 넣으면 AI가 내 코드에 맞춰 바로 답함. 이제는 Agent가 스스로 고침</span></li>
+      <li style="font-size:18px">검색도 같은 길<span>Google이 맨 위에 AI 요약을 보여 주자 링크를 누르지 않음. 언론사로 가는 검색 유입이 1년 새 40% 감소</span></li>
+      <li style="font-size:18px">역설<span>AI는 그 질문과 답으로 배웠음. 아무도 묻지 않고 쓰지 않으면 새 지식은 어디서 나오나</span></li>
+      <li style="font-size:18px">병원도 남의 일이 아님<span>환자가 포털 검색 대신 AI에 증상을 물음. 출처를 확인하지 않게 됨</span></li>
+    </ul>
+  </div>
+  <p class="punch" style="margin-top:14px">AI 서비스만 큰 모델에 흡수되는 것이 아닙니다. 검색, 질문 게시판, 교육 서비스처럼 정보를 찾아 주던 서비스가 먼저 흡수되고 있습니다.</p>
+  <footer class="foot"><div class="src">출처: <a href="https://developers.slashdot.org/story/26/01/05/1431212/stack-overflow-went-from-200000-monthly-questions-to-nearly-zero" target="_blank" rel="noopener">Slashdot, Stack Overflow 질문 수</a> / <a href="https://dev.to/frankchu/stack-overflow-now-gets-fewer-than-1000-questions-a-month-i-counted-via-the-api-4ep1" target="_blank" rel="noopener">DEV, 2026년 9월 집계</a> / <a href="https://css-tricks.com/stack-overflow-when-we-stop-asking/" target="_blank" rel="noopener">CSS-Tricks</a> / <a href="https://searchengineland.com/google-ai-overviews-cut-search-clicks-report-471497" target="_blank" rel="noopener">Search Engine Land, 검색 유입</a></div><span>2026년</span><div class="ribbon"><span>Chat</span><span>Multimodal</span><span>Reasoning</span><span class="on">Agent</span></div><span class="pg"></span></footer>
 </section>
 
 <section class="slide">
