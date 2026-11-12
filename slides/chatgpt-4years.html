@@ -343,6 +343,17 @@ a:focus-visible, button:focus-visible { outline: 3px solid var(--eosin); outline
 .toks .t { padding: 4px 9px; background: var(--hema-pale); border: 1px solid #C9D6F7; font-size: 17px; line-height: 1.3; white-space: pre; }
 .toks .t.x { background: #F1F2F5; border-color: var(--rule); color: #A3AAB6; padding: 4px 5px; font-size: 13px; }
 .toks .t.g { background: var(--eosin-pale); border-color: #B5DED5; }
+.toks .row { align-items: flex-start; gap: 6px; }
+.toks .grp { display: inline-flex; flex-direction: column; align-items: stretch; gap: 3px; }
+.toks .grp b { font-weight: 400; padding: 3px 9px; background: var(--hema-pale); border: 1px solid #C9D6F7; font-size: 17px; line-height: 1.3; text-align: center; white-space: pre; }
+.toks .grp .bits { display: flex; gap: 2px; }
+.toks .grp .bits i { flex: 1; height: 6px; background: var(--hema); }
+.toks .grp.x b { background: #F1F2F5; border-color: #D5D9E0; color: #5D6573; }
+.toks .grp.x .bits i { background: #A3AAB6; }
+.toks .grp.g b { background: var(--eosin-pale); border-color: #B5DED5; }
+.toks .grp.g .bits i { background: var(--eosin); }
+.toks .legend { font-size: 14.5px; color: var(--muted); display: flex; align-items: center; gap: 12px; line-height: 1.4; }
+.toks .legend .grp b { font-size: 14px; padding: 1px 7px; }
 .toks .cnt { font-family: var(--display); font-weight: 900; font-size: 24px; color: var(--hema); text-align: right; }
 .toks .ids { grid-column: 2 / 4; font-family: var(--code); font-size: 15px; color: var(--muted); }
 .tbl.even td:nth-child(3) { font-weight: 400; color: var(--ink); }
@@ -465,9 +476,10 @@ bash setup.sh</pre>
   <h2>Token(토큰): LLM은 글을 이렇게 읽는다</h2>
   <p class="small" style="margin-top:4px; font-size:19px">"안녕하세요. 김한성입니다"를 OpenAI 모델이 자르는 방식 (실제 실행 결과)</p>
   <div class="toks">
-    <div class="who"><b>GPT-3</b>2020~2022</div><div class="row"><span class="t x">◆</span><span class="t x">◆</span><span class="t x">◆</span><span class="t x">◆</span><span class="t x">◆</span><span class="t x">◆</span><span class="t x">◆</span><span class="t x">◆</span><span class="t x">◆</span><span class="t x">◆</span><span class="t x">◆</span><span class="t x">◆</span><span class="t x">◆</span><span class="t x">◆</span><span class="t">.</span><span class="t"> </span><span class="t x">◆</span><span class="t x">◆</span><span class="t x">◆</span><span class="t x">◆</span><span class="t x">◆</span><span class="t x">◆</span><span class="t x">◆</span><span class="t x">◆</span><span class="t x">◆</span><span class="t x">◆</span><span class="t x">◆</span><span class="t x">◆</span><span class="t x">◆</span><span class="t x">◆</span><span class="t x">◆</span></div><div class="cnt">31</div>
-    <div class="who"><b>GPT-3.5, GPT-4</b>2023</div><div class="row"><span class="t x">◆</span><span class="t x">◆</span><span class="t x">◆</span><span class="t x">◆</span><span class="t">하세요</span><span class="t">.</span><span class="t x">◆</span><span class="t x">◆</span><span class="t x">◆</span><span class="t">한</span><span class="t">성</span><span class="t">입니다</span></div><div class="cnt">12</div>
-    <div class="who"><b>GPT-4o 이후</b>2024~</div><div class="row"><span class="t g">안</span><span class="t g">녕하세요</span><span class="t g">.</span><span class="t g"> 김</span><span class="t g">한</span><span class="t g">성</span><span class="t g">입니다</span></div><div class="cnt">7</div>
+    <div class="who"><b>GPT-3</b>2020~2022</div><div class="row"><span class="grp x"><b>안</b><span class="bits"><i></i><i></i><i></i></span></span><span class="grp x"><b>녕</b><span class="bits"><i></i><i></i><i></i></span></span><span class="grp x"><b>하</b><span class="bits"><i></i><i></i></span></span><span class="grp x"><b>세</b><span class="bits"><i></i><i></i><i></i></span></span><span class="grp x"><b>요</b><span class="bits"><i></i><i></i><i></i></span></span><span class="grp"><b>.</b><span class="bits"><i></i></span></span><span class="grp"><b>␣</b><span class="bits"><i></i></span></span><span class="grp x"><b>김</b><span class="bits"><i></i><i></i><i></i></span></span><span class="grp x"><b>한</b><span class="bits"><i></i><i></i></span></span><span class="grp x"><b>성</b><span class="bits"><i></i><i></i><i></i></span></span><span class="grp x"><b>입</b><span class="bits"><i></i><i></i><i></i></span></span><span class="grp x"><b>니</b><span class="bits"><i></i><i></i></span></span><span class="grp x"><b>다</b><span class="bits"><i></i><i></i></span></span></div><div class="cnt">31</div>
+    <div class="who"><b>GPT-3.5, GPT-4</b>2023</div><div class="row"><span class="grp x"><b>안</b><span class="bits"><i></i><i></i></span></span><span class="grp x"><b>녕</b><span class="bits"><i></i><i></i></span></span><span class="grp"><b>하세요</b><span class="bits"><i></i></span></span><span class="grp"><b>.</b><span class="bits"><i></i></span></span><span class="grp x"><b>␣김</b><span class="bits"><i></i><i></i><i></i></span></span><span class="grp"><b>한</b><span class="bits"><i></i></span></span><span class="grp"><b>성</b><span class="bits"><i></i></span></span><span class="grp"><b>입니다</b><span class="bits"><i></i></span></span></div><div class="cnt">12</div>
+    <div class="who"><b>GPT-4o 이후</b>2024~</div><div class="row"><span class="grp g"><b>안</b><span class="bits"><i></i></span></span><span class="grp g"><b>녕하세요</b><span class="bits"><i></i></span></span><span class="grp g"><b>.</b><span class="bits"><i></i></span></span><span class="grp g"><b>␣김</b><span class="bits"><i></i></span></span><span class="grp g"><b>한</b><span class="bits"><i></i></span></span><span class="grp g"><b>성</b><span class="bits"><i></i></span></span><span class="grp g"><b>입니다</b><span class="bits"><i></i></span></span></div><div class="cnt">7</div>
+    <div class="who"></div><div class="legend"><span class="grp x"><b>안</b><span class="bits"><i></i><i></i><i></i></span></span>글자 아래 작은 칸 하나가 Token 하나입니다. 회색은 한 글자가 여러 조각으로 쪼개진 것, 색이 있는 것은 통째로 한 조각입니다. ␣는 띄어쓰기입니다.</div><div></div>
     <div class="who">모델이 실제로 받는 것</div><div class="ids">[14307, 171731, 13, 47713, 3748, 9360, 27001]</div>
   </div>
   <div class="cols" style="grid-template-columns:1fr 1fr; margin-top:20px; gap:40px; flex:none">
@@ -475,7 +487,7 @@ bash setup.sh</pre>
       <li style="font-size:17.5px">형태소와 비슷하지만 다릅니다<span>문법으로 자르지 않고, 자주 같이 나오는 글자 묶음을 통계로 뽑아 만든 사전. "입니다"는 한 조각, 드문 이름 "한성"은 글자별로</span></li>
     </ul>
     <ul class="plain" style="gap:8px">
-      <li style="font-size:17.5px">한국어 비용이 4분의 1로<span>회색 ◆는 한글이 글자도 못 되고 깨진 조각. 영어 문장은 처음부터 7개였습니다. 요금과 Context 한도는 이 개수로 셉니다</span></li>
+      <li style="font-size:17.5px">한국어 비용이 4분의 1로<span>GPT-3는 한글 사전이 없어 "안" 한 글자를 3조각으로 쪼갰습니다. 같은 뜻의 영어 문장은 처음부터 7개였습니다. 요금과 Context 한도는 이 개수로 셉니다</span></li>
     </ul>
   </div>
   <footer class="foot"><div class="src">출처: 발표자 실행 결과 (<a href="https://github.com/openai/tiktoken" target="_blank" rel="noopener">OpenAI tiktoken</a>: r50k_base, cl100k_base, o200k_base) / <a href="https://platform.openai.com/tokenizer" target="_blank" rel="noopener">OpenAI Tokenizer</a></div><span>ChatGPT 이후 4년</span><span class="pg"></span></footer>
