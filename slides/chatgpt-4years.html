@@ -617,6 +617,28 @@ bash setup.sh</pre>
 </section>
 
 <section class="slide">
+  <h2>유출된 파일 하나로 왜 Fine-tuning이 됐을까</h2>
+  <div class="cols" style="grid-template-columns:1fr 1.05fr; margin-top:18px; gap:38px; flex:none">
+    <ul class="plain" style="gap:11px">
+      <li style="font-size:18px">모델은 숫자가 든 파일입니다<span>LLaMA 7B는 숫자 70억 개가 든 파일. 실행은 이 숫자로 계산하는 것이고, 학습은 이 숫자를 조금씩 고치는 것</span></li>
+      <li style="font-size:18px">그래서 따로 기능이 필요 없습니다<span>파일을 가진 사람은 Meta가 처음 학습시킨 방법 그대로, 내 데이터로 이어서 학습할 수 있음. 계산 순서와 학습 방법은 이미 공개된 기술</span></li>
+      <li style="font-size:18px">ChatGPT는 왜 안 되나<span>파일이 OpenAI 서버 안에만 있음. 우리는 질문을 보내고 답만 받음</span></li>
+    </ul>
+    <table class="tbl compact" style="margin-top:0; font-size:15px; align-self:start">
+      <colgroup><col style="width:150px"><col></colgroup>
+      <thead><tr><th>방법</th><th>무엇을 고치나, 얼마나 드나</th></tr></thead>
+      <tbody>
+        <tr><td>전부 다시 학습</td><td>숫자 70억 개를 모두 고침. Alpaca는 큰 GPU 8장으로 3시간, 600달러 미만</td></tr>
+        <tr class="q"><td>LoRA(로라)</td><td>원본은 그대로 두고, 옆에 붙인 작은 숫자 묶음(전체의 1% 미만)만 학습. 게임용 그래픽카드 한 장으로 몇 시간</td></tr>
+        <tr><td>QLoRA(큐로라)</td><td>원본을 더 작게 줄여서 올림. 더 작은 장비에서도 가능 (2023.05)</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="punch" style="margin-top:16px">막아 둔 것은 파일 하나뿐이었습니다. 그 파일이 풀리자 개인도 대학원생도 자기 모델을 만들 수 있게 됐고, 2023년은 Fine-tuning의 해가 됩니다.</p>
+  <footer class="foot"><div class="src">출처: <a href="https://crfm.stanford.edu/2023/03/13/alpaca.html" target="_blank" rel="noopener">Stanford, Alpaca</a> / <a href="https://arxiv.org/abs/2106.09685" target="_blank" rel="noopener">LoRA 논문 (2021)</a> / <a href="https://github.com/tloen/alpaca-lora" target="_blank" rel="noopener">Alpaca-LoRA</a> / <a href="https://arxiv.org/abs/2305.14314" target="_blank" rel="noopener">QLoRA (2023.05)</a> / <a href="https://arxiv.org/abs/2302.13971" target="_blank" rel="noopener">Meta, LLaMA 논문</a></div><span>2023년</span><div class="ribbon"><span class="on">Chat</span><span>Multimodal</span><span>Reasoning</span><span>Agent</span></div><span class="pg"></span></footer>
+</section>
+
+<section class="slide">
   <h2>2023년은 Fine-tuning의 해였다</h2>
   <p class="small" style="margin-top:4px; font-size:18.5px">LLaMA가 풀리자 누구나 내 데이터로 모델을 추가 학습시킬 수 있게 됐습니다. Alpaca, KoAlpaca(2023.03), QLoRA(2023.05)가 쏟아졌고, 그 뒤 흐름은 다시 Prompt 쪽으로 돌아왔습니다.</p>
   <table class="tbl four even" style="margin-top:12px; font-size:15.5px">
