@@ -436,7 +436,7 @@ bash setup.sh</pre>
     <div><div class="n">2023</div><b>경쟁과 플랫폼</b><span>LLaMA 유출과 Fine-tuning, Hallucination, Jailbreak, Word2Vec과 Embedding, RAG와 Vector DB, 병원 양자컴퓨터</span></div>
     <div><div class="n">2024</div><b>Multimodal과 추론</b><span>검색을 붙이자 생긴 실수, Gemini 홍보 영상 논란, 멀티모달의 원리, API·MCP·A2A와 Multi-Agent, AlphaFold 노벨상, 양자컴퓨터와 Willow</span></div>
     <div><div class="n">2025</div><b>Agent 원년</b><span>DeepSeek 쇼크와 MoE, 양자 3배 ETP 상폐, 양자 오류 정정 경쟁, Agent 사고와 Guardrail</span></div>
-    <div><div class="n">2026</div><b>기업 속으로</b><span>AI 투자 경쟁과 소버린 AI, 독파모와 프런티어 AI, 증류 의혹과 AI가 AI를 가르치는 법, 분야별 모델과 노력 수준, 과학·콘텐츠·영상의 AI, 멈춘 버그바운티, 비어 가는 Stack Overflow, 큰 모델의 흡수와 표준, Token 단가와 AI Gateway, HBM·나노 공정·전력, 치과 원장의 Local LLM과 AWS 비용 비교, 바이오 서비스</span></div>
+    <div><div class="n">2026</div><b>기업 속으로</b><span>AI 투자 경쟁과 소버린 AI, 독파모와 프런티어 AI, 증류 의혹과 AI가 AI를 가르치는 법, 분야별 모델과 노력 수준, 과학·콘텐츠·영상의 AI, 멈춘 버그바운티, 유료 개인 비서 Agent, 비어 가는 Stack Overflow, 큰 모델의 흡수와 표준, Token 단가와 AI Gateway, HBM·나노 공정·전력, 치과 원장의 Local LLM과 AWS 비용 비교, 바이오 서비스</span></div>
     <div><div class="n">Q&amp;A</div><b>사전 질문과 실습</b><span>바이오헬스 질문은 각 연도 안에서 답하고, Memory MCP를 직접 만들어 Claude에 붙여 보고, RAG 프로젝트 꿀팁으로 마무리합니다. 더 자세한 내용은 부록에</span></div>
   </div>
   <footer class="foot"><span>ChatGPT 이후 4년</span><span class="pg"></span></footer>
@@ -1719,6 +1719,27 @@ bash setup.sh</pre>
   </div>
   <p class="punch">사용자가 직접 설치해 메일과 메신저 권한까지 주는 Agent가 대중화됐습니다. 편리함만큼 Prompt Injection(프롬프트 인젝션)과 권한 관리가 실전 과제가 됐습니다.</p>
   <footer class="foot"><div class="src">출처: <a href="https://www.computerworld.com/article/4125939/by-whatever-name-moltbolt-clawd-openclaw-this-uber-ai-assistant-is-a-security-nightmare.html" target="_blank" rel="noopener">Computerworld, OpenClaw</a> / <a href="https://dev.to/derivinate/openclaw-just-became-githubs-most-starred-project-heres-why-2ii0" target="_blank" rel="noopener">DEV, OpenClaw stars</a> / <a href="https://www.digitalocean.com/resources/articles/what-is-moltbook" target="_blank" rel="noopener">DigitalOcean, Moltbook</a> / <a href="https://www.gradually.ai/en/hermes-agent-statistics/" target="_blank" rel="noopener">Gradually, Hermes</a></div><span>2026년</span><div class="ribbon"><span>Chat</span><span>Multimodal</span><span>Reasoning</span><span class="on">Agent</span></div><span class="pg"></span></footer>
+</section>
+
+<section class="slide">
+  <h2>이제는 돈 내고 쓰는 개인 비서 Agent</h2>
+  <table class="tbl compact" style="margin-top:14px; font-size:15px; flex:none; table-layout:fixed; width:100%">
+    <colgroup><col style="width:180px"><col style="width:330px"><col></colgroup>
+    <thead><tr><th>서비스</th><th>요금</th><th>하는 일과 화제</th></tr></thead>
+    <tbody>
+      <tr><td>OpenClaw (2026 초)</td><td>무료. 내 컴퓨터에 직접 설치</td><td>개발자들의 오픈소스 Agent. 앞 장에서 본 열풍과 보안 사고</td></tr>
+      <tr class="q"><td>Meta Muse(뮤즈)<br>2026.09</td><td>무료(주 1억 Token), 월 20달러, 월 100달러</td><td>미국에서 출시해 앱 순위 1위. 요금 차이는 쓸 수 있는 Token 양. 광고 없음</td></tr>
+      <tr class="q"><td>Pickle(피클)<br>2026.10~11</td><td>무료에 하루 한도. 한도를 채우는 티켓이 2,900원부터</td><td>전화, 결제, KTX 예매, 정부24 서류를 대신함. 한국 앱스토어 생산성 1위. 시키지 않은 전화를 걸어 대표가 사과</td></tr>
+      <tr><td>ChatGPT, Claude, Gemini</td><td>월 20달러 안팎부터</td><td>기존 챗봇도 예약, 결제, 일정 관리 기능을 계속 넣는 중</td></tr>
+    </tbody>
+  </table>
+  <div class="cols" style="grid-template-columns:1fr 1fr 1fr; margin-top:14px; gap:30px; flex:none">
+    <ul class="plain"><li style="font-size:17px">요금의 단위가 Token<span>일을 많이 시킬수록 비싸짐. 무료는 한도가 있음</span></li></ul>
+    <ul class="plain"><li style="font-size:17px">맡기는 것은 권한<span>전화, 결제, 로그인. 사람 승인 없이 움직이면 사고</span></li></ul>
+    <ul class="plain"><li style="font-size:17px">받는 쪽도 달라짐<span>식당과 병원 접수 창구가 AI의 전화를 받게 됨</span></li></ul>
+  </div>
+  <p class="punch" style="margin-top:12px">채팅은 답을 틀리면 끝이지만, 비서 Agent는 틀린 전화를 걸고 틀린 결제를 합니다. 편한 만큼 무엇까지 맡길지를 정해야 합니다.</p>
+  <footer class="foot"><div class="src">출처: <a href="https://www.axios.com/2026/09/08/meta-debuts-muse-personal-ai-agent" target="_blank" rel="noopener">Axios, Meta Muse 출시</a> / <a href="https://www.cnbc.com/2026/10/07/meta-muse-personal-ai-agents-dazzle.html" target="_blank" rel="noopener">CNBC, Muse</a> / <a href="https://www.koreadaily.com/article/20261110014040989" target="_blank" rel="noopener">중앙일보 팩플, 피클 (2026.11.10)</a> / <a href="https://www.digitalmarketer.co.kr/insights/pickle-ai-agent-guide" target="_blank" rel="noopener">피클 요금 정리</a> / 2026년 11월 12일 기준</div><span>2026년</span><div class="ribbon"><span>Chat</span><span>Multimodal</span><span>Reasoning</span><span class="on">Agent</span></div><span class="pg"></span></footer>
 </section>
 
 <section class="slide">
