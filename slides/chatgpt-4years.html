@@ -1873,6 +1873,39 @@ bash setup.sh</pre>
 </section>
 
 <section class="slide">
+  <h2>AI가 코드를 너무 빨리 써서, Git이 버티지 못했다</h2>
+  <div class="cols" style="grid-template-columns:1fr 1.1fr; margin-top:16px; gap:36px; flex:none">
+    <div>
+      <p class="small" style="font-size:16.5px; margin-bottom:10px">Git(깃)은 코드가 바뀐 기록을 관리하고 여러 사람의 수정을 하나로 합쳐 주는 도구입니다. 전 세계 개발의 표준입니다.</p>
+      <div class="bars sm" role="img" aria-label="Anthropic 사내 저장소의 하루 Merge 수. 2026년 5월 약 2,500건, 9월 3만 건 이상">
+        <div class="bar"><div class="when">2026.05</div><div class="track"><div class="fill" style="width:6.5%"></div><div class="val">하루 2,500건</div></div></div>
+        <div class="bar"><div class="when">2026.09</div><div class="track"><div class="fill" style="width:62%"></div><div class="val">3만 건 이상</div></div></div>
+      </div>
+      <ul class="plain" style="gap:9px; margin-top:14px">
+        <li style="font-size:17px">Anthropic 사내 이야기 (2026.10)<span>Claude가 코드 대부분을 쓰자 코드를 합치는 횟수가 넉 달 만에 12배. Git 서버 수백 대로도 감당이 안 됨</span></li>
+        <li style="font-size:17px">그래서 직접 만듦: Scion(사이언)<span>7명이 5개월 만에 만들어 옮김. 단, 공개하지 않았고 설계 아이디어만 공유</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3 style="font-size:20px; margin-bottom:8px">필요해서 만들었다가 공개해 표준이 된 것</h3>
+      <table class="tbl compact" style="margin-top:0; font-size:14.5px">
+        <colgroup><col style="width:150px"><col style="width:92px"><col></colgroup>
+        <tbody>
+          <tr><td>PyTorch</td><td>Meta, 2017</td><td>AI 연구용 도구. 지금 거의 모든 모델이 이것으로 만들어짐</td></tr>
+          <tr><td>Whisper</td><td>OpenAI, 2022</td><td>음성을 글로 바꾸는 모델. 회의록과 자막 서비스의 기반</td></tr>
+          <tr class="q"><td>MCP</td><td>Anthropic, 2024</td><td>Claude에 도구를 붙이려 만든 규격. 오늘 실습의 주제</td></tr>
+          <tr><td>Codex CLI, AGENTS.md</td><td>OpenAI, 2025</td><td>코딩 Agent와 규칙 파일 형식</td></tr>
+          <tr><td>A2A</td><td>Google, 2025</td><td>Agent끼리 일을 주고받는 규격</td></tr>
+          <tr><td>Agent Skills</td><td>Anthropic, 2025</td><td>Agent에게 일하는 방법을 가르치는 문서 형식</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <p class="punch" style="margin-top:12px">사람 속도에 맞춰 만든 도구가 Agent 속도를 못 따라갑니다. 그리고 AI 회사가 공개한 도구와 규격이 표준이 됩니다. 새로 만들기보다 그 위에 내 일을 얹습니다.</p>
+  <footer class="foot"><div class="src">출처: <a href="https://www.anthropic.com/engineering/redesigning-source-control" target="_blank" rel="noopener">Anthropic, Redesigning source control (2026.10)</a> / <a href="https://www.developersdigest.tech/blog/anthropic-scion-source-control-git-agents-2026" target="_blank" rel="noopener">Developers Digest, Scion</a> / <a href="https://pytorch.org/" target="_blank" rel="noopener">PyTorch</a> / <a href="https://github.com/openai/whisper" target="_blank" rel="noopener">OpenAI Whisper</a> / <a href="https://github.com/openai/codex" target="_blank" rel="noopener">OpenAI Codex CLI</a></div><span>2026년</span><div class="ribbon"><span>Chat</span><span>Multimodal</span><span>Reasoning</span><span class="on">Agent</span></div><span class="pg"></span></footer>
+</section>
+
+<section class="slide">
   <h2>Token Economy(토큰 이코노미): 왜 지금 화두인가</h2>
   <div class="cols" style="grid-template-columns:1.25fr 1fr; margin-top:34px">
     <ul class="plain">
