@@ -2254,7 +2254,38 @@ bash setup.sh</pre>
       <li>연구 Agent<span>문헌 조사, 가설 수립, 실험 설계를 Agent가 맡는 흐름. 2026년의 핵심 트렌드</span></li>
     </ul>
   </div>
+  <p class="vids">영상으로 보기 <a href="https://www.youtube.com/watch?v=5taSpEDZAJU" target="_blank" rel="noopener">AlphaFold가 뭐길래 <small>YTN 사이언스 · 1분 47초</small></a></p>
   <footer class="foot"><div class="src">출처: <a href="https://aws.amazon.com/blogs/machine-learning/applying-multimodal-biological-foundation-models-across-therapeutics-and-patient-care/" target="_blank" rel="noopener">AWS ML Blog, BioFM</a> / <a href="https://www.nobelprize.org/prizes/chemistry/2024/summary/" target="_blank" rel="noopener">Nobel Prize 2024</a></div><span>2026년 바이오헬스</span><div class="ribbon"><span>Chat</span><span>Multimodal</span><span>Reasoning</span><span class="on">Agent</span></div><span class="pg"></span></footer>
+</section>
+
+<section class="slide">
+  <h2>한국 병원의 AI: 허가는 549건, 보험 적용은 49건</h2>
+  <div class="cols" style="grid-template-columns:1fr 1.1fr; margin-top:16px; gap:40px; flex:none">
+    <div>
+      <div class="bars sm" role="img" aria-label="식약처 허가 AI 의료기기 549건, 건강보험 급여 49건">
+        <div class="bar"><div class="when">식약처 허가</div><div class="track"><div class="fill" style="width:70%"></div><div class="val">549건</div></div></div>
+        <div class="bar"><div class="when">보험 적용</div><div class="track"><div class="fill" style="width:6.3%"></div><div class="val">49건</div></div></div>
+      </div>
+      <p class="mini" style="margin-top:10px">병원 시스템에서 AI가 실제로 돌아간다고 답한 의사는 19.3%입니다 (의사 1,043명 설문).</p>
+      <ul class="plain" style="gap:9px; margin-top:12px">
+        <li style="font-size:17px">왜 더딘가<span>AI를 쓰든 안 쓰든 병원이 받는 수가가 같음. 병원이 사용료를 따로 내야 해서 쓸수록 손해</span></li>
+        <li style="font-size:17px">그래서<span>루닛, 뷰노 등 대부분 적자. 수가를 받은 씨어스테크놀로지만 흑자</span></li>
+      </ul>
+    </div>
+    <table class="tbl compact" style="margin-top:0; font-size:15px; align-self:start">
+      <colgroup><col style="width:120px"><col></colgroup>
+      <thead><tr><th>쓰이는 곳</th><th>사례</th></tr></thead>
+      <tbody>
+        <tr><td>영상 판독 보조</td><td>루닛, 뷰노. 엑스레이와 유방촬영에서 놓치기 쉬운 곳을 표시. 대형 병원 중심으로 도입</td></tr>
+        <tr class="q"><td>위험 예측</td><td>뷰노 딥카스. 혈압, 맥박, 호흡, 체온으로 24시간 안의 심정지 위험을 알림. 2026년 3월 평가 유예가 끝나 신규 도입이 막힘</td></tr>
+        <tr><td>기록 작성</td><td>세브란스병원 등. 진료 대화를 듣고 의무기록 초안 작성</td></tr>
+        <tr><td>환자 모니터링</td><td>씨어스테크놀로지. 몸에 붙이는 센서와 AI. 1분기 매출 325억 원</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="punch" style="margin-top:12px">의료 AI는 정확도만으로 끝나지 않습니다. 누가 돈을 내는지, 임상 근거가 있는지, 병원 시스템에 붙는지가 함께 풀려야 합니다.</p>
+  <p class="vids" style="margin-top:10px">영상으로 보기 <a href="https://www.youtube.com/watch?v=s0FMrCByzmQ" target="_blank" rel="noopener">의료 AI로 사망 위험 예측 <small>서울경제TV · 2분 51초</small></a><a href="https://www.youtube.com/watch?v=jrJcV6Hkr3A" target="_blank" rel="noopener">루닛의 해외 진출 <small>더구루 · 2분 43초</small></a></p>
+  <footer class="foot"><div class="src">출처: <a href="https://news.mtn.co.kr/article/2026111016252461644" target="_blank" rel="noopener">MTN, 진료실에 들어온 의료 AI (2026.11.10)</a> / <a href="https://www.dataeconomy.co.kr/news/articleView.html?idxno=43028" target="_blank" rel="noopener">한국데이터경제신문, 허가 549건</a> / <a href="https://m.etnews.com/20260831000288" target="_blank" rel="noopener">전자신문, 의료 AI 기업 실적</a></div><span>2026년 바이오헬스</span><div class="ribbon"><span>Chat</span><span>Multimodal</span><span>Reasoning</span><span class="on">Agent</span></div><span class="pg"></span></footer>
 </section>
 
 <section class="slide">
@@ -2297,6 +2328,33 @@ bash setup.sh</pre>
   </table>
   <p class="punch" style="margin-top:10px; padding-top:10px; padding-bottom:10px">프로젝트라면 HealthImaging에 영상을 두고 Bedrock으로 읽는 조합이 가장 쌉니다. HealthLake는 켜 두기만 해도 요금이 나가고, 영어 전용 서비스는 한국어 기록에 맞지 않습니다.</p>
   <footer class="foot"><div class="src">요금표: <a href="https://aws.amazon.com/healthimaging/pricing/" target="_blank" rel="noopener">HealthImaging</a> / <a href="https://aws.amazon.com/healthlake/pricing/" target="_blank" rel="noopener">HealthLake</a> / <a href="https://aws.amazon.com/healthomics/pricing/" target="_blank" rel="noopener">HealthOmics</a> / <a href="https://aws.amazon.com/healthscribe/pricing/" target="_blank" rel="noopener">HealthScribe</a> / <a href="https://aws.amazon.com/comprehend/medical/pricing/" target="_blank" rel="noopener">Comprehend Medical</a> / <a href="https://aws.amazon.com/braket/pricing/" target="_blank" rel="noopener">Braket</a> / <a href="https://calculator.aws/" target="_blank" rel="noopener">Pricing Calculator</a> / 2026년 11월 13일, 미국 Region 기준</div><span>2026년 바이오헬스</span><div class="ribbon"><span>Chat</span><span>Multimodal</span><span>Reasoning</span><span class="on">Agent</span></div><span class="pg"></span></footer>
+</section>
+
+<section class="slide">
+  <h2>AWS 위의 바이오헬스: 누가 어떻게 쓰나</h2>
+  <div class="cols" style="grid-template-columns:1.2fr 1fr; margin-top:16px; gap:36px; flex:none">
+    <table class="tbl compact" style="margin-top:0; font-size:15px; align-self:start">
+      <colgroup><col style="width:168px"><col></colgroup>
+      <thead><tr><th>누가</th><th>무엇을</th></tr></thead>
+      <tbody>
+        <tr><td>고려대 보건과학대학</td><td>HealthOmics로 자폐 연구. 세포의 유전자 발현을 AI로 분석</td></tr>
+        <tr><td>Roche</td><td>HealthOmics로 암 연구 분석을 1년에서 3개월로. Bedrock에서 연구 Agent 29개 운영</td></tr>
+        <tr><td>연세의료원, 삼성서울병원, 분당서울대병원</td><td>병원 데이터를 한곳에 모으고 표준 형식으로 정리. 연구자용 분석 환경</td></tr>
+        <tr><td>3M HIS</td><td>HealthScribe로 진료 기록 작성 시간을 줄이는 제품</td></tr>
+      </tbody>
+    </table>
+    <div>
+      <h3 style="font-size:20px; margin-bottom:8px">여러분의 프로젝트로 줄이면</h3>
+      <ul class="plain" style="gap:8px">
+        <li style="font-size:16.5px">저장<span>공개 엑스레이 데이터를 S3나 HealthImaging에</span></li>
+        <li style="font-size:16.5px">분석과 검색<span>전용 모델이나 Bedrock으로 읽고, S3 Vectors에서 비슷한 사례 찾기</span></li>
+        <li style="font-size:16.5px">안전장치<span>Guardrails로 개인정보와 진단을 단정하는 문장 거르기</span></li>
+      </ul>
+    </div>
+  </div>
+  <p class="punch" style="margin-top:12px">병원이 AWS를 고르는 이유는 모델이 아니라 데이터입니다. 환자 데이터가 계정 밖으로 나가지 않고, 모델은 그 안에서 골라 씁니다.</p>
+  <p class="vids" style="margin-top:10px">영상으로 보기 <a href="https://www.youtube.com/watch?v=lmklf-yP50s" target="_blank" rel="noopener">진료 대화가 기록 초안으로 <small>AWS 공식 · 3분 2초, 영어</small></a><a href="https://www.youtube.com/watch?v=xLsoScAaffY" target="_blank" rel="noopener">3M HIS의 HealthScribe 사례 <small>AWS 공식 · 2분 17초, 영어</small></a></p>
+  <footer class="foot"><div class="src">출처: <a href="https://aws.amazon.com/healthomics/customers/" target="_blank" rel="noopener">AWS, HealthOmics 고객 사례</a> / <a href="https://d1.awsstatic.com/onedam/marketing-channels/website/aws/ko_KR/events/approved/documents/aws-korea-healthcare-reference-v2.pdf" target="_blank" rel="noopener">AWS 코리아, 헬스케어 사례집 (2024)</a> / <a href="https://aws.amazon.com/about-aws/our-impact/health-impact-initiative/" target="_blank" rel="noopener">AWS Health Impact Initiative</a></div><span>2026년 바이오헬스</span><div class="ribbon"><span>Chat</span><span>Multimodal</span><span>Reasoning</span><span class="on">Agent</span></div><span class="pg"></span></footer>
 </section>
 
 <section class="slide">
