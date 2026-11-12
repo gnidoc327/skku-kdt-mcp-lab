@@ -1,6 +1,6 @@
 # 실습: 나만의 MCP 서버 만들기
 
-맥북에서 무료로, API 키 없이 MCP(엠씨피) 서버 두 개를 만들어 Claude 같은 AI에 연결합니다.
+맥북에서 무료로, API 키 없이 Embedding, Vector DB, RAG, MCP, Agent를 Jupyter Notebook으로 차례로 만들어 봅니다. 마지막에는 직접 만든 MCP 서버를 Claude 같은 AI에 연결합니다.
 
 | 서버 | 하는 일 | Tool(도구) |
 |---|---|---|
@@ -14,7 +14,7 @@
 
 ## 빠른 시작: 그대로 복사해 붙여 넣기
 
-터미널(Spotlight에서 "터미널" 검색)을 열고, 회색 상자를 통째로 복사해 붙여 넣은 뒤 Enter를 누르면 됩니다. 경로를 고칠 곳은 없습니다.
+실습은 **Jupyter Notebook(브라우저)** 으로 합니다. 터미널(Spotlight에서 "터미널" 검색)을 열고, 회색 상자를 통째로 복사해 붙여 넣은 뒤 Enter를 누르면 됩니다.
 
 **1단계. Ollama 앱 설치** (브라우저에서 한 번만)
 
@@ -28,14 +28,44 @@ cd mcp-lab
 bash setup.sh
 ```
 
-마지막에 `✅ 성공`이 나오면 준비 끝입니다. 이미지 실습까지 하려면 `bash setup.sh --image`를 한 번 더 실행합니다.
+`✅ 성공`이 나온 뒤 브라우저에 JupyterLab이 열리면 준비 끝입니다. 다음에 다시 열 때도 `cd mcp-lab` 후 `bash setup.sh`를 실행하면 됩니다.
 
-**3단계. Claude에 연결** (둘 중 쓰는 것 하나)
+<details>
+<summary><b>setup.sh가 하는 일을 직접 하려면</b></summary>
+
+```bash
+python3 -m venv .venv                 # 가상환경 만들기 (Python 3.10 이상)
+source .venv/bin/activate             # 가상환경 켜기. 프롬프트 앞에 (.venv)가 보이면 성공
+pip install jupyterlab ipykernel      # JupyterLab 설치
+jupyter lab --notebook-dir=example    # 실행
+```
+
+각 노트북의 첫 셀에 `%pip install ...`이 있어서 필요한 패키지는 그때 설치됩니다.
+</details>
+
+**3단계. 노트북을 순서대로 실행**
+
+왼쪽 파일 목록에서 `step0`부터 엽니다. 셀을 하나씩 선택하고 **Shift + Enter**를 누르면 실행됩니다. `# TODO`가 적힌 곳은 내용을 바꿔서 다시 실행해 보세요.
+
+| Step | 노트북 | 내용 |
+|---|---|---|
+| **Step 0** | `step0/0_check_setup.ipynb` | Ollama 연결 확인, 모델 내려받기(약 6.5GB), 설정 저장 |
+| **Step 1** | `step1/0_embedding_similarity.ipynb` | Embedding으로 뜻이 비슷한 글 찾기, 키워드 검색과 비교, 의미 지도 그리기 |
+| **Step 2** | `step2/0_vector_db.ipynb` | Vector DB(Chroma)에 저장하고 의미와 꼬리표로 찾기 |
+| **Step 3** | `step3/0_rag.ipynb` | RAG: 문서를 찾아서 LLM에게 함께 보여 주기. RAG 없이 물었을 때와 비교 |
+| **Step 4-0** | `step4/0_mcp_server.ipynb` | Memory MCP 서버에 연결해 도구 목록을 받고 직접 호출 |
+| **Step 4-1** | `step4/1_agent_with_mcp.ipynb` | Agent: 로컬 LLM이 스스로 MCP 도구를 고르게 하기 (`for`문 하나) |
+
+전부 내 맥북 안에서 돌아가므로 API 키도 요금도 없습니다. 모델을 내려받는 Step 0만 인터넷이 필요합니다.
+
+**4단계. (선택) 같은 MCP 서버를 Claude에 연결**
+
+노트북에서 만든 `memory_mcp.py`를 그대로 Claude에 붙입니다. 노트북에서 저장한 기억을 Claude가 꺼냅니다.
 
 Claude Desktop 앱:
 
 ```bash
-python3 connect_claude_desktop.py
+.venv/bin/python connect_claude_desktop.py
 ```
 
 실행한 뒤 Claude Desktop을 완전히 종료(⌘Q)했다가 다시 켭니다. 기존 설정은 `.bak` 파일로 백업됩니다.
@@ -43,10 +73,10 @@ python3 connect_claude_desktop.py
 Claude Code:
 
 ```bash
-claude mcp add memory -- uv run "$(pwd)/memory_mcp.py"
+claude mcp add memory -- "$(pwd)/.venv/bin/python" "$(pwd)/memory_mcp.py"
 ```
 
-**4단계. 말 걸기** (Claude 대화창에 그대로 입력)
+Claude 대화창에 그대로 입력해 보세요.
 
 ```
 이거 기억해 줘: 다음 주 화요일까지 RAG 과제 제출
@@ -62,12 +92,14 @@ claude mcp add memory -- uv run "$(pwd)/memory_mcp.py"
 |---|---|
 | `Ollama 앱이 꺼져 있습니다` | 응용 프로그램에서 Ollama를 실행하고 `bash setup.sh` 다시 |
 | `command not found: git` | 뜨는 설치 창에서 "설치"를 누르고, 끝나면 2단계 다시 |
+| `Python 3.10 이상이 필요합니다` | https://www.python.org/downloads/ 에서 설치하고 2단계 다시 |
+| 노트북 셀이 `[*]`에서 오래 멈춤 | 모델을 처음 부르는 중입니다. 1~2분 기다리면 됩니다 |
+| `config.json이 없습니다` | `step0` 노트북을 먼저 끝까지 실행 |
 | Claude에 도구가 안 보임 | Claude Desktop을 ⌘Q로 완전히 끄고 다시 켜기 |
-| 처음 실행이 1~2분 걸림 | 필요한 패키지를 받는 중입니다. 기다리면 됩니다 |
 
-아래부터는 자세한 설명입니다.
+아래부터는 자세한 설명과 심화 내용입니다.
 
-## 0. 준비 (한 번만)
+## 0. 내 맥에 맞는 모델 고르기
 
 1. **Ollama(올라마) 설치**: https://ollama.com 에서 앱을 받아 설치합니다.
    Docker(도커) 안에 설치하면 맥 GPU를 못 써서 매우 느립니다. 반드시 앱으로 설치하세요.
@@ -92,19 +124,13 @@ claude mcp add memory -- uv run "$(pwd)/memory_mcp.py"
    - 속도는 메모리 대역폭이 좌우합니다. M3 100GB/s, M3 Pro 150GB/s, M3 Max 300~400GB/s.
    - iMac과 MacBook은 같은 M3 칩이라 표가 같습니다. 팬이 없는 MacBook Air는 오래 돌리면 느려집니다.
    - Embedding 모델 `bge-m3`(1.2GB)는 모든 기종에서 됩니다.
-3. **uv(유브이) 설치**: 파이썬 패키지를 자동으로 챙겨 주는 도구입니다.
-   ```bash
-   curl -LsSf https://astral.sh/uv/install.sh | sh
-   ```
-   코드 맨 위 주석에 필요한 패키지가 적혀 있어서 `uv run`만 하면 알아서 설치됩니다.
 
 ## 1. MCP Inspector로 먼저 테스트
 
 AI 없이 도구가 잘 도는지 브라우저에서 직접 눌러 볼 수 있습니다.
 
 ```bash
-cd lab
-npx @modelcontextprotocol/inspector uv run memory_mcp.py
+npx @modelcontextprotocol/inspector .venv/bin/python memory_mcp.py
 ```
 
 열린 화면에서 Connect → Tools → `remember`에 아무 문장이나 넣고 실행 → `recall`로 찾아보세요.
@@ -114,8 +140,8 @@ npx @modelcontextprotocol/inspector uv run memory_mcp.py
 **Claude Code**
 
 ```bash
-claude mcp add memory -- uv run /절대경로/mcp-lab/memory_mcp.py
-claude mcp add images -- uv run /절대경로/mcp-lab/image_mcp.py
+claude mcp add memory -- /절대경로/mcp-lab/.venv/bin/python /절대경로/mcp-lab/memory_mcp.py
+claude mcp add images -- /절대경로/mcp-lab/.venv/bin/python /절대경로/mcp-lab/image_mcp.py
 ```
 
 **Claude Desktop**: 설정 → 개발자 → 설정 편집에서 `claude_desktop_config.json`에 추가
@@ -123,13 +149,13 @@ claude mcp add images -- uv run /절대경로/mcp-lab/image_mcp.py
 ```json
 {
   "mcpServers": {
-    "memory": { "command": "uv", "args": ["run", "/절대경로/mcp-lab/memory_mcp.py"] },
-    "images": { "command": "uv", "args": ["run", "/절대경로/mcp-lab/image_mcp.py"] }
+    "memory": { "command": "/절대경로/mcp-lab/.venv/bin/python", "args": ["/절대경로/mcp-lab/memory_mcp.py"] },
+    "images": { "command": "/절대경로/mcp-lab/.venv/bin/python", "args": ["/절대경로/mcp-lab/image_mcp.py"] }
   }
 }
 ```
 
-`uv`를 못 찾는다는 오류가 나면 `"command"`에 `which uv`로 나온 전체 경로를 넣으세요.
+`/절대경로/mcp-lab`은 터미널에서 `pwd`를 실행해 나온 경로로 바꿉니다. `connect_claude_desktop.py`를 쓰면 자동으로 들어갑니다.
 Cursor, Kiro, VS Code 등 MCP를 지원하는 도구도 같은 방식으로 연결합니다.
 
 ### 비용이 걱정되면: AI만 바꾸기
@@ -193,7 +219,7 @@ OpenCode 2.0부터 MCP 도구를 코드 실행 도구(`execute`) 안에 감싸�
   },
   "mcp": {
     "servers": {
-      "memory": { "type": "local", "command": ["uv", "run", "/절대경로/mcp-lab/memory_mcp.py"], "codemode": false }
+      "memory": { "type": "local", "command": ["/절대경로/mcp-lab/.venv/bin/python", "/절대경로/mcp-lab/memory_mcp.py"], "codemode": false }
     }
   },
   "permissions": [

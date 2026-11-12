@@ -2,3 +2,6 @@ __pycache__/
 *.pyc
 .venv/
 .DS_Store
+.ipynb_checkpoints/
+example/config.json
+example/.lab-data/
