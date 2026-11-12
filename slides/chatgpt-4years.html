@@ -435,7 +435,7 @@ bash setup.sh</pre>
     <div><div class="n">2022</div><b>ChatGPT 등장</b><span>SKT 한국어 GPT-2, Token, ChatGPT 공개, Agent의 뿌리 ReAct, OpenAI도 따라가기 바빴다</span></div>
     <div><div class="n">2023</div><b>경쟁과 플랫폼</b><span>LLaMA 유출과 Fine-tuning, Hallucination, Jailbreak, Word2Vec과 Embedding, RAG와 Vector DB, 병원 양자컴퓨터</span></div>
     <div><div class="n">2024</div><b>Multimodal과 추론</b><span>검색을 붙이자 생긴 실수, Gemini 홍보 영상 논란, 멀티모달의 원리, API·MCP·A2A와 Multi-Agent, AlphaFold 노벨상, 양자컴퓨터와 Willow</span></div>
-    <div><div class="n">2025</div><b>Agent 원년</b><span>양자 3배 ETP 상폐, 양자 오류 정정 경쟁, Agent 사고와 Guardrail</span></div>
+    <div><div class="n">2025</div><b>Agent 원년</b><span>DeepSeek 쇼크와 MoE, 양자 3배 ETP 상폐, 양자 오류 정정 경쟁, Agent 사고와 Guardrail</span></div>
     <div><div class="n">2026</div><b>기업 속으로</b><span>AI 투자 경쟁과 소버린 AI, 독파모와 프런티어 AI, 증류 의혹과 AI가 AI를 가르치는 법, 분야별 모델과 노력 수준, 과학·콘텐츠·영상의 AI, 멈춘 버그바운티, 큰 모델의 흡수와 표준, Token 단가와 AI Gateway, HBM·나노 공정·전력, 치과 원장의 Local LLM과 AWS 비용 비교, 바이오 서비스</span></div>
     <div><div class="n">Q&amp;A</div><b>사전 질문과 실습</b><span>바이오헬스 질문은 각 연도 안에서 답하고, Memory MCP를 직접 만들어 Claude에 붙여 보고, RAG 프로젝트 꿀팁으로 마무리합니다. 더 자세한 내용은 부록에</span></div>
   </div>
@@ -1220,6 +1220,31 @@ bash setup.sh</pre>
     </ul>
   </div>
   <footer class="foot"><div class="src">출처: <a href="https://github.com/deepseek-ai/DeepSeek-R1" target="_blank" rel="noopener">DeepSeek-R1</a> / <a href="https://linuxfoundation.org/press/a2a-protocol-surpasses-150-organizations-lands-in-major-cloud-platforms-and-sees-enterprise-production-use-in-first-year" target="_blank" rel="noopener">Linux Foundation, A2A</a></div><span>2025년</span><div class="ribbon"><span>Chat</span><span>Multimodal</span><span class="on">Reasoning</span><span class="on">Agent</span></div><span class="pg"></span></footer>
+</section>
+
+<section class="slide">
+  <h2>MoE(엠오이): 전문가 여럿 중 몇 명만 일한다</h2>
+  <div class="cols" style="grid-template-columns:0.95fr 1.05fr; margin-top:16px; gap:36px; flex:none">
+    <div><svg viewBox="0 0 490 330" width="100%" role="img" aria-label="Router가 질문을 보고 전문가 여덟 중 둘만 골라 계산하는 그림" style="background:#F6F8FC; display:block"><defs><marker id="ma" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#1F4ED8"/></marker></defs><text x="245" y="26" font-size="14" text-anchor="middle" fill="#5D6573">"이 파이썬 코드로 혈압 평균을 구해 줘"</text><rect x="150" y="40" width="190" height="52" fill="#E2F3EF" stroke="#0E8A74" stroke-width="1.5"/><text x="245" y="63" font-size="16" font-weight="700" text-anchor="middle" fill="#14171C">Router(접수 창구)</text><text x="245" y="82" font-size="12.5" text-anchor="middle" fill="#5D6573">누구에게 보낼지 고른다</text><line x1="225" y1="92" x2="185" y2="146" stroke="#1F4ED8" stroke-width="2" marker-end="url(#ma)"/><line x1="262" y1="92" x2="300" y2="146" stroke="#1F4ED8" stroke-width="2" marker-end="url(#ma)"/><rect x="14" y="150" width="106" height="48" fill="#EEF0F3" stroke="#D8DCE3"/><text x="67" y="180" font-size="15.5" font-weight="700" text-anchor="middle" fill="#8A93A3">문법 전문가</text><rect x="132" y="150" width="106" height="48" fill="#1F4ED8" stroke="#1F4ED8"/><text x="185" y="180" font-size="15.5" font-weight="700" text-anchor="middle" fill="#fff">코드 전문가</text><rect x="250" y="150" width="106" height="48" fill="#1F4ED8" stroke="#1F4ED8"/><text x="303" y="180" font-size="15.5" font-weight="700" text-anchor="middle" fill="#fff">의학 전문가</text><rect x="368" y="150" width="106" height="48" fill="#EEF0F3" stroke="#D8DCE3"/><text x="421" y="180" font-size="15.5" font-weight="700" text-anchor="middle" fill="#8A93A3">수학 전문가</text><rect x="14" y="212" width="106" height="48" fill="#EEF0F3" stroke="#D8DCE3"/><text x="67" y="242" font-size="15.5" font-weight="700" text-anchor="middle" fill="#8A93A3">역사 전문가</text><rect x="132" y="212" width="106" height="48" fill="#EEF0F3" stroke="#D8DCE3"/><text x="185" y="242" font-size="15.5" font-weight="700" text-anchor="middle" fill="#8A93A3">번역 전문가</text><rect x="250" y="212" width="106" height="48" fill="#EEF0F3" stroke="#D8DCE3"/><text x="303" y="242" font-size="15.5" font-weight="700" text-anchor="middle" fill="#8A93A3">법률 전문가</text><rect x="368" y="212" width="106" height="48" fill="#EEF0F3" stroke="#D8DCE3"/><text x="421" y="242" font-size="15.5" font-weight="700" text-anchor="middle" fill="#8A93A3">요리 전문가</text><text x="245" y="296" font-size="13.5" text-anchor="middle" fill="#14171C">여덟 명이 다 대기하지만, 이번에 일하는 것은 두 명</text><text x="245" y="317" font-size="12.5" text-anchor="middle" fill="#8A93A3">설명용 그림. 실제 전문가는 사람이 이름 붙인 분야가 아니라 학습으로 나뉨</text></svg></div>
+    <div>
+      <table class="tbl compact" style="margin-top:0; font-size:14.5px">
+        <colgroup><col style="width:84px"><col></colgroup>
+        <tbody>
+          <tr><td>1991</td><td>Mixture of Experts 아이디어 (Jacobs, Hinton 등)</td></tr>
+          <tr><td>2023.12</td><td>Mistral의 Mixtral. 전문가 8명 중 2명만 쓰는 공개 모델</td></tr>
+          <tr class="q"><td>2024.12</td><td>DeepSeek-V3. 숫자 6,710억 개 중 Token마다 370억 개, 약 5%만 사용. 학습비 약 560만 달러라고 발표</td></tr>
+          <tr><td>2025.01</td><td>DeepSeek 쇼크. 하루에 NVIDIA 시가총액 약 5,900억 달러 증발</td></tr>
+          <tr><td>2025~</td><td>Llama 4, gpt-oss 등 큰 공개 모델 대부분이 MoE</td></tr>
+        </tbody>
+      </table>
+      <ul class="plain" style="gap:8px; margin-top:12px">
+        <li style="font-size:17px">좋은 점<span>지식은 큰 모델만큼, 계산은 작은 모델만큼. 싸고 빠름</span></li>
+        <li style="font-size:17px">단서<span>메모리는 전체 크기만큼 필요. 560만 달러는 마지막 학습 한 번의 값이고 연구와 장비는 빠짐</span></li>
+      </ul>
+    </div>
+  </div>
+  <p class="punch" style="margin-top:12px">DeepSeek가 MoE를 만든 것은 아닙니다. 덜 쓰고도 된다는 것을 보여 줘서, GPU를 무조건 더 넣는 경쟁에 처음으로 의문을 던졌습니다.</p>
+  <footer class="foot"><div class="src">출처: <a href="https://arxiv.org/abs/2412.19437" target="_blank" rel="noopener">DeepSeek-V3 논문</a> / <a href="https://mistral.ai/news/mixtral-of-experts" target="_blank" rel="noopener">Mistral, Mixtral of experts</a> / <a href="https://www.reuters.com/technology/chinas-deepseek-sets-off-ai-market-rout-2025-01-27/" target="_blank" rel="noopener">Reuters, DeepSeek 쇼크</a> / <a href="https://huggingface.co/openai/gpt-oss-120b" target="_blank" rel="noopener">OpenAI, gpt-oss-120b</a> / 그림: 발표자 작성</div><span>2025년</span><div class="ribbon"><span>Chat</span><span>Multimodal</span><span class="on">Reasoning</span><span class="on">Agent</span></div><span class="pg"></span></footer>
 </section>
 
 <section class="slide">
