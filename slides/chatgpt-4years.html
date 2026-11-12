@@ -1098,11 +1098,40 @@ bash setup.sh</pre>
       <li style="font-size:18px">얽힘<span>큐비트 여러 개가 한 덩어리로 묶임. 그래서 개수가 늘면 담는 경우의 수가 2배씩 늘어남</span></li>
       <li style="font-size:18px">간섭<span>틀린 답은 서로 지워지고 맞는 답만 커지게 계산을 짬. "모든 답을 동시에 본다"는 오해</span></li>
       <li style="font-size:18px">잘하는 일, 못하는 일<span>분자 시뮬레이션과 암호 해독에 강함. 문서 작업이나 일반 계산은 지금 컴퓨터가 더 빠름</span></li>
-      <li style="font-size:18px">왜 아직인가<span>큐비트가 열과 진동에 너무 민감해 금방 틀림. 그래서 오류 정정이 핵심 (다음 장)</span></li>
+      <li style="font-size:18px">왜 아직인가<span>큐비트가 열과 진동에 너무 민감해 금방 틀림. 그래서 오류 정정이 핵심 (뒤의 Willow 장)</span></li>
     </ul>
   </div>
   <p class="vids">영상으로 보기 <a href="https://www.youtube.com/watch?v=oqM5ce7DylY" target="_blank" rel="noopener">양자 컴퓨터의 핵심 기술, 큐비트 <small>YTN 사이언스 · 3분 31초</small></a></p>
   <footer class="foot"><div class="src">출처: <a href="https://www.ibm.com/think/topics/quantum-computing" target="_blank" rel="noopener">IBM, What is quantum computing</a> / <a href="https://aws.amazon.com/what-is/quantum-computing/" target="_blank" rel="noopener">AWS, What is quantum computing</a> / 그림: 발표자 작성</div><span>2024년 바이오헬스</span><div class="ribbon"><span>Chat</span><span class="on">Multimodal</span><span class="on">Reasoning</span><span>Agent</span></div><span class="pg"></span></footer>
+</section>
+
+<section class="slide">
+  <h2>양자컴퓨터는 왜 빠른가: 덜 계산하기 때문</h2>
+  <div class="cols" style="grid-template-columns:0.92fr 1.08fr; margin-top:16px; gap:36px; flex:none">
+    <div>
+      <h3 style="font-size:20px; margin-bottom:8px">지금 컴퓨터의 물리적 한계</h3>
+      <ul class="plain" style="gap:9px">
+        <li style="font-size:17px">비트는 전압입니다<span>예를 들어 0V와 5V를 두고 2.5V를 기준으로 0과 1을 가름. 계산은 스위치 수십억 개를 켜고 끄는 일</span></li>
+        <li style="font-size:17px">빨리 켜고 끌수록 뜨거워집니다<span>반도체에는 저항이 있어 열이 남. CPU 속도는 2005년쯤 4~5GHz에서 멈춤</span></li>
+        <li style="font-size:17px">그래서 더 빨리 대신 더 많이<span>코어 수를 늘리고, 수천 개가 동시에 계산하는 GPU로. 그 결과가 전력 문제</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3 style="font-size:20px; margin-bottom:8px">양자컴퓨터는 계산 횟수가 줄어듭니다</h3>
+      <table class="tbl compact" style="margin-top:0; font-size:14.5px">
+        <colgroup><col style="width:170px"><col><col></colgroup>
+        <thead><tr><th>문제</th><th>지금 컴퓨터</th><th>양자컴퓨터</th></tr></thead>
+        <tbody>
+          <tr><td>1조 개 중 하나 찾기</td><td>최대 1조 번 확인</td><td>약 100만 번</td></tr>
+          <tr class="q"><td>인터넷 암호 풀기</td><td>우주 나이보다 오래</td><td>며칠. 단, 그런 기계는 아직 없음</td></tr>
+          <tr><td>분자 시뮬레이션</td><td>전자가 하나 늘 때마다 메모리가 2배</td><td>큐비트 몇 개만 추가</td></tr>
+        </tbody>
+      </table>
+      <p class="small" style="margin-top:10px; font-size:15.5px">초전도 큐비트는 저항이 없어 열이 거의 안 나지만, 빠른 이유는 그것이 아닙니다. 큐비트 연산 하나는 오히려 반도체 스위치보다 훨씬 느립니다.</p>
+    </div>
+  </div>
+  <p class="punch" style="margin-top:12px">지금 컴퓨터는 한 걸음씩 아주 빨리 걷고, 양자컴퓨터는 걸음은 느리지만 지름길로 갑니다. 지름길이 있는 문제에서만 이깁니다.</p>
+  <footer class="foot"><div class="src">출처: <a href="https://en.wikipedia.org/wiki/Dennard_scaling" target="_blank" rel="noopener">Wikipedia, Dennard scaling (CPU 속도 정체)</a> / <a href="https://en.wikipedia.org/wiki/Grover%27s_algorithm" target="_blank" rel="noopener">Wikipedia, Grover 알고리즘</a> / <a href="https://arxiv.org/abs/2505.15917" target="_blank" rel="noopener">Gidney (2025), RSA-2048 추정</a> / <a href="https://www.ibm.com/think/topics/quantum-computing" target="_blank" rel="noopener">IBM, What is quantum computing</a></div><span>2024년 바이오헬스</span><div class="ribbon"><span>Chat</span><span class="on">Multimodal</span><span class="on">Reasoning</span><span>Agent</span></div><span class="pg"></span></footer>
 </section>
 
 <section class="slide">
