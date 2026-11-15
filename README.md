@@ -1,6 +1,9 @@
-# 실습: 나만의 MCP 서버 만들기
+# 실습: 나만의 MCP 서버, 그리고 의료 Multi-Agent와 Distillation
 
-맥북에서 무료로, API 키 없이 Embedding, Vector DB, RAG, MCP, Agent를 Jupyter Notebook으로 차례로 만들어 봅니다. 마지막에는 직접 만든 MCP 서버를 Claude 같은 AI에 연결합니다.
+맥에서 무료로, API 키 없이 Jupyter Notebook으로 차례로 만들어 봅니다.
+
+- **1일차 (노트북 0~5)**: Embedding, Vector DB, RAG, MCP, Agent. 직접 만든 MCP 서버를 Kiro나 Claude에 연결
+- **2일차 (노트북 6~9)**: 신약 후보물질을 검토하는 Multi-Agent(전문가 3명 + 지휘자)를 만들고, 지휘자의 판단을 작은 모델에 Distillation(증류)으로 가르치기. [바로 가기](#2일차-의료-multi-agent와-distillation)
 
 | 서버 | 하는 일 | Tool(도구) |
 |---|---|---|
@@ -32,7 +35,7 @@ cd mcp-lab
 bash setup.sh
 ```
 
-모델을 합쳐서 약 6.5GB 내려받기 때문에 Wi-Fi에 따라 10~30분 걸립니다. **수업 첫 시간에 먼저 실행해 두고** 강의를 들으면 실습 시간에 바로 시작할 수 있습니다. 중간에 끊겨도 다시 실행하면 이어서 받습니다.
+모델을 합쳐서 약 16GB 내려받기 때문에 Wi-Fi에 따라 20~60분 걸립니다(1일차에 받은 모델은 다시 받지 않습니다). **수업 첫 시간에 먼저 실행해 두고** 강의를 들으면 실습 시간에 바로 시작할 수 있습니다. 중간에 끊겨도 다시 실행하면 이어서 받습니다.
 
 `✅ 성공`이 나온 뒤 브라우저에 JupyterLab이 열리면 준비 끝입니다. 다음에 다시 열 때도 `cd mcp-lab` 후 `bash setup.sh`를 실행하면 됩니다.
 
@@ -108,9 +111,68 @@ claude mcp add memory -- "$(pwd)/.venv/bin/python" "$(pwd)/memory_mcp.py"
 | `command not found: git` | 뜨는 설치 창에서 "설치"를 누르고, 끝나면 2단계 다시 |
 | `Python 3.10 이상이 필요합니다` | https://www.python.org/downloads/ 에서 설치하고 2단계 다시 |
 | 노트북 셀이 `[*]`에서 오래 멈춤 | 모델을 처음 부르는 중입니다. 1~2분 기다리면 됩니다 |
+| `setup.sh`가 중간에 멈춤 | 같은 폴더의 `setup.log` 파일과 화면의 메시지를 강사에게 보여 주세요. 폴더를 옮겼거나 예전 `.venv`가 남아 있으면 `rm -rf .venv` 후 `bash setup.sh` 다시 |
 | `config.json이 없습니다` | `0_check_setup` 노트북을 먼저 끝까지 실행 |
 | Claude에 도구가 안 보임 | Claude Desktop을 ⌘Q로 완전히 끄고 다시 켜기 |
 | Kiro에 도구가 안 보임 | 명령 팔레트(⌘⇧P)에서 "MCP" 검색 → 사용자 MCP 설정 열기. `memory`가 있는지 확인하고 저장 |
+
+## 2일차: 의료 Multi-Agent와 Distillation
+
+AWS 기술 블로그의 [SK바이오팜 해커톤 사례](https://aws.amazon.com/ko/blogs/tech/agentic-ai-drug-development-workflow-automation-challenge/)와 같은 구조를 내 맥 안에서 만듭니다. 약 이름을 넣으면 전문가 Agent 세 명이 공개 데이터베이스를 조회해 분석하고, 지휘자가 통합 리포트를 씁니다.
+
+```
+질문 ─▶ 지휘자(Orchestrator) ─┬─▶ 의약화학 전문가   (PubChem, RDKit)
+                              ├─▶ 임상약리 전문가   (PubMed, openFDA)
+                              └─▶ 임상·규제 전문가  (ClinicalTrials.gov)
+                                        │
+                              지휘자가 세 답을 모아 통합 리포트
+```
+
+| 블로그의 구성 | 이 실습 |
+|---|---|
+| Amazon Bedrock의 Claude | 내 맥의 Ollama `gemma4:e4b` (0원) |
+| Strands Agents | Strands Agents (같음) |
+| SageMaker의 TxGemma로 분자 특성 예측 | RDKit으로 계산 (GPU 필요 없음) |
+| PubChem, PubMed, ClinicalTrials.gov, OpenFDA | 같음 (`drug_tools.py`, API 키 필요 없음) |
+
+**준비**: 1일차와 같은 명령입니다. 새 패키지와 모델(`gemma4:e4b` 9.5GB, 제자 모델 0.7GB)을 더 받습니다. **수업 시작 전에 먼저 실행해 두세요.**
+
+```bash
+cd mcp-lab
+git pull
+bash setup.sh
+```
+
+**노트북 순서** (4시간 기준)
+
+| 순서 | 노트북 | 내용 | 실행 시간 |
+|---|---|---|---|
+| **6** | `6_drug_tools_agent.ipynb` | 공개 데이터베이스 조회 도구 6개와, 그 도구를 쓰는 전문가 Agent 한 명 | 1분 |
+| **7** | `7_multi_agent.ipynb` | 전문가 세 명 + 지휘자. 종합 분석(전원)과 스마트 컨설팅(필요한 전문가만), 리포트 저장 | 3~4분 |
+| **8** | `8_distill_data.ipynb` | 스승 모델(`gemma4:e4b`)이 질문 약 500개에 "누구에게 보낼지" 답을 달아 학습 자료 만들기 | 2~3분 |
+| **9** | `9_distill_train.ipynb` | 제자 모델(`gemma-3-1b`, 스승의 10분의 1 이하)을 MLX LoRA로 학습, 학습 전후 정답률과 속도 비교 | 4~5분 |
+
+발표자 맥(M1 Max 32GB)에서 돌린 결과: 학습 2분 30초, 스승과 같은 답을 고른 비율이 처음 보는 유형의 질문에서 **0% → 83%**, Adapter 파일 8MB. 숫자는 실행할 때마다 조금씩 달라집니다.
+
+**Kiro에서 한 번에 하기**
+
+같은 도구를 MCP 서버(`drug_tools_mcp.py`)로 내놓았습니다. Kiro에 연결하면 Kiro가 지휘자가 되어, 말 한마디로 조회부터 리포트 파일 저장까지 합니다.
+
+```bash
+.venv/bin/python connect_kiro.py --drug
+```
+
+그다음 **Kiro에서 이 `mcp-lab` 폴더를 열고** 채팅창에 입력합니다. 폴더 안의 `.kiro/steering/drug-review.md`가 검토 절차(전문가 세 명의 역할, 리포트 형식, 지어내지 않기)를 Kiro에게 알려 줍니다. 이 파일을 고치면 전문가를 늘리거나 리포트 형식을 바꿀 수 있습니다.
+
+```
+ibuprofen을 다음 개발 단계로 진행해도 되는지 종합 검토해서 리포트로 만들어 줘
+```
+
+Claude Code를 쓴다면 `claude mcp add drug-review -- "$(pwd)/.venv/bin/python" "$(pwd)/drug_tools_mcp.py"`로 연결하고, 같은 문서를 읽게 하면 됩니다.
+
+**GPU 서버 버전**: 더 큰 모델을 스승으로 쓰고 싶으면 [`aws/README.md`](aws/README.md)를 보세요. GPU EC2에 Ollama를 띄우고 주소만 바꿉니다(Bedrock 미사용, 시간당 약 1달러).
+
+**주의**: 공개 데이터와 작은 모델로 만든 교육용 실습입니다. 결과를 임상 판단이나 투약 결정에 쓰지 마세요. 같은 조회 결과는 `data/cache`에 저장해 다시 쓰므로, 여러 명이 동시에 실습해도 공개 API 한도에 덜 걸립니다.
 
 아래부터는 자세한 설명과 심화 내용입니다.
 

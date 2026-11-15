@@ -5,3 +5,7 @@ __pycache__/
 .ipynb_checkpoints/
 example/config.json
 example/.lab-data/
+example/distill/
+example/reports/
+reports/
+setup.log

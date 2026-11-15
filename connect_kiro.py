@@ -2,6 +2,7 @@
 
 사용법: .venv/bin/python connect_kiro.py           (memory만)
         .venv/bin/python connect_kiro.py --image   (images도)
+        .venv/bin/python connect_kiro.py --drug    (2일차: 신약 후보 검토 도구 drug-review도)
 
 Kiro의 사용자 설정 ~/.kiro/settings/mcp.json 에 넣으므로 어느 폴더를 열어도 쓸 수 있다.
 """
@@ -31,10 +32,21 @@ servers["memory"] = {
 }
 if "--image" in sys.argv:
     servers["images"] = {"command": py, "args": [str(lab / "image_mcp.py")], "disabled": False, "autoApprove": ["search_images", "show_image"]}
+if "--drug" in sys.argv:
+    servers["drug-review"] = {
+        "command": py,
+        "args": [str(lab / "drug_tools_mcp.py")],
+        "disabled": False,
+        "autoApprove": ["compound_info", "molecule_properties", "similar_compounds", "pubmed_search", "adverse_events", "clinical_trials"],
+    }
 
 cfg.parent.mkdir(parents=True, exist_ok=True)
 cfg.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
-print(f"✅ 추가했습니다: {', '.join(k for k in servers if k in ('memory', 'images'))}")
+print(f"✅ 추가했습니다: {', '.join(k for k in servers if k in ('memory', 'images', 'drug-review'))}")
 print(f"   설정 파일: {cfg}")
 print("   Kiro는 설정 파일이 바뀌면 자동으로 다시 연결합니다. Kiro 채팅창에 이렇게 입력해 보세요.")
-print("   이거 기억해 줘: 다음 주 화요일까지 RAG 과제 제출")
+if "--drug" in sys.argv:
+    print("   (Kiro에서 이 실습 폴더를 열어야 검토 절차 .kiro/steering/drug-review.md 가 함께 적용됩니다)")
+    print("   ibuprofen을 다음 개발 단계로 진행해도 되는지 종합 검토해서 리포트로 만들어 줘")
+else:
+    print("   이거 기억해 줘: 다음 주 화요일까지 RAG 과제 제출")
