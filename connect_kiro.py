@@ -28,6 +28,8 @@ def dev_rules():
 
     묻게 남겨 둔 것: 파일 삭제(rm), 패키지 설치(pip), 모델 받기(ollama pull), git push, 증류 학습(mlx_lm lora).
     Kiro는 && 나 | 로 이은 명령을 하나씩 따로 검사한다.
+    echo는 일부러 뺐다. 허용한 명령 뒤에 '> 파일'을 붙이면 폴더 밖에도 쓸 수 있고, 이것은 규칙으로 막히지 않는다
+    (Kiro CLI 3.5.0에서 확인). 그래서 이 규칙은 편의 기능이지 안전장치가 아니다.
     """
     venv_py = [f"{lab}/.venv/bin/python *", ".venv/bin/python *", "../.venv/bin/python *"]
     return [
@@ -55,7 +57,8 @@ if "--dev" in sys.argv or "--dev-off" in sys.argv:
     if perm.exists():
         shutil.copy(perm, str(perm) + ".bak")
     mine = dev_rules()
-    doc["rules"] = [r for r in doc.get("rules", []) if r not in mine]      # 전에 넣은 같은 규칙은 빼고
+    ours = lambda r: r in mine or (isinstance(r, dict) and any(str(lab) in str(m) for m in r.get("match", [])))
+    doc["rules"] = [r for r in doc.get("rules", []) if not ours(r)]      # 전에 넣은 규칙은 빼고
     if "--dev" in sys.argv:
         doc["rules"] += mine
     perm.parent.mkdir(parents=True, exist_ok=True)

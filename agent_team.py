@@ -158,7 +158,8 @@ class Team:
     def build_distill_data(self, train_templates, test_templates, subjects=("",), n_valid=40, seed=7):
         """질문 틀과 낱말을 조합해 질문을 만들고, 스승(큰 모델)이 고른 전문가를 정답으로 붙여 저장한다.
 
-        질문 틀의 {d} 자리에 subjects의 낱말이 하나씩 들어간다. {d}가 없는 틀은 그대로 한 번 쓴다.
+        질문 틀의 {d} 자리에 subjects의 낱말이 하나씩 들어간다. {d}가 없는 틀은 질문이 하나뿐이라
+        시험용으로 빠지지 않게 항상 학습에 넣고, 묻히지 않도록 세 번 넣는다.
         test_templates는 학습에 쓰지 않는다. 처음 보는 유형에도 맞는지 시험하는 데 쓴다.
         """
         def expand(templates):
@@ -178,8 +179,12 @@ class Team:
         rng.shuffle(train_q), rng.shuffle(test_q)
         print(f"학습용 질문 {len(train_q)}개, 처음 보는 유형의 시험용 질문 {len(test_q)}개에 스승({EXPERT_MODEL})이 답을 답니다.")
         train_rows, test_rows = label(train_q, "학습용"), label(test_q, "시험용")
-        n_valid = min(n_valid, len(train_rows) // 5)
-        splits = {"train": train_rows[n_valid:], "valid": train_rows[:n_valid], "test": test_rows}
+        fixed = {t.strip() for t in train_templates if "{d}" not in t}       # 낱말 자리가 없는 질문
+        varied = [r for r in train_rows if r["question"] not in fixed]
+        n_valid = min(n_valid, len(varied) // 5)
+        splits = {"train": varied[n_valid:] + [r for r in train_rows if r["question"] in fixed] * 3,
+                  "valid": varied[:n_valid], "test": test_rows}
+        rng.shuffle(splits["train"])
         (self.folder / "data").mkdir(parents=True, exist_ok=True)
         for name, rows in splits.items():
             with open(self.folder / "data" / f"{name}.jsonl", "w", encoding="utf-8") as f:
