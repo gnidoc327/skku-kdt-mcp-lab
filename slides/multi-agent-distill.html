@@ -1,0 +1,917 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Multi-Agent와 Distillation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gothic+A1:wght@300;500;700;800;900&family=IBM+Plex+Sans+KR:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: 1280×720 slides, white tech-lecture look; one blue "era ribbon" is the recurring signature, everything else stays quiet.
+   Single light look on purpose (projector deck), so no dark tokens. */
+:root {
+  --paper: #FFFFFF;      /* slide glass, faint lavender */
+  --ink: #14171C;        /* body text */
+  --hema: #1F4ED8;       /* hematoxylin: structure, years, headings */
+  --eosin: #0E8A74;      /* eosin: the one emphasis color */
+  --eosin-pale: #E2F3EF;
+  --hema-pale: #EAF0FD;
+  --muted: #5D6573;
+  --rule: #E1E5EB;
+  --display: "Gothic A1", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  --body: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  --code: "IBM Plex Mono", "SFMono-Regular", Menlo, monospace;
+  color-scheme: light;
+}
+html, body { height: 100%; }
+body {
+  background: var(--paper); color: var(--ink);
+  font-family: var(--body); margin: 0;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+body.scroll { overflow: auto; height: auto; padding-block: 16px; }
+
+.stage { position: fixed; left: 50%; top: 50%; width: 1280px; height: 720px; transform-origin: center; }
+.slide {
+  position: absolute; inset: 0; display: none;
+  padding: 52px 88px 104px; box-sizing: border-box;
+  background: var(--paper);
+  flex-direction: column;
+}
+.slide.active { display: flex; }
+body.scroll .stage { position: static; transform: none !important; width: auto; height: auto; display: grid; gap: 16px; }
+body.scroll .slide { position: relative; display: flex; width: 1280px; height: 720px; box-shadow: 0 0 0 1px var(--rule); }
+
+/* type scale (1.25 ratio from 22px body) */
+h1, h2, h3 { font-family: var(--display); color: var(--hema); margin: 0; text-wrap: balance; word-break: keep-all; font-weight: 700; letter-spacing: -0.02em; }
+h2 { font-size: 52px; line-height: 1.15; }
+h3 { font-size: 27px; line-height: 1.3; }
+p, li { font-size: 22px; line-height: 1.6; margin: 0; }
+.lede { font-size: 26px; line-height: 1.55; color: var(--muted); max-width: 30em; }
+.small { font-size: 17px; color: var(--muted); line-height: 1.5; }
+strong { font-weight: 700; color: var(--ink); }
+.num { font-variant-numeric: tabular-nums; }
+
+/* footer: deck name, era ribbon (Part 1 only), page */
+.foot {
+  position: absolute; left: 88px; right: 88px; bottom: 22px;
+  display: flex; flex-wrap: wrap; align-items: center; gap: 6px 24px;
+  font-size: 15px; color: var(--muted);
+}
+.foot .pg { margin-left: auto; font-variant-numeric: tabular-nums; }
+
+/* the signature: era ribbon, stain deepening from eosin to hematoxylin */
+.ribbon { display: flex; gap: 3px; }
+.ribbon span { padding: 4px 12px; font-size: 14px; color: var(--ink); background: var(--hema-pale); opacity: .5; }
+.ribbon span:nth-child(2) { background: #C7D6F7; }
+.ribbon span:nth-child(3) { background: #8EA8EC; }
+.ribbon span:nth-child(4) { background: var(--hema); color: var(--paper); }
+.ribbon span.on { opacity: 1; font-weight: 700; }
+
+/* cover */
+.cover { justify-content: space-between; }
+.cover .who { font-size: 18px; color: var(--muted); }
+.cover .date { font-family: var(--display); font-weight: 300; font-size: 150px; line-height: .95; color: var(--hema); letter-spacing: -0.04em; font-variant-numeric: tabular-nums; }
+.cover .date b { font-weight: 900; }
+.cover .datecap { font-size: 18px; color: var(--muted); margin-top: 10px; }
+.cover h1 { font-size: 60px; line-height: 1.2; margin-top: 36px; color: var(--ink); font-weight: 900; }
+.cover .sub { font-size: 24px; color: var(--muted); margin-top: 14px; }
+.cover .bigribbon { display: flex; height: 18px; margin-top: 8px; }
+.cover .bigribbon i { flex: 1; }
+
+/* agenda / sequence */
+.seq { display: grid; grid-template-columns: repeat(4, 1fr); gap: 3px; margin-top: 48px; }
+.seq > div { padding: 28px 26px 30px; min-height: 300px; display: flex; flex-direction: column; gap: 14px; }
+.seq .yr { font-family: var(--display); font-size: 20px; font-variant-numeric: tabular-nums; }
+.seq .k { font-family: var(--display); font-size: 40px; font-weight: 900; line-height: 1.1; }
+.seq .k small { display: block; font-size: 20px; font-weight: 500; margin-top: 6px; }
+.seq p { font-size: 19px; line-height: 1.55; }
+.seq > div:nth-child(1) { background: var(--hema-pale); }
+.seq > div:nth-child(2) { background: #C7D6F7; }
+.seq > div:nth-child(3) { background: #8EA8EC; }
+.seq > div:nth-child(4) { background: var(--hema); color: var(--paper); }
+.seq > div:nth-child(4) .k, .seq > div:nth-child(4) p { color: var(--paper); }
+
+/* year slides */
+.year { display: grid; grid-template-columns: 360px 1fr; gap: 64px; flex: 1; align-items: start; padding-top: 12px; }
+.year .big { font-family: var(--display); font-weight: 900; font-size: 160px; line-height: .9; color: var(--hema); letter-spacing: -0.04em; font-variant-numeric: tabular-nums; }
+.year .kw { font-family: var(--display); font-size: 30px; font-weight: 500; margin-top: 22px; line-height: 1.35; color: var(--ink); }
+.events { list-style: none; padding: 0; margin: 0; display: grid; gap: 0; align-content: start; }
+.events li { display: grid; grid-template-columns: 210px 1fr; gap: 24px; padding: 15px 0; border-top: 1px solid var(--rule); font-size: 20px; line-height: 1.5; }
+.events li:last-child { border-bottom: 1px solid var(--rule); }
+.events b { font-weight: 700; color: var(--hema); }
+.events li.key b { color: var(--eosin); }
+
+/* stat moment (2022) */
+.stats { display: grid; grid-template-columns: 1fr 1fr; gap: 64px; margin-top: 56px; }
+.stat .v { font-family: var(--display); font-weight: 900; font-size: 128px; line-height: 1; color: var(--hema); font-variant-numeric: tabular-nums; letter-spacing: -0.04em; }
+.stat .v small { font-size: 48px; font-weight: 500; margin-left: 6px; }
+.stat p { margin-top: 10px; color: var(--muted); }
+
+/* shifts / generic two-col */
+.cols { display: grid; grid-template-columns: 1fr 1fr; gap: 56px; margin-top: 40px; flex: 1; }
+.cols3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 40px; margin-top: 52px; }
+.cols3 h3 { margin-bottom: 14px; }
+.cols3 p { font-size: 20px; }
+.shift .from { font-size: 18px; color: var(--muted); text-decoration: line-through; text-decoration-color: var(--eosin); }
+.shift h3 { margin: 6px 0 14px; }
+
+ul.plain { list-style: none; padding: 0; margin: 0; display: grid; gap: 18px; align-content: start; }
+ul.plain li { padding-left: 26px; position: relative; font-size: 21px; }
+ul.plain li::before { content: ""; position: absolute; left: 0; top: .62em; width: 10px; height: 10px; border-radius: 50%; background: var(--eosin); }
+ul.plain li span { display: block; font-size: 17px; color: var(--muted); line-height: 1.5; }
+
+.case { background: var(--hema); color: var(--paper); padding: 32px 36px; align-self: start; }
+.case h3 { color: var(--paper); font-size: 25px; }
+.case p { font-size: 19px; margin-top: 14px; color: var(--paper); }
+.case .v { font-family: var(--display); font-size: 84px; font-weight: 900; line-height: 1; margin-top: 20px; }
+.case .small { color: var(--hema-pale); margin-top: 16px; }
+
+/* divider + question */
+.divider { background: var(--paper); justify-content: center; box-shadow: inset 12px 0 0 var(--hema); }
+.divider .part { font-family: var(--display); font-size: 22px; color: var(--eosin); font-weight: 700; }
+.divider h2 { color: var(--hema); font-size: 60px; margin-top: 14px; }
+.divider blockquote { margin: 34px 0 0; padding: 18px 24px; border-left: 4px solid var(--eosin); background: var(--eosin-pale); color: var(--ink); font-size: 21px; line-height: 1.7; max-width: 46em; }
+.divider .foot { color: var(--muted); }
+
+/* split now / later */
+.split { display: grid; grid-template-columns: 1fr 1fr; gap: 3px; margin-top: 40px; flex: 1; }
+.split > div { padding: 30px 34px; }
+.split .now { background: var(--eosin-pale); }
+.split .later { background: var(--hema-pale); }
+.split h3 { font-size: 30px; margin-bottom: 18px; }
+.split ul.plain { gap: 12px; }
+.split ul.plain li { font-size: 19px; }
+
+/* table */
+.tbl { width: 100%; border-collapse: collapse; margin-top: 30px; font-size: 18px; }
+.tbl th { text-align: left; font-weight: 500; color: var(--muted); font-size: 15px; padding: 0 16px 10px 0; border-bottom: 2px solid var(--hema); }
+.tbl td { padding: 10px 16px 10px 0; border-bottom: 1px solid var(--rule); vertical-align: top; line-height: 1.45; }
+.tbl td:first-child { color: var(--muted); width: 150px; }
+.tbl td:nth-child(2) { font-weight: 700; color: var(--hema); width: 330px; }
+.tbl tr.new td:nth-child(2) { color: var(--eosin); }
+.tbl tr.q td { background: var(--hema-pale); }
+.tbl tr.q td:first-child { padding-left: 0; box-shadow: -10px 0 0 var(--hema-pale); }
+
+ol.rank { list-style: none; padding: 0; margin: 0; counter-reset: r; display: grid; gap: 6px; }
+ol.rank li { counter-increment: r; display: grid; grid-template-columns: 48px 1fr; align-items: baseline; font-size: 21px; line-height: 1.45; }
+ol.rank li::before { content: counter(r); font-family: var(--display); font-weight: 900; font-size: 32px; color: var(--hema); }
+ol.rank li span { grid-column: 2; font-size: 17px; color: var(--muted); }
+ol.rank li.dim { opacity: .6; }
+ol.rank li.dim::before { content: "·"; }
+
+.closing { justify-content: center; }
+.closing p.q { font-family: var(--display); font-size: 46px; font-weight: 700; line-height: 1.45; color: var(--ink); max-width: 22em; text-wrap: balance; }
+.closing p.q b { color: var(--hema); font-weight: 900; }
+
+.refs { columns: 2; column-gap: 48px; margin-top: 28px; font-size: 15px; line-height: 1.5; padding: 0; list-style: none; }
+.refs li { font-size: 15px; break-inside: avoid; margin-bottom: 10px; color: var(--muted); }
+.refs a { color: var(--hema); text-decoration: none; }
+.refs a:hover, .refs a:focus-visible { text-decoration: underline; }
+
+/* speaker notes (N) */
+/* token economy: single-series magnitude bars, one hue */
+.bars { display: grid; gap: 22px; margin-top: 8px; }
+.bar { display: grid; grid-template-columns: 120px 1fr; align-items: center; gap: 20px; }
+.bar .when { font-size: 18px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.bar .track { display: flex; align-items: center; gap: 14px; }
+.bar .fill { height: 46px; background: var(--hema); border-radius: 0 4px 4px 0; }
+.bar .val { font-family: var(--display); font-weight: 700; font-size: 26px; color: var(--ink); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.eq { display: flex; align-items: center; gap: 22px; margin-top: 36px; font-family: var(--display); font-size: 24px; font-weight: 700; color: var(--ink); flex-wrap: wrap; }
+.eq { gap: 14px; }
+.eq span.op { color: var(--muted); font-weight: 300; }
+.eq .t { background: var(--hema-pale); padding: 12px 16px; }
+.eq .t.r { background: var(--eosin-pale); }
+.tips { display: grid; grid-template-columns: repeat(4, 1fr); gap: 32px; margin-top: 44px; }
+.tips h3 { font-size: 23px; margin-bottom: 10px; }
+.tips p { font-size: 18px; line-height: 1.55; }
+
+/* glossary */
+.gloss { display: grid; grid-template-columns: 1fr 1fr; column-gap: 56px; margin-top: 26px; }
+.gloss > div { padding: 14px 0; border-top: 1px solid var(--rule); }
+.gloss dt { font-family: var(--display); font-weight: 700; font-size: 22px; color: var(--hema); }
+.gloss dt small { font-family: var(--body); font-weight: 400; font-size: 15px; color: var(--muted); margin-left: 8px; }
+.gloss dd { margin: 4px 0 0; font-size: 18px; line-height: 1.5; }
+
+/* feedback loop */
+.loop { display: grid; grid-template-columns: repeat(5, 1fr); gap: 34px; margin-top: 40px; position: relative; padding-bottom: 46px; }
+.loop > div:not(.back) { background: var(--hema-pale); padding: 18px 18px 20px; position: relative; }
+.loop > div:nth-child(-n+4)::after { content: ""; position: absolute; right: -26px; top: 50%; border: 9px solid transparent; border-left: 12px solid var(--hema); transform: translateY(-50%); }
+.loop .n { font-family: var(--display); font-weight: 900; font-size: 30px; color: var(--hema); line-height: 1; }
+.loop b { display: block; font-size: 20px; margin-top: 10px; }
+.loop span { display: block; font-size: 16px; color: var(--muted); margin-top: 4px; line-height: 1.45; }
+.loop .back { position: absolute; left: 10%; right: 10%; bottom: 0; height: 26px; border: 3px solid var(--eosin); border-top: 0; }
+.loop .back i { position: absolute; left: 50%; bottom: -14px; transform: translateX(-50%); background: var(--paper); padding: 0 12px; font-style: normal; font-size: 16px; color: var(--eosin); font-weight: 700; }
+.loopx { display: grid; grid-template-columns: repeat(3, 1fr); gap: 40px; margin-top: 36px; }
+.loopx h3 { font-size: 22px; margin-bottom: 8px; }
+.loopx p { font-size: 17px; line-height: 1.55; }
+
+/* agenda */
+.agenda { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px; margin-top: 28px; }
+.agenda > div { background: var(--hema-pale); padding: 20px 24px 22px; display: flex; flex-direction: column; gap: 8px; }
+.agenda > div:last-child { background: var(--eosin-pale); }
+.agenda .n { font-family: var(--display); font-weight: 900; font-size: 34px; color: var(--hema); line-height: 1; }
+.agenda b { font-family: var(--display); font-size: 25px; font-weight: 700; color: var(--ink); }
+.agenda span { font-size: 16px; color: var(--muted); line-height: 1.45; }
+.divider .lede { color: var(--muted); margin-top: 24px; max-width: 44em; font-size: 23px; }
+
+/* compact table */
+.tbl.compact { font-size: 15.5px; margin-top: 22px; }
+.tbl.compact td { padding: 8px 14px 8px 0; }
+.tbl.compact td:first-child { width: auto; color: var(--hema); font-weight: 700; }
+.tbl.compact td:nth-child(2) { width: auto; font-weight: 400; color: var(--ink); }
+.tbl.wide td:first-child { width: 160px; }
+.tbl.wide td:nth-child(2) { width: 300px; font-weight: 700; color: var(--hema); }
+
+/* ReAct trace */
+.trace { background: var(--ink); color: var(--paper); padding: 22px 26px; display: grid; gap: 9px; align-self: start; }
+.trace .row { display: grid; grid-template-columns: 112px 1fr; gap: 14px; font-size: 16.5px; line-height: 1.45; }
+.trace .row b { font-family: var(--code); font-weight: 500; font-size: 14.5px; padding-top: 2px; }
+.trace .row.th b { color: #8EA8EC; }
+.trace .row.ac b { color: #FFB37A; }
+.trace .row.ob b { color: #9FD3C7; }
+.trace .row.fi b { color: var(--paper); }
+.trace code { font-family: var(--code); font-size: 15px; color: #FFD27A; }
+.trace .q { color: var(--hema-pale); font-size: 16.5px; padding-bottom: 6px; border-bottom: 1px solid #2C323C; }
+
+/* protocol diagram */
+.proto { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; margin-top: 26px; }
+.pbox h3 { margin-bottom: 16px; }
+.flow { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 0; height: 128px; border: 2px solid var(--rule); padding: 0 22px; }
+.flow .node { background: var(--hema); color: var(--paper); padding: 12px 16px; font-weight: 700; font-size: 17px; text-align: center; }
+.flow .node.alt { background: var(--hema-pale); color: var(--ink); }
+.flow .stack { display: grid; gap: 6px; }
+.flow .stack .node { padding: 6px 14px; font-size: 15px; }
+.flow .link { height: 3px; background: var(--eosin); position: relative; margin: 0 10px; }
+.flow .link span { position: absolute; left: 50%; top: -30px; transform: translateX(-50%); color: var(--eosin); font-weight: 700; font-size: 17px; white-space: nowrap; }
+.pbox .events { margin-top: 14px; }
+.pbox .events li { grid-template-columns: 90px 1fr; font-size: 16.5px; padding: 9px 0; gap: 14px; }
+
+/* misc */
+.cols3.tight { margin-top: 30px; gap: 32px; }
+.cols3.tight h3 { font-size: 24px; margin-bottom: 10px; }
+.cols3.tight ul.plain { gap: 10px; }
+.cols3.tight ul.plain li { font-size: 17px; line-height: 1.5; }
+.cols3.tight ul.plain li span { font-size: 15px; }
+.punch { margin-top: 26px; padding: 16px 22px; background: var(--eosin-pale); font-size: 19px; line-height: 1.55; }
+.events.dated li { grid-template-columns: 120px 1fr; }
+.events.tight li { padding: 10px 0; font-size: 18px; }
+.bars.sm { gap: 14px; }
+.bars.sm .bar { grid-template-columns: 130px 1fr; }
+.bars.sm .fill { height: 34px; }
+.bars.sm .val { font-size: 21px; }
+.bars.sm .when { font-size: 16px; color: var(--ink); }
+.refs.three { columns: 3; column-gap: 32px; margin-top: 18px; }
+.refs.three li { font-size: 12.5px; margin-bottom: 7px; }
+.mini { font-size: 15px; color: var(--muted); margin-top: 10px; line-height: 1.5; }
+
+.meme { background: var(--ink); color: var(--paper); padding: 30px 32px; align-self: start; }
+.meme .who { font-size: 15px; color: var(--hema-pale); }
+.meme .ask { font-size: 19px; margin-top: 12px; color: var(--paper); line-height: 1.5; }
+.meme .ans { font-family: var(--display); font-size: 25px; line-height: 1.5; margin-top: 18px; padding-left: 18px; border-left: 4px solid var(--eosin); color: var(--paper); }
+.meme .after { font-size: 16px; color: var(--hema-pale); margin-top: 18px; line-height: 1.5; }
+.aws { margin-top: 22px; display: grid; grid-template-columns: auto 1fr; gap: 16px; align-items: baseline; padding: 14px 20px; background: var(--hema-pale); border-left: 4px solid var(--hema); font-size: 17.5px; line-height: 1.55; }
+.aws b { font-family: var(--display); font-weight: 900; color: var(--hema); white-space: nowrap; }
+.aws.mac { background: var(--eosin-pale); border-left-color: var(--eosin); }
+.aws.mac b { color: var(--eosin); }
+.tbl.four td:first-child { width: 120px; }
+.tbl.four td:nth-child(2) { width: 230px; font-weight: 400; color: var(--ink); }
+.tbl.four td:nth-child(3) { width: 250px; font-weight: 700; color: var(--hema); }
+.code { align-self: start; background: var(--ink); color: var(--paper); padding: 18px 22px; font-family: var(--code); font-size: 13.5px; line-height: 1.6; white-space: pre; overflow-x: auto; margin: 0; }
+.code .c { color: #9FD3C7; }
+.code .k { color: #FFB37A; }
+.steps { display: grid; gap: 22px; align-content: start; }
+.steps > div { display: grid; grid-template-columns: 44px 1fr; gap: 12px; align-items: start; }
+.steps .n { font-family: var(--display); font-weight: 900; font-size: 30px; color: var(--hema); line-height: 1; }
+.steps b { display: block; font-size: 19px; }
+.steps span { display: block; font-size: 15.5px; color: var(--muted); line-height: 1.5; margin-top: 2px; }
+.src { flex-basis: 100%; order: -1; font-size: 12px; line-height: 1.45; color: var(--muted); padding-top: 6px; border-top: 1px solid var(--rule); }
+.src a { color: var(--hema); text-decoration: underline; text-decoration-color: var(--rule); text-underline-offset: 2px; }
+.src a:hover, .src a:focus-visible { text-decoration-color: currentColor; }
+.pipe { display: grid; grid-template-columns: 110px repeat(4, 1fr); gap: 26px; align-items: stretch; }
+.pipe + .pipe { margin-top: 18px; }
+.pipe .lab { font-family: var(--display); font-weight: 900; font-size: 22px; color: var(--hema); align-self: center; }
+.pipe > div:not(.lab) { background: var(--hema-pale); padding: 14px 16px; position: relative; font-size: 16px; line-height: 1.45; }
+.pipe > div:not(.lab) b { display: block; font-size: 17.5px; margin-bottom: 4px; }
+.pipe > div:not(.lab):not(:last-child)::after { content: ""; position: absolute; right: -19px; top: 50%; transform: translateY(-50%); border: 7px solid transparent; border-left: 10px solid var(--hema); }
+.pipe.alt > div:not(.lab) { background: var(--eosin-pale); }
+.pipe.alt .lab { color: var(--eosin); }
+.shots { display: flex; gap: 24px; align-items: flex-start; justify-content: center; margin-top: 16px; }
+.shots img { display: block; max-width: 100%; border-radius: 8px; box-shadow: 0 0 0 1px var(--rule); }
+.figs { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.figs figure { margin: 0; }
+.figs img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 6px; display: block; }
+.figs figcaption { font-size: 14px; color: var(--muted); margin-top: 6px; line-height: 1.4; }
+.notes { display: none; }
+#notepane {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 5;
+  background: var(--ink); color: var(--paper);
+  padding: 14px max(24px, env(safe-area-inset-right, 0px)) calc(16px + env(safe-area-inset-bottom, 0px)) max(24px, env(safe-area-inset-left, 0px));
+  font-size: 16px; line-height: 1.6; max-height: 30vh; overflow: auto;
+}
+#help { position: fixed; right: max(12px, env(safe-area-inset-right, 0px)); bottom: calc(10px + env(safe-area-inset-bottom, 0px)); font-size: 12px; color: var(--muted); z-index: 4; }
+body.scroll #help { display: none; }
+a:focus-visible, button:focus-visible { outline: 3px solid var(--eosin); outline-offset: 2px; }
+/* 5 layers of AI engineering: each row wraps the one above it */
+.layers { display: grid; gap: 8px; margin-top: 18px; }
+.layers .ly { display: grid; grid-template-columns: 150px 100px 250px 1fr; gap: 14px; align-items: center; padding: 10px 16px; background: var(--hema-pale); border-left: 5px solid var(--hema); font-size: 15.5px; line-height: 1.45; }
+.layers .ly:nth-child(1) { margin-left: 168px; background: #F4F7FE; border-left-color: #9DB3EE; }
+.layers .ly:nth-child(2) { margin-left: 126px; background: #EEF3FD; border-left-color: #7C99E7; }
+.layers .ly:nth-child(3) { margin-left: 84px; border-left-color: #5A7FE1; }
+.layers .ly:nth-child(4) { margin-left: 42px; background: #E0E8FB; border-left-color: #3C66DC; }
+.layers .ly:nth-child(5) { background: #D5E0FA; }
+.layers .ly b { font-family: var(--display); font-weight: 900; font-size: 19px; color: var(--hema); }
+.layers .ly .yr { font-family: var(--code); font-size: 13.5px; color: var(--muted); }
+.layers .ly .q { font-weight: 700; }
+.layers .ly .ex { color: var(--muted); font-size: 14.5px; }
+/* next-token sampling bars */
+.probs { display: grid; gap: 7px; margin-top: 10px; }
+.probs .pr { display: grid; grid-template-columns: 78px 1fr 46px; gap: 10px; align-items: center; font-size: 15px; }
+.probs .bar { height: 18px; background: var(--hema); }
+.probs .pr.cut .bar { background: var(--rule); }
+.probs .pr.cut { color: var(--muted); }
+.probs .v { font-family: var(--code); font-size: 13px; color: var(--muted); }
+/* token chips */
+.toks { display: grid; grid-template-columns: 190px 1fr 64px; gap: 10px 16px; align-items: center; margin-top: 16px; }
+.toks .who { font-size: 15.5px; line-height: 1.35; }
+.toks .who b { display: block; font-family: var(--display); color: var(--hema); font-size: 17px; }
+.toks .row { display: flex; flex-wrap: wrap; gap: 4px; }
+.toks .t { padding: 4px 9px; background: var(--hema-pale); border: 1px solid #C9D6F7; font-size: 17px; line-height: 1.3; white-space: pre; }
+.toks .t.x { background: #F1F2F5; border-color: var(--rule); color: #A3AAB6; padding: 4px 5px; font-size: 13px; }
+.toks .t.g { background: var(--eosin-pale); border-color: #B5DED5; }
+.toks .row { align-items: flex-start; gap: 6px; }
+.toks .grp { display: inline-flex; flex-direction: column; align-items: stretch; gap: 3px; }
+.toks .grp b { font-weight: 400; padding: 3px 9px; background: var(--hema-pale); border: 1px solid #C9D6F7; font-size: 17px; line-height: 1.3; text-align: center; white-space: pre; }
+.toks .grp .bits { display: flex; gap: 2px; }
+.toks .grp .bits i { flex: 1; height: 6px; background: var(--hema); }
+.toks .grp.x b { background: #F1F2F5; border-color: #D5D9E0; color: #5D6573; }
+.toks .grp.x .bits i { background: #A3AAB6; }
+.toks .grp.g b { background: var(--eosin-pale); border-color: #B5DED5; }
+.toks .grp.g .bits i { background: var(--eosin); }
+.toks .legend { font-size: 14.5px; color: var(--muted); display: flex; align-items: center; gap: 12px; line-height: 1.4; }
+.toks .legend .grp b { font-size: 14px; padding: 1px 7px; }
+.toks .cnt { font-family: var(--display); font-weight: 900; font-size: 24px; color: var(--hema); text-align: right; }
+.toks .ids { grid-column: 2 / 4; font-family: var(--code); font-size: 15px; color: var(--muted); }
+.tbl.even td:nth-child(3) { font-weight: 400; color: var(--ink); }
+.tbl.even th:nth-child(n+2) { color: var(--hema); font-weight: 700; }
+/* how a vision model sees a picture */
+.see { display: grid; grid-template-columns: repeat(3, 250px); justify-content: space-between; margin-top: 16px; }
+.see figure { margin: 0; }
+.see figcaption { margin-top: 8px; font-size: 15.5px; line-height: 1.45; color: var(--muted); }
+.see figcaption b { display: block; color: var(--hema); font-family: var(--display); font-size: 17px; }
+.see .pic { width: 250px; height: 250px; background: url(img/demo-input.jpeg) center/100% 100%; position: relative; }
+.see .pic.grid::after { content: ""; position: absolute; inset: 0; background:
+  repeating-linear-gradient(to right, rgba(255,214,90,.95) 0 2px, transparent 2px 41.666px),
+  repeating-linear-gradient(to bottom, rgba(255,214,90,.95) 0 2px, transparent 2px 41.666px); }
+.see .tiles { width: 250px; height: 250px; display: grid; grid-template-columns: repeat(9, 24px); gap: 4px 4.25px; align-content: start; background: #F6F8FC; padding: 0; }
+.see .tiles i { width: 24px; height: 24px; background-image: url(img/demo-input.jpeg); background-size: 144px 144px; display: block; }
+.see .tiles .n { grid-column: 1 / -1; font-size: 13.5px; line-height: 1.6; color: var(--muted); padding: 6px 8px 0; font-style: normal; }
+.see .tiles code { font-family: var(--code); font-size: 12.5px; color: var(--ink); }
+.see img.low { width: 250px; height: 250px; image-rendering: pixelated; display: block; }
+/* qubit grids */
+.qrow { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; align-items: end; text-align: center; }
+.qg { display: inline-grid; gap: 3px; }
+.qg i { display: block; aspect-ratio: 1; background: var(--hema); border-radius: 50%; }
+.qrow .cap { margin-top: 10px; font-size: 15px; line-height: 1.4; color: var(--muted); }
+.qrow .cap b { display: block; font-family: var(--display); font-size: 22px; color: var(--eosin); }
+/* short video links */
+.vids { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; align-items: center; font-size: 15px; color: var(--muted); }
+.vids a { display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px 6px 10px; border: 1.5px solid var(--hema); color: var(--hema); text-decoration: none; font-weight: 700; font-size: 15px; background: var(--paper); }
+.vids a::before { content: "▶"; font-size: 12px; }
+.vids a small { font-weight: 400; color: var(--muted); font-size: 13.5px; }
+/* side-by-side video compare */
+.vs { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; margin-top: 16px; }
+.vs figure { margin: 0; }
+.vs .yt { display: block; position: relative; aspect-ratio: 16 / 9; background: #000; overflow: hidden; }
+.vs .yt img, .vs .yt iframe { width: 100%; height: 100%; object-fit: cover; display: block; border: 0; }
+.vs a.yt::after { content: "▶"; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 64px; height: 64px; border-radius: 50%; background: rgba(20, 23, 28, .72); color: #fff; font-size: 24px; display: grid; place-items: center; padding-left: 4px; box-sizing: border-box; }
+.vs figcaption { font-size: 15.5px; color: var(--muted); margin-top: 8px; line-height: 1.45; }
+.vs figcaption b { color: var(--ink); font-size: 17px; }
+/* 한글 단어 중간에서 줄바꿈하지 않기 */
+.slide { word-break: keep-all; overflow-wrap: break-word; }
+.slide pre, .slide code, .slide .ids { word-break: normal; overflow-wrap: normal; }
+
+/* 2일차 추가 */
+.slide code { font-family: var(--code); font-size: .88em; background: var(--hema-pale); padding: 1px 6px; color: var(--ink); font-weight: 500; }
+.slide pre.code code, .code code { background: none; padding: 0; }
+.events span { display: block; }
+.tbl.wide td:nth-child(3) { font-weight: 400; }
+</style>
+</head>
+<body>
+
+<div class="stage" id="stage">
+
+<section class="slide cover" data-notes="2일차 뒷부분 2시간 실습용. 지난 시간에는 Agent 한 명이 MCP 도구를 골라 쓰는 것까지 했음. 오늘은 그 Agent를 여러 명으로 늘려 팀을 만들고, 팀을 지휘하는 판단을 작은 모델에게 가르침(증류). 모든 실습은 수강생 아이맥 안에서 돌고 비용이 들지 않음.">
+  <div class="who">성균관대 KDT 특강 2일차 <span class="num">2026.11.27</span></div>
+  <div>
+    <div class="date"><b>3 + 1</b></div>
+    <div class="datecap">전문가 Agent 세 명과 지휘자 한 명</div>
+    <h1>혼자 일하는 AI에서<br>팀으로 일하는 AI로</h1>
+    <div class="sub">Multi-Agent(멀티 에이전트)와 Distillation(디스틸레이션, 증류) 실습</div>
+  </div>
+  <div class="bigribbon" aria-hidden="true"><i style="background:var(--hema-pale)"></i><i style="background:#C7D6F7"></i><i style="background:#8EA8EC"></i><i style="background:var(--eosin)"></i></div>
+</section>
+
+<section class="slide" data-notes="수업 전에 안내한 준비가 끝났는지 먼저 확인. 안 한 사람은 지금 바로 실행. 새로 받는 것이 있으면 15~40분 걸리므로, 그동안 옆 사람 화면을 같이 보게 함. '6/6 동작 확인' 아래에 ❌ 없이 ✅만 나오고 JupyterLab이 열리면 준비 끝. ❌가 나오면 폴더의 setup.log를 보여 달라고 함. Ollama 앱이 꺼져 있는 경우가 가장 흔함(메뉴 막대의 라마 아이콘 확인).">
+  <h2>시작 전에: 준비가 끝났는지 확인</h2>
+  <p class="small" style="margin-top:4px; font-size:18.5px">지난 시간에 만든 <strong>mcp-lab</strong> 폴더를 그대로 씁니다. 새 실습 파일을 받고 동작을 확인하는 데 세 줄이면 됩니다.</p>
+  <div class="cols" style="grid-template-columns:1fr 1fr; margin-top:22px; gap:44px; flex:none">
+    <div>
+      <pre class="code"><span class="c"># 1. Ollama 앱이 켜져 있는지 확인 (메뉴 막대의 라마 아이콘)</span>
+
+<span class="c"># 2. 터미널에 그대로 붙여 넣기</span>
+cd ~/mcp-lab
+git pull
+bash setup.sh</pre>
+      <p class="mini">처음이면 모델을 약 10GB 받습니다. 15~40분 걸립니다.</p>
+    </div>
+    <ul class="plain" style="gap:14px">
+      <li style="font-size:19px"><strong>✅만 나오고 JupyterLab이 열리면 끝</strong><span>"6/6 동작 확인" 아래에 ❌가 없어야 합니다</span></li>
+      <li style="font-size:19px">❌가 나오면 손을 들어 주세요<span>폴더 안의 setup.log 파일에 이유가 적혀 있습니다</span></li>
+      <li style="font-size:19px">오늘은 노트북 6, 7, 10, 11을 씁니다<span>8, 9는 같은 방법을 한 번 더 해 보는 과제입니다</span></li>
+      <li style="font-size:19px">메모리를 많이 쓰는 앱은 닫아 주세요<span>큰 모델 하나가 메모리를 약 10GB 씁니다</span></li>
+    </ul>
+  </div>
+  <footer class="foot"><div class="src">실습 코드: <a href="https://github.com/gnidoc327/skku-kdt-mcp-lab" target="_blank" rel="noopener">github.com/gnidoc327/skku-kdt-mcp-lab</a></div><span>실습 준비</span><span class="pg"></span></footer>
+</section>
+
+<section class="slide" data-notes="2시간 배분. 설명은 짧게 하고 노트북을 돌리는 시간에 설명을 얹음. 특히 증류 학습 5~6분은 기다리는 시간이므로 그때 증류 원리 슬라이드를 넘김. 시간이 밀리면 Kiro 부분을 시연으로만 보여 주고 넘어감.">
+  <h2>오늘 2시간 순서</h2>
+  <div class="agenda">
+    <div><div class="n">10분</div><b>왜 팀으로 나누나</b><span>지난 시간의 Agent 한 명에서 출발해 Multi-Agent가 무엇인지, 실제 사례 하나</span></div>
+    <div><div class="n">25분</div><b>신약 후보 검토 팀</b><span>노트북 6, 7. 도구 여섯 개, 전문가 세 명, 지휘자 한 명</span></div>
+    <div><div class="n">30분</div><b>엑스레이 팀과 내 팀</b><span>노트북 10. 완성 예시를 돌려 보고 내 주제로 팀을 만들기</span></div>
+    <div><div class="n">30분</div><b>지휘자를 증류하기</b><span>노트북 11. 큰 모델의 판단을 작은 모델에게 가르치고 시험 보기</span></div>
+    <div><div class="n">20분</div><b>서비스로 띄우기</b><span>웹 화면으로 열고, Kiro에게 말로 시켜 계속 고치기</span></div>
+    <div><div class="n">5분</div><b>정리와 과제</b><span>오늘 배운 것, 조심할 것, 집에서 해 볼 것</span></div>
+  </div>
+  <footer class="foot"><span>Multi-Agent와 Distillation</span><span class="pg"></span></footer>
+</section>
+
+<section class="slide" data-notes="지난 시간 복습 한 장. 노트북 5에서 로컬 LLM이 MCP 도구를 스스로 골라 쓰는 Agent를 for문 하나로 만들었음. 오늘은 그 Agent를 여러 명 두고, 누구에게 일을 줄지 정하는 지휘자를 하나 더 둠. 새로 배우는 개념은 두 개뿐: 지휘자(Orchestrator)와 증류(Distillation).">
+  <h2>지난 시간에는 한 명, 오늘은 팀</h2>
+  <div class="split">
+    <div class="later">
+      <h3>지난 시간: Agent 한 명</h3>
+      <ul class="plain">
+        <li>모델 하나가 질문을 받고, 도구를 골라 쓰고, 답합니다<span>노트북 5: 로컬 LLM이 Memory MCP 도구를 스스로 고름</span></li>
+        <li>도구가 몇 개일 때는 잘합니다</li>
+        <li>일이 넓어지면 지시문이 길어지고, 도구를 잘못 고르기 시작합니다</li>
+      </ul>
+    </div>
+    <div class="now">
+      <h3>오늘: 전문가 여러 명 + 지휘자</h3>
+      <ul class="plain">
+        <li>전문가마다 맡은 일과 도구를 따로 줍니다<span>화학 담당은 화학 도구만, 논문 담당은 논문 도구만</span></li>
+        <li>Orchestrator(오케스트레이터, 지휘자)가 질문을 보고 필요한 전문가만 부릅니다</li>
+        <li>전문가들의 답을 지휘자가 하나로 합칩니다</li>
+      </ul>
+    </div>
+  </div>
+  <footer class="foot"><span>Multi-Agent와 Distillation</span><span class="pg"></span></footer>
+</section>
+
+<section class="slide" data-notes="나누는 이유 세 가지와 대가 한 가지. 대가를 꼭 말할 것: 모델을 여러 번 부르므로 느려지고, 유료 모델이면 비용이 그만큼 늘어남. 오늘 실습에서도 전문가 세 명을 다 부르면 80초쯤 걸림. 그래서 '필요한 전문가만 부르기'가 중요하고, 그 판단을 빠르게 하려고 증류를 함. 이 흐름이 오늘 전체의 줄거리.">
+  <h2>왜 한 명에게 다 시키지 않고 나눌까</h2>
+  <div class="cols3">
+    <div><h3>덜 헷갈립니다</h3><p>한 명에게 도구 스무 개를 주면 엉뚱한 도구를 고릅니다. 전문가마다 두세 개만 주면 고를 것이 줄어듭니다.</p></div>
+    <div><h3>역할이 분명합니다</h3><p>"너는 논문만 찾는다"처럼 지시문이 짧아집니다. 틀렸을 때 누구의 어느 부분을 고칠지도 바로 보입니다.</p></div>
+    <div><h3>동시에 일합니다</h3><p>세 명이 한꺼번에 조사하면 한 명이 차례로 하는 것보다 빨리 끝납니다.</p></div>
+  </div>
+  <div class="punch"><strong>대가도 있습니다.</strong> 모델을 여러 번 부르니 한 명일 때보다 느리고 비용이 늘어납니다. 그래서 질문마다 <strong>꼭 필요한 전문가만</strong> 부르는 판단이 중요합니다. 오늘 뒷부분에서 이 판단을 작은 모델에게 가르칩니다.</div>
+  <footer class="foot"><span>Multi-Agent와 Distillation</span><span class="pg"></span></footer>
+</section>
+
+<section class="slide" data-notes="오늘 실습의 본보기가 된 실제 사례. AWS 기술 블로그(2025-11-18)에 실린 SK바이오팜 참가팀의 구성. 분자 구조식(SMILES)을 넣으면 TxGemma라는 신약 개발용 모델이 특성 22가지를 예측하고, 전문가 Agent 세 명(화학, 임상약리, 규제)이 각자 공개 데이터베이스를 조사한 뒤, 지휘자가 질문에 맞는 전문가만 골라 동시에 돌리고 리포트로 합침. 오늘 실습은 같은 구조를 유료 서비스 없이 내 컴퓨터에서 돌리도록 바꾼 것. 아래 표의 오른쪽이 바꾼 부분.">
+  <h2>실제 사례: 신약 개발 검토를 Agent 팀에게</h2>
+  <div class="pipe" style="margin-top:20px">
+    <div class="lab">사례</div>
+    <div><b>구조식 입력</b>SMILES(스마일스): 분자 구조를 글자로 적은 것</div>
+    <div><b>특성 예측</b>신약 개발용 모델이 분자 특성 22가지를 예측</div>
+    <div><b>전문가 세 명</b>화학, 임상약리, 규제. 각자 공개 데이터베이스 조사</div>
+    <div><b>지휘자</b>필요한 전문가만 골라 동시에 실행, 리포트로 통합</div>
+  </div>
+  <table class="tbl compact" style="margin-top:24px; font-size:17px">
+    <colgroup><col style="width:210px"><col><col></colgroup>
+    <thead><tr><th>부품</th><th>사례 (AWS 위에서)</th><th>오늘 실습 (내 컴퓨터에서, 무료)</th></tr></thead>
+    <tbody>
+      <tr><td>Agent를 만드는 틀</td><td>Strands Agents</td><td>Strands Agents (같은 것)</td></tr>
+      <tr><td>전문가와 지휘자의 두뇌</td><td>Amazon Bedrock의 Claude</td><td>Ollama의 gemma4:e4b</td></tr>
+      <tr><td>분자 특성</td><td>SageMaker에 올린 TxGemma가 예측</td><td>RDKit이 공식으로 계산</td></tr>
+      <tr><td>조사하는 곳</td><td>PubChem, ChEMBL, PubMed, ClinicalTrials.gov, OpenFDA</td><td>PubChem, PubMed, ClinicalTrials.gov, openFDA</td></tr>
+    </tbody>
+  </table>
+  <footer class="foot"><div class="src">출처: AWS 기술 블로그, <a href="https://aws.amazon.com/ko/blogs/tech/agentic-ai-drug-development-workflow-automation-challenge/" target="_blank" rel="noopener">Agentic AI 기반 신약 개발 워크플로 자동화: SK바이오팜 참가팀</a> (2025.11.18)</div><span>Multi-Agent와 Distillation</span><span class="pg"></span></footer>
+</section>
+
+<section class="slide" data-notes="실습 1. 노트북 6을 먼저 실행(1분): 도구 여섯 개를 하나씩 불러 보고 전문가 한 명을 만듦. 이어서 노트북 7(3~4분): 전문가 세 명과 지휘자. 두 가지 방식을 비교하게 함. '종합 분석'은 세 명 전원, '스마트 컨설팅'은 질문에 필요한 사람만. 예: '이부프로펜의 부작용은?'은 임상약리 전문가 한 명만 불림. 도구는 모두 공개 데이터베이스를 조회하며 무료. openFDA의 숫자는 자발적으로 보고된 건수이지 발생률이 아니라는 점을 짚어 줌.">
+  <h2>실습 1. 신약 후보 검토 팀 <span style="font-size:26px; color:var(--muted); font-weight:500">노트북 6, 7</span></h2>
+  <table class="tbl wide" style="margin-top:22px; font-size:18.5px">
+    <thead><tr><th>전문가</th><th>보는 것</th><th>쓰는 도구</th></tr></thead>
+    <tbody>
+      <tr><td style="color:var(--hema); font-weight:700">의약화학</td><td style="font-weight:400; color:var(--ink)">구조, 물리화학적 특성</td><td><code>compound_info</code>, <code>molecule_properties</code>, <code>similar_compounds</code></td></tr>
+      <tr><td style="color:var(--hema); font-weight:700">임상약리</td><td style="font-weight:400; color:var(--ink)">안전성, 독성, 상호작용</td><td><code>pubmed_search</code>, <code>adverse_events</code></td></tr>
+      <tr><td style="color:var(--hema); font-weight:700">임상·규제 전략</td><td style="font-weight:400; color:var(--ink)">임상시험 현황, 허가 경로</td><td><code>clinical_trials</code>, <code>pubmed_search</code></td></tr>
+    </tbody>
+  </table>
+  <div class="cols" style="margin-top:26px; gap:40px; flex:none">
+    <div class="aws"><b>종합 분석</b><span>세 명 모두에게 묻고 리포트로 합칩니다. "다음 단계로 진행해도 될까?" 같은 질문.</span></div>
+    <div class="aws mac"><b>스마트 컨설팅</b><span>지휘자가 필요한 전문가만 고릅니다. "부작용은?"이면 임상약리 한 명.</span></div>
+  </div>
+  <p class="mini" style="margin-top:18px">해 볼 것: 노트북 7에서 약 이름을 바꿔 보고(영문 성분명), 질문에 따라 불리는 전문가가 달라지는지 확인합니다.</p>
+  <footer class="foot"><span>실습 1</span><span class="pg"></span></footer>
+</section>
+
+<section class="slide" data-notes="지휘자가 하는 일을 세 단계로. 코드로는 agent_team.py에 다 들어 있고 100줄 남짓. (1) 고르기: 큰 모델에게 전문가 목록과 질문을 주고, 답을 정해진 형식(JSON)으로만 받음. 형식을 강제하지 않으면 '음, 제 생각에는…' 같은 문장이 섞여 프로그램이 읽지 못함. (2) 시키기: 고른 전문가를 동시에 실행. 전문가가 도구를 한 번도 안 쓰고 기억만으로 답하면 한 번 더 시킴. (3) 합치기: 전문가들의 답을 모아 정해진 리포트 형식으로 정리. 오른쪽 코드는 (1)의 핵심. 뒤에서 증류하는 것이 바로 이 (1).">
+  <h2>지휘자가 하는 일은 세 가지</h2>
+  <div class="cols" style="grid-template-columns: 1fr 1.1fr; gap:44px; margin-top:24px; flex:none">
+    <div class="steps" style="gap:18px">
+      <div><div class="n">1</div><div><b>고르기 (Routing, 라우팅)</b><span>질문을 보고 누구에게 보낼지 정합니다. 답은 전문가 이름 목록으로만 받습니다.</span></div></div>
+      <div><div class="n">2</div><div><b>시키기</b><span>고른 전문가들을 동시에 일하게 합니다. 도구를 안 쓰고 답하면 한 번 더 시킵니다.</span></div></div>
+      <div><div class="n">3</div><div><b>합치기</b><span>전문가들의 답을 모아 정해진 형식의 리포트 하나로 씁니다.</span></div></div>
+    </div>
+    <pre class="code" style="font-size:13.5px"><span class="c"># 1번: 큰 모델에게 "누구에게 보낼까?"를 묻는다</span>
+<span class="c"># 답의 형식을 정해 주면 이름 목록만 돌아온다</span>
+schema = {<span class="k">"experts"</span>: {
+    <span class="k">"type"</span>: "array",
+    <span class="k">"items"</span>: {"enum": ["reader", "cases", "literature"]}}}
+
+r = ollama.chat(model="gemma4:e4b", format=schema,
+                messages=[전문가_소개, 질문])
+
+<span class="c"># 질문: "비슷한 사례가 있어?"</span>
+<span class="c"># 답:   {"experts": ["cases"]}</span></pre>
+  </div>
+  <div class="punch" style="margin-top:20px; font-size:18px">뒤에서 작은 모델에게 가르치는 것은 <strong>1번 고르기</strong>입니다.</div>
+  <footer class="foot"><div class="src">실습 저장소의 <code>agent_team.py</code>에 세 단계가 모두 들어 있습니다. 코드는 설명을 위해 줄였습니다.</div><span>Multi-Agent와 Distillation</span><span class="pg"></span></footer>
+</section>
+
+<section class="slide" data-notes="실습 2 앞부분. 노트북 10을 실행(4~5분). 흉부 엑스레이 사진 한 장을 주면 세 명이 일함. 영상 판독 보조 전문가는 사진을 직접 다시 봄(같은 gemma4:e4b가 사진도 읽음). 유사 사례 전문가는 사람이 판독 요약을 붙여 둔 사례 아홉 건에서 비슷한 것을 찾음(지난 시간의 Embedding 검색). 문헌 전문가는 PubMed를 찾음. 종합 검토는 80초쯤 걸리고, 한 명만 부르는 질문은 25~40초. 사진은 모두 Wikimedia Commons의 공개 라이선스 자료이며 실제 환자 자료는 넣지 않았다는 점을 말해 줌.">
+  <h2>실습 2. 엑스레이 판독을 돕는 팀 <span style="font-size:26px; color:var(--muted); font-weight:500">노트북 10</span></h2>
+  <table class="tbl wide" style="margin-top:20px; font-size:18.5px">
+    <thead><tr><th>전문가</th><th>맡은 일</th><th>쓰는 도구</th></tr></thead>
+    <tbody>
+      <tr><td style="color:var(--hema); font-weight:700">영상 판독 보조</td><td style="font-weight:400; color:var(--ink)">사진을 직접 다시 보고 답하기</td><td><code>look_at_image</code> <span style="font-weight:400; color:var(--muted)">사진을 읽는 모델</span></td></tr>
+      <tr><td style="color:var(--hema); font-weight:700">유사 사례</td><td style="font-weight:400; color:var(--ink)">판독이 끝난 과거 사례와 비교</td><td><code>search_similar_cases</code> <span style="font-weight:400; color:var(--muted)">Embedding(임베딩) 검색</span></td></tr>
+      <tr><td style="color:var(--hema); font-weight:700">문헌</td><td style="font-weight:400; color:var(--ink)">논문 근거, 감별할 질환, 추가 검사</td><td><code>pubmed_search</code></td></tr>
+    </tbody>
+  </table>
+  <div class="pipe alt" style="margin-top:28px">
+    <div class="lab">리포트</div>
+    <div><b>한 줄 요약</b>무엇이 의심되는지, 확신은 어느 정도인지</div>
+    <div><b>사진에서 보이는 것</b>위치와 모양. 진단명은 쓰지 않음</div>
+    <div><b>사례와 문헌 근거</b>비슷한 사례의 유사도, 논문 번호</div>
+    <div><b>사람이 꼭 확인할 것</b>AI가 틀릴 수 있는 부분</div>
+  </div>
+  <p class="mini" style="margin-top:16px">발표자 맥에서 종합 검토는 약 80초, 전문가 한 명만 부르는 질문은 25~40초 걸렸습니다. 사진은 모두 공개 라이선스 자료입니다.</p>
+  <footer class="foot"><div class="src">사진 출처와 라이선스: 실습 저장소 <code>data/xray/SOURCES.md</code> (Wikimedia Commons, CC0·Public domain·CC BY 4.0)</div><span>실습 2</span><span class="pg"></span></footer>
+</section>
+
+<section class="slide" data-notes="이 장이 오늘의 안전 수업. 왼쪽 사진은 사람이 '늑골 골절'로 판독한 공개 사진(Wikimedia Commons, CC0). 발표자 맥에서 영상 판독 보조 전문가에게 '갈비뼈 선이 끊긴 곳이 있는지 봐 줘'라고 물었더니 '명확하게 끊어진 부분은 보이지 않는다'고 답했음. 작은 범용 모델은 엑스레이를 배운 적이 거의 없으므로 당연한 결과. 그래서 세 가지를 설계에 넣었음: 이름을 '판독'이 아니라 '판독 보조'로, 사례 검색은 AI가 쓴 설명이 아니라 사람이 쓴 판독 요약으로, 리포트 마지막 칸은 항상 '사람이 꼭 확인할 것'. 지난 시간에 본 Hallucination이 사진에서도 똑같이 일어난다는 점과 연결.">
+  <h2>AI는 사진을 틀리게 읽습니다</h2>
+  <div class="cols" style="grid-template-columns: 330px 1fr; gap:48px; margin-top:24px">
+    <figure style="margin:0">
+      <img src="img/rib_fracture.jpg" alt="늑골 골절로 판독된 공개 흉부 엑스레이 사진" style="width:330px; height:330px; object-fit:cover; display:block; background:#000">
+      <figcaption class="mini">사람이 "늑골 골절"로 판독한 공개 사진<br>Doctoroftcm, CC0, Wikimedia Commons</figcaption>
+    </figure>
+    <div>
+      <div class="meme" style="padding:22px 26px">
+        <div class="who">질문</div>
+        <div class="ask">갈비뼈 선이 끊긴 곳이 있는지 봐 줘</div>
+        <div class="ans">명확하게 끊어진 부분은 보이지 않는다</div>
+        <div class="after">발표자 맥에서 영상 판독 보조 전문가(gemma4:e4b)가 한 답</div>
+      </div>
+      <ul class="plain" style="gap:10px; margin-top:20px">
+        <li style="font-size:19px">그래서 이름이 판독이 아니라 <strong>판독 보조</strong>입니다</li>
+        <li style="font-size:19px">사례 검색은 AI가 쓴 설명이 아니라 <strong>사람이 쓴 판독 요약</strong>으로 합니다</li>
+        <li style="font-size:19px">리포트의 마지막 칸은 언제나 <strong>사람이 꼭 확인할 것</strong>입니다</li>
+      </ul>
+    </div>
+  </div>
+  <footer class="foot"><div class="src">사진: <a href="https://commons.wikimedia.org/wiki/File:Rib_fracture_2347.jpg" target="_blank" rel="noopener">commons.wikimedia.org/wiki/File:Rib_fracture_2347.jpg</a></div><span>실습 2</span><span class="pg"></span></footer>
+</section>
+
+<section class="slide" data-notes="실습 2 뒷부분, 오늘의 중심. 노트북 10의 아래쪽에 건강검진 상담 팀 예시가 있고, 셀 하나가 my_team.py 파일을 만들어 줌. 이 파일의 세 군데만 고치면 내 주제의 팀이 됨. (1) 도구: 평범한 파이썬 함수. 설명글(docstring)이 중요함. Agent는 코드를 읽지 않고 설명글만 보고 언제 쓸지 정함. (2) 전문가: 이름, 역할, 지시문, 도구 목록. role은 지휘자가 읽는 글이므로 전문가끼리 겹치지 않게. (3) TEAM: 팀 이름과 목표. 주제 예시를 던져 줌: 복약 상담, 임상시험 찾기, 논문 읽기 모임, 병원 예약 안내. 10분 정도 직접 고쳐 보게 함. 코딩이 어려운 사람은 뒤의 Kiro 시간에 말로 시켜도 된다고 안내.">
+  <h2>내 팀 만들기: 파일 하나에 세 가지만</h2>
+  <div class="cols" style="grid-template-columns: 1.15fr 1fr; gap:44px; margin-top:22px">
+    <pre class="code" style="font-size:14px"><span class="c"># my_team.py</span>
+<span class="c"># ① 도구: 평범한 함수. 설명글을 보고 Agent가 고른다</span>
+<span class="k">def</span> bmi(height_cm: float, weight_kg: float) -> dict:
+    <span class="c">"""키와 몸무게로 체질량지수를 계산한다."""</span>
+    ...
+
+<span class="c"># ② 전문가: 맡은 일, 지시문, 쓸 도구</span>
+experts = {
+    "lifestyle": {
+        <span class="k">"title"</span>:  "생활습관 전문가",
+        <span class="k">"role"</span>:   "식단, 운동, 체중에 관한 것",
+        <span class="k">"prompt"</span>: "너는 생활습관을 상담하는 전문가다…",
+        <span class="k">"tools"</span>:  [bmi],
+    },
+    ...
+}
+
+<span class="c"># ③ 팀: 이름과 목표</span>
+TEAM = Team(name="checkup", goal="건강검진 결과 상담 팀",
+            experts=experts)</pre>
+    <div>
+      <ul class="plain" style="gap:16px">
+        <li style="font-size:19.5px"><strong>도구의 설명글이 제일 중요합니다</strong><span>Agent는 코드를 읽지 않습니다. 설명글만 보고 언제 쓸지 정합니다</span></li>
+        <li style="font-size:19.5px"><strong>역할(role)은 서로 겹치지 않게</strong><span>지휘자가 이 글을 읽고 누구에게 보낼지 정합니다</span></li>
+        <li style="font-size:19.5px"><strong>전문가는 두세 명부터</strong><span>늘릴수록 느려집니다</span></li>
+      </ul>
+      <div class="punch" style="margin-top:22px; font-size:17.5px">주제 예시: 복약 상담, 임상시험 찾기, 검사 결과 설명, 논문 요약 모임.<br><strong>실제 환자의 이름이나 검사 결과는 넣지 마세요.</strong></div>
+    </div>
+  </div>
+  <footer class="foot"><div class="src">노트북 10의 셀 하나가 <code>my_team.py</code>를 만들어 줍니다. 완성 예시는 <code>xray_team.py</code>.</div><span>실습 2</span><span class="pg"></span></footer>
+</section>
+
+<section class="slide divider" data-notes="여기서부터 후반. 팀은 만들었는데 느림. 지휘자가 '누구에게 보낼까'를 정하는 데도 큰 모델을 한 번 부름. 이 판단은 어렵지 않고 답의 종류도 몇 가지뿐. 이런 일은 작은 모델에게 가르쳐서 맡길 수 있음. 그 방법이 증류.">
+  <div class="part">후반</div>
+  <h2>지휘자의 판단을 작은 모델에게 가르치기</h2>
+  <p class="lede">"누구에게 보낼까"는 답의 종류가 몇 가지뿐인 쉬운 판단입니다. 이런 일까지 큰 모델을 부를 필요는 없습니다.</p>
+  <footer class="foot"><span>Multi-Agent와 Distillation</span><span class="pg"></span></footer>
+</section>
+
+<section class="slide" data-notes="증류의 뜻. 지난 시간 2026년 부분에서 '증류 의혹'과 'AI가 AI를 가르치는 법'을 봤음. 오늘은 직접 해 봄. 큰 모델(스승)에게 문제를 많이 풀게 하고, 그 답을 정답 삼아 작은 모델(제자)을 학습시킴. 사람이 정답을 일일이 달지 않아도 된다는 것이 핵심. 제자는 스승이 잘하는 일 가운데 좁은 일 하나만 배움. 학습은 LoRA 방식: 모델 전체를 고치지 않고 작은 덧붙임 부분만 학습. 그래서 맥에서 5~6분에 끝나고 결과 파일이 8MB. MLX는 애플 실리콘 맥에서 학습을 돌리는 애플의 도구.">
+  <h2>Distillation(증류): 큰 모델이 작은 모델을 가르친다</h2>
+  <div class="pipe" style="margin-top:26px; grid-template-columns: 110px repeat(4, 1fr)">
+    <div class="lab">순서</div>
+    <div><b>1. 문제 만들기</b>질문 틀에 낱말을 바꿔 넣어 질문 수백 개를 만든다</div>
+    <div><b>2. 스승이 풀기</b>큰 모델이 질문마다 "누구에게 보낼지" 답을 단다</div>
+    <div><b>3. 제자가 배우기</b>작은 모델이 그 답을 정답 삼아 학습한다</div>
+    <div><b>4. 시험 보기</b>학습에 쓰지 않은 질문으로 스승과 같은 답을 내는지 본다</div>
+  </div>
+  <div class="cols" style="margin-top:30px; gap:48px; flex:none">
+    <div>
+      <table class="tbl compact" style="margin-top:0; font-size:17px">
+        <thead><tr><th></th><th>스승</th><th>제자</th></tr></thead>
+        <tbody>
+          <tr><td>모델</td><td>gemma4:e4b</td><td>gemma-3-1b</td></tr>
+          <tr><td>크기</td><td>9.5GB</td><td>스승의 10분의 1 이하</td></tr>
+          <tr><td>하는 일</td><td>무엇이든</td><td>전문가 고르기 하나만</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <ul class="plain" style="gap:12px">
+      <li style="font-size:19px"><strong>사람이 정답을 달지 않습니다</strong><span>스승의 답이 정답 노릇을 합니다</span></li>
+      <li style="font-size:19px"><strong>LoRA(로라)로 조금만 고칩니다</strong><span>모델 전체가 아니라 덧붙인 작은 부분만 학습. 결과 파일 8MB</span></li>
+      <li style="font-size:19px"><strong>내 맥에서 5~6분</strong><span>애플의 MLX로 학습합니다. 비용이 들지 않습니다</span></li>
+    </ul>
+  </div>
+  <footer class="foot"><span>Multi-Agent와 Distillation</span><span class="pg"></span></footer>
+</section>
+
+<section class="slide" data-notes="무엇을 증류하고 무엇을 안 하는지. 이 구분이 실무에서 가장 중요함. 증류는 스승의 답을 그대로 베끼는 일이므로 스승이 믿을 만한 일에만 써야 함. 전문가 고르기는 스승이 잘하고, 답의 종류가 적고, 틀려도 '전문가를 한 명 덜 부르는' 정도. 사진 읽기는 앞에서 봤듯이 스승이 틀림. 틀린 답을 가르치면 제자는 틀린 답을 빠르게 내는 모델이 됨. 사진을 읽는 모델을 제대로 만들려면 사람이 붙인 정답(판독문)이 있는 데이터가 필요하고, 그것은 증류가 아니라 일반적인 Fine-tuning의 영역.">
+  <h2>무엇을 증류하고, 무엇은 하지 않나</h2>
+  <div class="split">
+    <div class="now">
+      <h3>증류합니다: 전문가 고르기</h3>
+      <ul class="plain">
+        <li>스승이 잘하는 일입니다</li>
+        <li>답의 종류가 적습니다<span>전문가 세 명이면 조합은 일곱 가지</span></li>
+        <li>질문이 올 때마다 하는 일이라 빨라지면 이득이 큽니다</li>
+        <li>틀려도 피해가 작습니다<span>전문가를 덜 부르거나 더 부르는 정도</span></li>
+      </ul>
+    </div>
+    <div class="later">
+      <h3>증류하지 않습니다: 사진 읽기</h3>
+      <ul class="plain">
+        <li>스승이 자주 틀립니다<span>골절 사진을 보고 "끊긴 곳이 없다"고 답했습니다</span></li>
+        <li>틀린 답을 가르치면 제자는 틀린 답을 빨리 내는 모델이 됩니다</li>
+        <li>제대로 하려면 사람이 붙인 정답이 필요합니다<span>판독문이 달린 공개 데이터로 Fine-tuning(파인튜닝)하는 일</span></li>
+      </ul>
+    </div>
+  </div>
+  <footer class="foot"><span>Multi-Agent와 Distillation</span><span class="pg"></span></footer>
+</section>
+
+<section class="slide" data-notes="실습 3. 노트북 11을 위에서부터 실행(8~9분). 맨 위의 TEAM_FILE을 'xray_team'으로 두면 완성 예시로, 'my_team'으로 바꾸면 방금 만든 내 팀으로 진행. 시간이 빠듯하면 전원 xray_team으로 통일. 학습 셀이 5~6분 걸리므로 이때 앞의 증류 슬라이드 두 장을 설명. 학습 전 시험이 0%로 나오는 이유: 제자가 전문가 이름(reader, cases 등)을 아직 모르기 때문. 숫자는 발표자 맥에서 세 번 돌린 범위이고 실행할 때마다 조금씩 달라짐. 컴퓨터가 뜨거워지는 것은 정상.">
+  <h2>실습 3. 지휘자를 증류하기 <span style="font-size:26px; color:var(--muted); font-weight:500">노트북 11</span></h2>
+  <div class="cols" style="grid-template-columns: 1fr 1fr; gap:56px; margin-top:26px">
+    <div class="steps" style="gap:18px">
+      <div><div class="n">1</div><div><b>질문 만들기</b><span>질문 틀 30여 개 × 낱말 12개 → 약 260개</span></div></div>
+      <div><div class="n">2</div><div><b>스승이 답 달기</b><span>약 1분</span></div></div>
+      <div><div class="n">3</div><div><b>학습 전 시험</b><span>제자는 아직 전문가 이름도 모릅니다</span></div></div>
+      <div><div class="n">4</div><div><b>학습</b><span>5~6분. 컴퓨터가 뜨거워지는 것은 정상입니다</span></div></div>
+      <div><div class="n">5</div><div><b>학습 후 시험, 팀에 넣어 실행</b><span>제자가 고르고, 전문가들은 그대로 큰 모델</span></div></div>
+    </div>
+    <div>
+      <h3 style="font-size:21px; color:var(--ink)">스승과 같은 답을 고른 비율</h3>
+      <div class="bars sm" style="margin-top:16px">
+        <div class="bar"><div class="when">학습 전</div><div class="track"><div class="fill" style="width:3px; background:var(--rule)"></div><div class="val">0%</div></div></div>
+        <div class="bar"><div class="when">본 유형</div><div class="track"><div class="fill" style="width:280px"></div><div class="val">90~95%</div></div></div>
+        <div class="bar"><div class="when">처음 보는 유형</div><div class="track"><div class="fill" style="width:265px"></div><div class="val">86~98%</div></div></div>
+      </div>
+      <p class="mini" style="margin-top:14px">발표자 맥(M1 Max)에서 세 번 돌린 범위입니다. 실행할 때마다 조금씩 달라집니다.</p>
+      <div class="punch" style="margin-top:16px; font-size:17.5px">제자가 전문가를 고르는 데 걸린 시간은 <strong>약 0.2초</strong>였습니다.</div>
+    </div>
+  </div>
+  <footer class="foot"><div class="src">맨 위 셀의 <code>TEAM_FILE</code>을 <code>"my_team"</code>으로 바꾸면 내가 만든 팀으로 같은 과정을 돌립니다.</div><span>실습 3</span><span class="pg"></span></footer>
+</section>
+
+<section class="slide" data-notes="증류를 준비하면서 실제로 겪은 일 네 가지. 숫자만 보면 놓치는 것들. (1) '이 사진을 종합적으로 검토해 줘'는 학습 자료에 한 번만 들어 있었고, 그마저 시험용으로 빠져서 제자가 배우지 못했음. 제자는 전문가를 한 명만 골랐음. 이런 질문을 항상 학습에 세 번씩 넣도록 고친 뒤 세 명 모두를 고름. (2) 파일 이름을 앞에 붙인 질문('lobar_pneumonia.jpg 사진을 종합 검토해 줘')에는 지금도 한 명만 고름. 학습 자료에 그런 말투가 없기 때문. (3) 제자의 정답률은 '스승과 같은 답을 낸 비율'이므로 스승이 틀리면 같이 틀림. (4) 시험 문제를 학습에 쓰면 점수는 높아지지만 의미가 없음. 결론: 제자의 판단이 이상하면 큰 모델로 되돌릴 수 있게 해 둘 것(웹 화면에 고르는 모델 선택이 있음).">
+  <h2>증류하면서 실제로 겪은 일</h2>
+  <ul class="events" style="margin-top:28px">
+    <li><b>한 번만 본 질문은 못 배웁니다</b><span>"이 사진을 종합적으로 검토해 줘"가 학습 자료에 한 번뿐이어서, 제자는 전문가를 한 명만 골랐습니다. 이런 질문을 세 번씩 넣도록 고친 뒤 세 명 모두를 골랐습니다.</span></li>
+    <li><b>말투가 다르면 틀립니다</b><span>"lobar_pneumonia.jpg 사진을 종합 검토해 줘"처럼 파일 이름이 앞에 붙으면 지금도 한 명만 고릅니다. 사람들이 실제로 묻는 말투를 학습 자료에 넣어야 합니다.</span></li>
+    <li><b>제자는 스승을 넘지 못합니다</b><span>점수는 "스승과 같은 답을 낸 비율"입니다. 스승이 틀린 문제는 제자도 같이 틀립니다.</span></li>
+    <li class="key"><b>되돌릴 길을 남겨 둡니다</b><span>제자의 판단이 이상하면 큰 모델로 바꿔 쓸 수 있어야 합니다. 실습 웹 화면에 "전문가를 고르는 모델" 선택이 있는 이유입니다.</span></li>
+  </ul>
+  <footer class="foot"><span>Multi-Agent와 Distillation</span><span class="pg"></span></footer>
+</section>
+
+<section class="slide" data-notes="실습 4 앞부분. JupyterLab은 켜 둔 채 새 터미널을 열어 실행. 브라우저에서 localhost:8000을 열면 사진을 고르고 질문하는 화면이 나옴. 어떤 전문가가 불렸는지, 각자 어떤 도구를 썼는지, 통합 답변이 카드로 보임. '전문가를 고르는 모델'을 큰 모델과 증류한 작은 모델로 바꿔 가며 같은 질문을 넣어 보게 함. 내 팀은 xray_team 자리에 my_team을 넣음. 이 화면은 내 컴퓨터 안에서만 열리고 밖에서는 접속할 수 없음. 끝낼 때는 Ctrl+C.">
+  <h2>실습 4. 팀을 웹 화면으로 띄우기</h2>
+  <div class="cols" style="grid-template-columns: 1fr 1fr; gap:48px; margin-top:26px">
+    <div>
+      <pre class="code" style="font-size:15px"><span class="c"># JupyterLab은 켜 둔 채, 새 터미널에서</span>
+cd ~/mcp-lab
+.venv/bin/python team_service.py xray_team
+
+<span class="c"># 브라우저에서 열기</span>
+http://localhost:8000
+
+<span class="c"># 내 팀은 이름만 바꿉니다</span>
+.venv/bin/python team_service.py my_team</pre>
+      <p class="mini">끝낼 때는 터미널에서 Ctrl+C. 내 컴퓨터 안에서만 열립니다.</p>
+    </div>
+    <ul class="plain" style="gap:16px">
+      <li style="font-size:19.5px"><strong>사진과 질문을 고르고 "질문하기"</strong><span>불린 전문가, 각자 쓴 도구, 통합 답변이 카드로 나옵니다</span></li>
+      <li style="font-size:19.5px"><strong>고르는 모델을 바꿔 가며 같은 질문을</strong><span>큰 모델과 증류한 작은 모델이 같은 전문가를 고르는지 봅니다</span></li>
+      <li style="font-size:19.5px"><strong>일부러 다른 말투로 물어보기</strong><span>제자가 어디서 틀리는지 찾아봅니다</span></li>
+    </ul>
+  </div>
+  <footer class="foot"><span>실습 4</span><span class="pg"></span></footer>
+</section>
+
+<section class="slide" data-notes="실습 4 뒷부분. Kiro는 원래 명령을 실행하거나 파일을 고칠 때마다 허락을 구함. connect_kiro.py --dev 한 줄이 실습에 늘 쓰는 일만 미리 허락해 둠. 그다음 Kiro에서 mcp-lab 폴더를 열고(폴더를 믿느냐고 물으면 믿는다를 고름) 말로 시킴. 폴더 안의 안내 문서(.kiro/steering/mcp-lab.md)를 Kiro가 먼저 읽기 때문에 실행 방법과 파일 구성을 이미 알고 있음. 모델은 auto로 둘 것(가장 싼 모델은 MCP 도구를 못 찾는 일이 있었음). 주의 두 가지를 꼭 말함: 이 설정은 편의 기능이지 안전장치가 아님. 무료 요금제는 한 달 50 credit이라 한 번에 할 일을 분명하게 적어 시킬 것. 시간이 없으면 발표자가 시연만.">
+  <h2>Kiro에게 말로 시켜 계속 고치기</h2>
+  <div class="cols" style="grid-template-columns: 1fr 1fr; gap:44px; margin-top:22px">
+    <div>
+      <pre class="code" style="font-size:14.5px"><span class="c"># 한 번만 실행: 늘 쓰는 일은 묻지 않게</span>
+cd ~/mcp-lab
+.venv/bin/python connect_kiro.py --dev</pre>
+      <p style="font-size:18px; margin-top:16px">Kiro에서 <strong>mcp-lab 폴더를 열고</strong> 채팅창에 입력합니다.</p>
+      <div class="punch" style="margin-top:10px; font-size:17px">xray_team.py를 본보기로 my_team.py에 '복약 상담 팀'을 만들어 줘. 전문가는 두 명, 만든 뒤 질문 하나로 돌려서 확인해 줘</div>
+      <p class="mini">모델은 auto로 둡니다. 무료 요금제는 한 달 50 credit이니 한 번에 할 일을 분명하게 적습니다.</p>
+    </div>
+    <div>
+      <table class="tbl compact" style="margin-top:0; font-size:16.5px">
+        <thead><tr><th>묻지 않고 하는 일</th><th>여전히 묻는 일</th></tr></thead>
+        <tbody>
+          <tr><td style="color:var(--ink); font-weight:400">실습 파이썬 실행</td><td>파일 삭제, git push</td></tr>
+          <tr><td style="color:var(--ink); font-weight:400">파일 보기, git 상태 보기</td><td>패키지 설치, 모델 받기</td></tr>
+          <tr><td style="color:var(--ink); font-weight:400">mcp-lab 폴더 안의 파일 고치기</td><td>증류 학습</td></tr>
+          <tr><td style="color:var(--ink); font-weight:400">실습 MCP 도구 부르기</td><td>그 밖의 모든 명령</td></tr>
+        </tbody>
+      </table>
+      <ul class="plain" style="gap:10px; margin-top:18px">
+        <li style="font-size:17.5px">편의 기능이지 안전장치가 아닙니다<span>실습이 끝나면 <code>connect_kiro.py --dev-off</code>로 끕니다</span></li>
+        <li style="font-size:17.5px">Kiro는 폴더의 안내 문서를 먼저 읽습니다<span><code>.kiro/steering/mcp-lab.md</code>. 내 규칙을 더하려면 이 파일을 고칩니다</span></li>
+      </ul>
+    </div>
+  </div>
+  <footer class="foot"><div class="src">Kiro CLI 3.5.0으로 확인한 동작입니다. Kiro IDE 1.0 이상이 필요합니다. 요금: <a href="https://kiro.dev/pricing/" target="_blank" rel="noopener">kiro.dev/pricing</a></div><span>실습 4</span><span class="pg"></span></footer>
+</section>
+
+<section class="slide" data-notes="오늘 실습을 AWS로 옮기면 무엇이 무엇으로 바뀌는지. 수강생의 진로가 AWS 기반 의료 개발·분석이므로 연결만 해 줌. Strands Agents는 AWS가 공개한 오픈소스라 코드가 거의 그대로 가고, 모델만 Ollama에서 Bedrock으로 바꿈. 증류는 SageMaker에서 직접 학습하거나 Bedrock의 Model Distillation 기능을 씀. 서비스는 AgentCore나 컨테이너로 올림. 솔직하게 말할 것: 이 표는 오늘 실습에서 돌려 본 것이 아니라 대응 관계만 적은 것. 실제 환자 자료를 다루려면 병원과 기관의 승인, 비식별화, 접근 기록이 먼저.">
+  <h2>같은 구조를 AWS로 옮기면</h2>
+  <table class="tbl four" style="margin-top:24px; font-size:18px">
+    <thead><tr><th>부품</th><th>오늘 (내 컴퓨터)</th><th>AWS에서</th><th>달라지는 점</th></tr></thead>
+    <tbody>
+      <tr><td>Agent 틀</td><td>Strands Agents</td><td>Strands Agents</td><td>코드가 거의 그대로 갑니다</td></tr>
+      <tr><td>두뇌</td><td>Ollama의 gemma4:e4b</td><td>Amazon Bedrock의 모델</td><td>더 똑똑하지만 쓴 만큼 돈을 냅니다</td></tr>
+      <tr><td>증류</td><td>MLX LoRA, 맥에서 5~6분</td><td>SageMaker 학습, Bedrock Model Distillation</td><td>더 큰 모델과 자료로 할 수 있습니다</td></tr>
+      <tr><td>서비스</td><td>내 컴퓨터의 웹 화면</td><td>Bedrock AgentCore, 컨테이너</td><td>여러 사람이 쓰고, 접근 기록이 남습니다</td></tr>
+    </tbody>
+  </table>
+  <div class="punch">이 표는 대응 관계를 적은 것이고, 오늘 실습에서 AWS로 돌려 보지는 않았습니다. 실제 환자 자료를 다루려면 기술보다 먼저 <strong>기관의 승인, 비식별화, 접근 기록</strong>이 필요합니다.</div>
+  <footer class="foot"><span>Multi-Agent와 Distillation</span><span class="pg"></span></footer>
+</section>
+
+<section class="slide" data-notes="정리. 세 문장만 기억하게 함. 과제는 선택: 노트북 8, 9는 신약 검토 팀의 지휘자를 같은 방법으로 증류하는 것(질문 약 500개, 학습 약 5분). 발표자 맥에서는 처음 보는 유형 정답률이 68~71%로 엑스레이 팀보다 낮았음. 왜 낮은지 생각해 보게 함(질문이 더 다양하고 전문가 역할이 겹침). 또 하나의 과제는 내 팀의 질문 틀을 늘려 제자의 점수를 올려 보는 것.">
+  <h2>오늘 기억할 세 가지</h2>
+  <div class="cols3" style="margin-top:40px">
+    <div><h3>팀은 역할을 나누는 일</h3><p>전문가마다 맡은 일과 도구를 좁게 주고, 지휘자가 필요한 사람만 부릅니다. 대신 느려지고 비용이 늘어납니다.</p></div>
+    <div><h3>증류는 스승이 잘하는 일만</h3><p>쉬운 판단은 작은 모델에게 가르쳐 빠르게 합니다. 스승이 틀리는 일을 가르치면 틀린 답을 빨리 낼 뿐입니다.</p></div>
+    <div><h3>마지막 확인은 사람</h3><p>AI는 사진도 글도 틀립니다. 리포트에 "사람이 꼭 확인할 것"을 남기고, 실제 환자 자료는 넣지 않습니다.</p></div>
+  </div>
+  <div class="aws" style="margin-top:36px"><b>과제 (선택)</b><span>노트북 8, 9로 신약 검토 팀의 지휘자도 증류해 보세요. 발표자 맥에서는 처음 보는 유형의 정답률이 68~71%로 더 낮았습니다. 왜 낮은지, 질문 틀을 어떻게 바꾸면 오르는지 살펴봅니다.</span></div>
+  <footer class="foot"><span>Multi-Agent와 Distillation</span><span class="pg"></span></footer>
+</section>
+
+<section class="slide" data-notes="출처와 실습에 쓴 것들.">
+  <h2>출처와 실습에 쓴 것</h2>
+  <ul class="refs">
+    <li>AWS 기술 블로그, Agentic AI 기반 신약 개발 워크플로 자동화: SK바이오팜 참가팀 (2025.11.18)<br><a href="https://aws.amazon.com/ko/blogs/tech/agentic-ai-drug-development-workflow-automation-challenge/" target="_blank" rel="noopener">aws.amazon.com/ko/blogs/tech/agentic-ai-drug-development-workflow-automation-challenge</a></li>
+    <li>실습 저장소 (노트북 6~11, 팀 틀, 웹 화면)<br><a href="https://github.com/gnidoc327/skku-kdt-mcp-lab" target="_blank" rel="noopener">github.com/gnidoc327/skku-kdt-mcp-lab</a></li>
+    <li>Strands Agents: Agent를 만드는 오픈소스 틀<br><a href="https://strandsagents.com" target="_blank" rel="noopener">strandsagents.com</a></li>
+    <li>Ollama: 내 컴퓨터에서 모델을 돌리는 도구<br><a href="https://ollama.com" target="_blank" rel="noopener">ollama.com</a></li>
+    <li>MLX LM: 애플 실리콘 맥에서 LoRA 학습<br><a href="https://github.com/ml-explore/mlx-lm" target="_blank" rel="noopener">github.com/ml-explore/mlx-lm</a></li>
+    <li>흉부 엑스레이 예시 사진: Wikimedia Commons (CC0, Public domain, CC BY 4.0)<br>파일별 저작자와 라이선스는 실습 저장소 <code>data/xray/SOURCES.md</code></li>
+    <li>조회한 공개 데이터베이스: PubChem, PubMed, ClinicalTrials.gov, openFDA</li>
+    <li>Kiro 권한 설정과 요금<br><a href="https://kiro.dev/docs/permissions/" target="_blank" rel="noopener">kiro.dev/docs/permissions</a> · <a href="https://kiro.dev/pricing/" target="_blank" rel="noopener">kiro.dev/pricing</a></li>
+    <li>이 자료의 숫자(실행 시간, 정답률)는 발표자 맥(M1 Max 32GB)에서 잰 것입니다. 수강생 아이맥에서는 다를 수 있습니다.</li>
+  </ul>
+  <footer class="foot"><span>Multi-Agent와 Distillation</span><span class="pg"></span></footer>
+</section>
+
+</div>
+
+<div id="notepane" hidden></div>
+<div id="help">← → 이동 · N 발표자 노트(새 창) · F 전체화면</div>
+
+<script>
+(() => {
+  const stage = document.getElementById('stage');
+  const slides = [...stage.querySelectorAll('.slide')];
+  const pane = document.getElementById('notepane');
+  const total = slides.length;
+  let i = 0;
+
+  slides.forEach((s, n) => { const pg = s.querySelector('.pg'); if (pg) pg.textContent = `${n + 1} / ${total}`; });
+
+  const narrow = () => window.innerWidth < 720;
+
+  function fit() {
+    document.body.classList.toggle('scroll', narrow());
+    if (narrow()) {
+      const z = (document.body.clientWidth - 32) / 1280;
+      slides.forEach(s => s.style.zoom = z);
+      return;
+    }
+    slides.forEach(s => s.style.zoom = '');
+    const k = Math.min(window.innerWidth / 1280, window.innerHeight / 720);
+    stage.style.transform = `translate(-50%, -50%) scale(${k})`;
+  }
+
+  // 발표자 노트는 별도 창에 띄운다. 이 창은 노트북 화면에 두고, 슬라이드 창만 프로젝터로 보낸다.
+  let notesWin = null;
+  const started = Date.now();
+  const titleOf = s => (s?.querySelector('h1, h2')?.textContent || '').replace(/\s+/g, ' ').trim();
+
+  function paint() {
+    if (!notesWin || notesWin.closed) return;
+    const doc = notesWin.document;
+    const min = Math.floor((Date.now() - started) / 60000);
+    doc.getElementById('pos').textContent = `${i + 1} / ${total} · ${min}분 경과`;
+    doc.getElementById('cur').textContent = titleOf(slides[i]) || '(제목 없음)';
+    doc.getElementById('note').textContent = slides[i].dataset.notes || '(노트 없음)';
+    doc.getElementById('next').textContent = i + 1 < total ? '다음: ' + (titleOf(slides[i + 1]) || '(제목 없음)') : '마지막 장';
+  }
+
+  function openNotes() {
+    if (notesWin && !notesWin.closed) { notesWin.focus(); return; }
+    notesWin = window.open('', 'deck-notes', 'width=720,height=560');
+    if (!notesWin) { pane.hidden = !pane.hidden; return; }  // 팝업이 막히면 예전처럼 화면 아래에 표시
+    notesWin.document.write('<!doctype html><meta charset="utf-8"><title>발표자 노트</title>' +
+      '<style>body{margin:0;padding:22px 26px;font:20px/1.7 "Apple SD Gothic Neo",sans-serif;background:#14171C;color:#EDEFF3}' +
+      '#pos{font-size:15px;color:#9AA3B2}#cur{font-size:24px;font-weight:700;margin:6px 0 14px;color:#fff}' +
+      '#note{white-space:pre-wrap}#next{margin-top:20px;padding-top:12px;border-top:1px solid #333A46;font-size:16px;color:#9DB7FF}</style>' +
+      '<div id="pos"></div><div id="cur"></div><div id="note"></div><div id="next"></div>');
+    notesWin.document.close();
+    notesWin.document.addEventListener('keydown', e => {
+      if (['ArrowRight', 'PageDown'].includes(e.key)) show(i + 1);
+      else if (['ArrowLeft', 'PageUp'].includes(e.key)) show(i - 1);
+    });
+    paint();
+  }
+  setInterval(paint, 30000);
+  window.addEventListener('beforeunload', () => notesWin && !notesWin.closed && notesWin.close());
+
+  function show(n) {
+    i = Math.max(0, Math.min(total - 1, n));
+    slides.forEach((s, k) => s.classList.toggle('active', k === i));
+    pane.textContent = slides[i].dataset.notes || '';
+    paint();
+    try { history.replaceState(null, '', '#s' + (i + 1)); } catch (e) {}
+  }
+
+  document.addEventListener('keydown', e => {
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    if (['ArrowRight', 'PageDown'].includes(e.key)) { e.preventDefault(); show(i + 1); }
+    else if (['ArrowLeft', 'PageUp'].includes(e.key)) { e.preventDefault(); show(i - 1); }
+    else if (e.key === 'Home') show(0);
+    else if (e.key === 'End') show(total - 1);
+    else if (e.key === 'n' || e.key === 'N') openNotes();
+    else if (e.key === 'f' || e.key === 'F') {
+      const p = document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen?.();
+      p?.catch?.(() => {});
+    }
+  });
+
+
+  const m = /^#s(\d+)$/.exec(location.hash);
+  show(m ? parseInt(m[1], 10) - 1 : 0);
+  fit();
+  window.addEventListener('resize', fit);
+})();
+</script>
+</body>
+</html>
