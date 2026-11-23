@@ -39,17 +39,34 @@ bash setup.sh
 
 `✅ 성공`이 나온 뒤 브라우저에 JupyterLab이 열리면 준비 끝입니다. 다음에 다시 열 때도 `cd mcp-lab` 후 `bash setup.sh`를 실행하면 됩니다.
 
+**Python은 따로 설치하지 않아도 됩니다**
+
+맥에 기본으로 들어 있는 `python3`은 3.9.6입니다(`/usr/bin/python3`, Apple이 넣어 둔 것이라 업그레이드할 수 없고, 3.9는 2025년 10월에 지원이 끝났습니다). 실습 패키지는 3.10 이상이 필요해서, `setup.sh`가 **이 폴더 안에만** Python 3.13을 받아 씁니다.
+
+| | 위치 | 바뀌는 것 |
+|---|---|---|
+| 맥의 기본 Python 3.9 | `/usr/bin/python3` | 그대로 둡니다 |
+| 실습 전용 Python 3.13 | `mcp-lab/.tools/` (약 100MB) | 새로 받습니다. 관리자 암호 필요 없음 |
+| 실습 패키지 | `mcp-lab/.venv/` | 여기에만 설치합니다 |
+| `PATH`, `~/.zshrc` | | **건드리지 않습니다** |
+
+- 터미널에서 `python3 --version`을 치면 실습 뒤에도 여전히 3.9.6이 나옵니다. 정상입니다.
+- 그래서 실습 명령은 항상 **`.venv/bin/python`** 으로 시작합니다. 그냥 `python3 ...`이나 `pip install ...`을 치면 맥의 3.9로 실행되어 `SyntaxError`나 `No matching distribution` 오류가 납니다.
+- JupyterLab 안에서는 신경 쓸 필요가 없습니다. 노트북은 자동으로 `.venv`의 3.13으로 돕니다.
+- Homebrew나 python.org로 Python을 이미 설치했어도 충돌하지 않습니다. 실습은 폴더 안의 것만 씁니다.
+- 지울 때는 `mcp-lab` 폴더를 휴지통에 넣으면 됩니다. 맥의 다른 곳에는 남는 것이 없습니다(Ollama 모델은 `ollama rm 모델이름`으로 따로 지웁니다).
+
 <details>
 <summary><b>setup.sh가 하는 일을 직접 하려면</b></summary>
 
 ```bash
-python3 -m venv .venv                 # 가상환경 만들기 (Python 3.10 이상)
-source .venv/bin/activate             # 가상환경 켜기. 프롬프트 앞에 (.venv)가 보이면 성공
-pip install jupyterlab ipykernel      # JupyterLab 설치
-jupyter lab --notebook-dir=example    # 실행
+python3 --version                     # 3.10 이상인지 확인. 3.9면 아래 명령은 실패합니다
+python3 -m venv .venv                 # 가상환경 만들기
+.venv/bin/python -m pip install jupyterlab ipykernel
+.venv/bin/python -m jupyter lab --notebook-dir=example
 ```
 
-각 노트북의 첫 셀에 `%pip install ...`이 있어서 필요한 패키지는 그때 설치됩니다.
+`source .venv/bin/activate`로 가상환경을 켜면 그 터미널 창에서만 `python`이 `.venv`의 것으로 바뀝니다. 창을 닫으면 원래대로 돌아갑니다. 각 노트북의 첫 셀이 필요한 패키지를 설치합니다.
 </details>
 
 **3단계. 노트북을 순서대로 실행**
@@ -109,7 +126,8 @@ claude mcp add memory -- "$(pwd)/.venv/bin/python" "$(pwd)/memory_mcp.py"
 |---|---|
 | `Ollama 앱이 꺼져 있습니다` | 응용 프로그램에서 Ollama를 실행하고 `bash setup.sh` 다시 |
 | `command not found: git` | 뜨는 설치 창에서 "설치"를 누르고, 끝나면 2단계 다시 |
-| `Python 3.10 이상이 필요합니다` | https://www.python.org/downloads/ 에서 설치하고 2단계 다시 |
+| `실습용 Python을 내려받지 못했고` | 인터넷(github.com 접속)을 확인하고 `bash setup.sh` 다시. 계속 안 되면 https://www.python.org/downloads/ 에서 Python 3.13 설치 후 다시 |
+| `SyntaxError`, `EOL while scanning`, `No matching distribution` | 맥의 기본 Python 3.9로 실행된 것입니다. `python3 ...` 대신 `.venv/bin/python ...`으로 실행하거나 `bash setup.sh`를 다시 실행 |
 | 노트북 셀이 `[*]`에서 오래 멈춤 | 모델을 처음 부르는 중입니다. 1~2분 기다리면 됩니다 |
 | `setup.sh`가 중간에 멈춤 | 같은 폴더의 `setup.log` 파일과 화면의 메시지를 강사에게 보여 주세요. 폴더를 옮겼거나 예전 `.venv`가 남아 있으면 `rm -rf .venv` 후 `bash setup.sh` 다시 |
 | `config.json이 없습니다` | `0_check_setup` 노트북을 먼저 끝까지 실행 |
@@ -150,9 +168,9 @@ bash setup.sh
 | **6** | `6_drug_tools_agent.ipynb` | 공개 데이터베이스 조회 도구 6개와, 그 도구를 쓰는 전문가 Agent 한 명 | 1분 |
 | **7** | `7_multi_agent.ipynb` | 전문가 세 명 + 지휘자. 종합 분석(전원)과 스마트 컨설팅(필요한 전문가만), 리포트 저장 | 3~4분 |
 | **8** | `8_distill_data.ipynb` | 스승 모델(`gemma4:e4b`)이 질문 약 500개에 "누구에게 보낼지" 답을 달아 학습 자료 만들기 | 2~3분 |
-| **9** | `9_distill_train.ipynb` | 제자 모델(`gemma-3-1b`, 스승의 10분의 1 이하)을 MLX LoRA로 학습, 학습 전후 정답률과 속도 비교 | 4~5분 |
+| **9** | `9_distill_train.ipynb` | 제자 모델(`gemma-3-1b`, 스승의 10분의 1 이하)을 MLX LoRA로 학습, 학습 전후 정답률과 속도 비교, 제자를 지휘자 자리에 넣어 실행 | 7~8분 |
 
-발표자 맥(M1 Max 32GB)에서 돌린 결과: 학습 2분 30초, 스승과 같은 답을 고른 비율이 처음 보는 유형의 질문에서 **0% → 83%**, Adapter 파일 8MB. 숫자는 실행할 때마다 조금씩 달라집니다.
+발표자 맥(M1 Max 32GB)에서 돌린 결과: 학습 약 5분, 스승과 같은 답을 고른 비율이 학습 때 본 유형의 질문에서 **22% → 88%**, 처음 보는 유형에서 **0% → 71%**, Adapter 파일 8MB. 세 번 돌려 처음 보는 유형은 68~71%였고, 숫자는 실행할 때마다 조금씩 달라집니다.
 
 **Kiro에서 한 번에 하기**
 

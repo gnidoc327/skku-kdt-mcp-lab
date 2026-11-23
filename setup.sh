@@ -11,6 +11,7 @@ LOG=setup.log
   echo "=== $(date '+%Y-%m-%d %H:%M:%S') setup.sh 시작"
   echo "폴더: $(pwd)"
   echo "macOS: $(sw_vers -productVersion 2>/dev/null) $(uname -m)"
+  echo "터미널의 python3: $(command -v python3 2>/dev/null) $(python3 --version 2>&1)"
   echo "shell: $BASH_VERSION"
 } > "$LOG"
 
@@ -49,15 +50,35 @@ if [ -d .venv ] && ! { py_ok .venv/bin/python && .venv/bin/python -m pip --versi
   rm -rf .venv
 fi
 if [ ! -x .venv/bin/python ]; then
+  # 맥에 기본으로 들어 있는 python3(/usr/bin/python3)은 3.9라서 실습 패키지가 설치되지 않는다.
+  # 그래서 이 폴더 안(.tools)에만 Python 3.13을 따로 받아 쓴다. 관리자 암호가 필요 없고,
+  # PATH와 ~/.zshrc를 건드리지 않으므로 터미널의 python3은 그대로다. 폴더를 지우면 함께 지워진다.
   PY=""
-  for c in python3.13 python3.12 python3.11 python3.14 python3.10 python3; do
-    if command -v "$c" >/dev/null && py_ok "$c"; then PY="$c"; break; fi
-  done
+  TOOLS="$(pwd)/.tools"
+  export UV_PYTHON_INSTALL_DIR="$TOOLS/python" UV_CACHE_DIR="$TOOLS/cache" UV_NO_MODIFY_PATH=1 UV_PYTHON_PREFERENCE=only-managed
+  if [ ! -x "$TOOLS/uv" ]; then
+    case "$(uname -m)" in arm64) ARCH=aarch64 ;; *) ARCH=x86_64 ;; esac
+    echo "   실습 전용 Python 3.13을 이 폴더 안에 내려받습니다 (약 40MB, 맥의 기존 Python은 그대로 둡니다)"
+    mkdir -p "$TOOLS"
+    if curl -fsSL --retry 2 "https://github.com/astral-sh/uv/releases/latest/download/uv-$ARCH-apple-darwin.tar.gz" 2>>"$LOG" | tar -xz -C "$TOOLS" --strip-components 1 2>>"$LOG"; then :; else
+      echo "   (내려받기 실패. 맥에 설치된 Python을 찾아봅니다)"; rm -f "$TOOLS/uv"
+    fi
+  fi
+  if [ -x "$TOOLS/uv" ] && logged "$TOOLS/uv" python install -q 3.13; then
+    PY="$("$TOOLS/uv" python find 3.13 2>>"$LOG" || true)"
+  fi
+  if [ -z "$PY" ]; then      # 내려받지 못했으면 맥에 이미 있는 Python 3.10 이상을 쓴다
+    for c in python3.13 python3.12 python3.11 python3.14 python3.10 python3; do
+      if command -v "$c" >/dev/null && py_ok "$c"; then PY="$c"; break; fi
+    done
+  fi
   if [ -z "$PY" ]; then
-    echo "❌ Python 3.10 이상이 필요합니다. https://www.python.org/downloads/ 에서 설치하거나"
-    echo "   Homebrew가 있으면 'brew install python@3.13'을 실행한 뒤 다시 해 주세요."
+    echo "❌ 실습용 Python을 내려받지 못했고, 맥에도 Python 3.10 이상이 없습니다."
+    echo "   인터넷 연결을 확인하고 다시 실행해 주세요. 계속 안 되면 https://www.python.org/downloads/ 에서"
+    echo "   Python 3.13을 설치한 뒤 다시 실행합니다."
     exit 1
   fi
+  echo "venv를 만드는 Python: $PY" >> "$LOG"
   logged "$PY" -m venv .venv
 fi
 echo "python: $(.venv/bin/python --version 2>&1) ($(.venv/bin/python -c 'import sys; print(sys.base_prefix)'))" >> "$LOG"
