@@ -428,7 +428,7 @@ a:focus-visible, button:focus-visible { outline: 3px solid var(--eosin); outline
 cd ~/mcp-lab
 git pull
 bash setup.sh</pre>
-      <p class="mini">처음이면 모델을 약 10GB 받습니다. 15~40분 걸립니다.</p>
+      <p class="mini">지난 시간에 받은 모델 외에 약 10GB를 더 받습니다. 15~40분 걸립니다.<br>지난 시간에 준비를 못 했다면 약 16GB, 20~60분입니다.</p>
     </div>
     <ul class="plain" style="gap:14px">
       <li style="font-size:19px"><strong>✅만 나오고 JupyterLab이 열리면 끝</strong><span>"6/6 동작 확인" 아래에 ❌가 없어야 합니다</span></li>
@@ -476,7 +476,7 @@ bash setup.sh</pre>
   <footer class="foot"><span>Multi-Agent와 Distillation</span><span class="pg"></span></footer>
 </section>
 
-<section class="slide" data-notes="나누는 이유 세 가지와 대가 한 가지. 대가를 꼭 말할 것: 모델을 여러 번 부르므로 느려지고, 유료 모델이면 비용이 그만큼 늘어남. 오늘 실습에서도 전문가 세 명을 다 부르면 80초쯤 걸림. 그래서 '필요한 전문가만 부르기'가 중요하고, 그 판단을 빠르게 하려고 증류를 함. 이 흐름이 오늘 전체의 줄거리.">
+<section class="slide" data-notes="나누는 이유 세 가지와 대가 한 가지. 대가를 꼭 말할 것: 모델을 여러 번 부르므로 느려지고, 유료 모델이면 비용이 그만큼 늘어남. 오늘 실습에서도 전문가 세 명을 다 부르면 80초쯤 걸림. 그래서 '필요한 전문가만 부르기'가 중요하고, 그 판단을 큰 모델 없이도 할 수 있게 증류를 함. 이 흐름이 오늘 전체의 줄거리.">
   <h2>왜 한 명에게 다 시키지 않고 나눌까</h2>
   <div class="cols3">
     <div><h3>덜 헷갈립니다</h3><p>한 명에게 도구 스무 개를 주면 엉뚱한 도구를 고릅니다. 전문가마다 두세 개만 주면 고를 것이 줄어듭니다.</p></div>
@@ -639,7 +639,7 @@ TEAM = Team(name="checkup", goal="건강검진 결과 상담 팀",
 </section>
 
 <section class="slide" data-notes="증류의 뜻. 지난 시간 2026년 부분에서 '증류 의혹'과 'AI가 AI를 가르치는 법'을 봤음. 오늘은 직접 해 봄. 큰 모델(스승)에게 문제를 많이 풀게 하고, 그 답을 정답 삼아 작은 모델(제자)을 학습시킴. 사람이 정답을 일일이 달지 않아도 된다는 것이 핵심. 제자는 스승이 잘하는 일 가운데 좁은 일 하나만 배움. 학습은 LoRA 방식: 모델 전체를 고치지 않고 작은 덧붙임 부분만 학습. 그래서 맥에서 5~6분에 끝나고 결과 파일이 8MB. MLX는 애플 실리콘 맥에서 학습을 돌리는 애플의 도구.">
-  <h2>Distillation(증류): 큰 모델이 작은 모델을 가르친다</h2>
+  <h2>증류: 큰 모델이 작은 모델을 가르친다</h2>
   <div class="pipe" style="margin-top:26px; grid-template-columns: 110px repeat(4, 1fr)">
     <div class="lab">순서</div>
     <div><b>1. 문제 만들기</b>질문 틀에 낱말을 바꿔 넣어 질문 수백 개를 만든다</div>
@@ -667,7 +667,7 @@ TEAM = Team(name="checkup", goal="건강검진 결과 상담 팀",
   <footer class="foot"><span>Multi-Agent와 Distillation</span><span class="pg"></span></footer>
 </section>
 
-<section class="slide" data-notes="무엇을 증류하고 무엇을 안 하는지. 이 구분이 실무에서 가장 중요함. 증류는 스승의 답을 그대로 베끼는 일이므로 스승이 믿을 만한 일에만 써야 함. 전문가 고르기는 스승이 잘하고, 답의 종류가 적고, 틀려도 '전문가를 한 명 덜 부르는' 정도. 사진 읽기는 앞에서 봤듯이 스승이 틀림. 틀린 답을 가르치면 제자는 틀린 답을 빠르게 내는 모델이 됨. 사진을 읽는 모델을 제대로 만들려면 사람이 붙인 정답(판독문)이 있는 데이터가 필요하고, 그것은 증류가 아니라 일반적인 Fine-tuning의 영역.">
+<section class="slide" data-notes="무엇을 증류하고 무엇을 안 하는지. 이 구분이 실무에서 가장 중요함. 증류는 스승의 답을 그대로 베끼는 일이므로 스승이 믿을 만한 일에만 써야 함. 전문가 고르기는 스승이 잘하고, 답의 종류가 적고, 틀려도 '전문가를 한 명 덜 부르는' 정도. 사진 읽기는 앞에서 봤듯이 스승이 틀림. 틀린 답을 가르치면 제자는 틀린 답을 그대로 배움. 사진을 읽는 모델을 제대로 만들려면 사람이 붙인 정답(판독문)이 있는 데이터가 필요하고, 그것은 증류가 아니라 일반적인 Fine-tuning의 영역.">
   <h2>무엇을 증류하고, 무엇은 하지 않나</h2>
   <div class="split">
     <div class="now">
@@ -675,7 +675,7 @@ TEAM = Team(name="checkup", goal="건강검진 결과 상담 팀",
       <ul class="plain">
         <li>스승이 잘하는 일입니다</li>
         <li>답의 종류가 적습니다<span>전문가 세 명이면 조합은 일곱 가지</span></li>
-        <li>질문이 올 때마다 하는 일이라 빨라지면 이득이 큽니다</li>
+        <li>질문이 올 때마다 하는 일입니다<span>큰 모델이 유료라면 부를 때마다 돈이 듭니다</span></li>
         <li>틀려도 피해가 작습니다<span>전문가를 덜 부르거나 더 부르는 정도</span></li>
       </ul>
     </div>
@@ -683,7 +683,7 @@ TEAM = Team(name="checkup", goal="건강검진 결과 상담 팀",
       <h3>증류하지 않습니다: 사진 읽기</h3>
       <ul class="plain">
         <li>스승이 자주 틀립니다<span>골절 사진을 보고 "끊긴 곳이 없다"고 답했습니다</span></li>
-        <li>틀린 답을 가르치면 제자는 틀린 답을 빨리 내는 모델이 됩니다</li>
+        <li>틀린 답을 가르치면 제자는 틀린 답을 그대로 배웁니다</li>
         <li>제대로 하려면 사람이 붙인 정답이 필요합니다<span>판독문이 달린 공개 데이터로 Fine-tuning(파인튜닝)하는 일</span></li>
       </ul>
     </div>
@@ -691,7 +691,7 @@ TEAM = Team(name="checkup", goal="건강검진 결과 상담 팀",
   <footer class="foot"><span>Multi-Agent와 Distillation</span><span class="pg"></span></footer>
 </section>
 
-<section class="slide" data-notes="실습 3. 노트북 11을 위에서부터 실행(8~9분). 맨 위의 TEAM_FILE을 'xray_team'으로 두면 완성 예시로, 'my_team'으로 바꾸면 방금 만든 내 팀으로 진행. 시간이 빠듯하면 전원 xray_team으로 통일. 학습 셀이 5~6분 걸리므로 이때 앞의 증류 슬라이드 두 장을 설명. 학습 전 시험이 0%로 나오는 이유: 제자가 전문가 이름(reader, cases 등)을 아직 모르기 때문. 숫자는 발표자 맥에서 세 번 돌린 범위이고 실행할 때마다 조금씩 달라짐. 컴퓨터가 뜨거워지는 것은 정상.">
+<section class="slide" data-notes="실습 3. 노트북 11을 위에서부터 실행(8~9분). 맨 위의 TEAM_FILE을 'xray_team'으로 두면 완성 예시로, 'my_team'으로 바꾸면 방금 만든 내 팀으로 진행. 시간이 빠듯하면 전원 xray_team으로 통일. 학습 셀이 5~6분 걸리므로 이때 앞의 증류 슬라이드 두 장을 설명. 속도를 꼭 짚을 것: 이 맥에서는 스승도 0.1~0.3초 만에 고르므로 제자가 더 빠르지 않음. 증류의 이득은 작은 모델로도 된다는 것(메모리, 그리고 큰 모델이 유료 API일 때의 비용). 학습 전 시험이 0%로 나오는 이유: 제자가 전문가 이름(reader, cases 등)을 아직 모르기 때문. 숫자는 발표자 맥에서 세 번 돌린 범위이고 실행할 때마다 조금씩 달라짐. 컴퓨터가 뜨거워지는 것은 정상. 실행 중에 컴퓨터가 잠들면 멈추므로 화면을 가끔 건드리게 함(발표자 맥은 10분 잠들어 그만큼 늦어졌음).">
   <h2>실습 3. 지휘자를 증류하기 <span style="font-size:26px; color:var(--muted); font-weight:500">노트북 11</span></h2>
   <div class="cols" style="grid-template-columns: 1fr 1fr; gap:56px; margin-top:26px">
     <div class="steps" style="gap:18px">
@@ -708,8 +708,8 @@ TEAM = Team(name="checkup", goal="건강검진 결과 상담 팀",
         <div class="bar"><div class="when">본 유형</div><div class="track"><div class="fill" style="width:280px"></div><div class="val">90~95%</div></div></div>
         <div class="bar"><div class="when">처음 보는 유형</div><div class="track"><div class="fill" style="width:265px"></div><div class="val">86~98%</div></div></div>
       </div>
-      <p class="mini" style="margin-top:14px">발표자 맥(M1 Max)에서 세 번 돌린 범위입니다. 실행할 때마다 조금씩 달라집니다.</p>
-      <div class="punch" style="margin-top:16px; font-size:17.5px">제자가 전문가를 고르는 데 걸린 시간은 <strong>약 0.2초</strong>였습니다.</div>
+      <p class="mini" style="margin-top:14px">발표자 맥(M1 Max)에서 네 번 돌린 범위입니다. 실행할 때마다 조금씩 달라집니다.</p>
+      <div class="punch" style="margin-top:16px; font-size:17.5px">고르는 시간은 스승 0.1~0.3초, 제자 약 0.2초로 <strong>비슷했습니다.</strong> 얻는 것은 속도가 아니라 크기입니다. 제자는 스승의 10분의 1 이하입니다.</div>
     </div>
   </div>
   <footer class="foot"><div class="src">맨 위 셀의 <code>TEAM_FILE</code>을 <code>"my_team"</code>으로 바꾸면 내가 만든 팀으로 같은 과정을 돌립니다.</div><span>실습 3</span><span class="pg"></span></footer>
@@ -799,7 +799,7 @@ cd ~/mcp-lab
   <h2>오늘 기억할 세 가지</h2>
   <div class="cols3" style="margin-top:40px">
     <div><h3>팀은 역할을 나누는 일</h3><p>전문가마다 맡은 일과 도구를 좁게 주고, 지휘자가 필요한 사람만 부릅니다. 대신 느려지고 비용이 늘어납니다.</p></div>
-    <div><h3>증류는 스승이 잘하는 일만</h3><p>쉬운 판단은 작은 모델에게 가르쳐 빠르게 합니다. 스승이 틀리는 일을 가르치면 틀린 답을 빨리 낼 뿐입니다.</p></div>
+    <div><h3>증류는 스승이 잘하는 일만</h3><p>쉬운 판단은 작은 모델에게 가르쳐 맡기고, 큰 모델은 덜 부릅니다. 스승이 틀리는 일을 가르치면 틀린 답을 배울 뿐입니다.</p></div>
     <div><h3>마지막 확인은 사람</h3><p>AI는 사진도 글도 틀립니다. 리포트에 "사람이 꼭 확인할 것"을 남기고, 실제 환자 자료는 넣지 않습니다.</p></div>
   </div>
   <div class="aws" style="margin-top:36px"><b>과제 (선택)</b><span>노트북 8, 9로 신약 검토 팀의 지휘자도 증류해 보세요. 발표자 맥에서는 처음 보는 유형의 정답률이 68~71%로 더 낮았습니다. 왜 낮은지, 질문 틀을 어떻게 바꾸면 오르는지 살펴봅니다.</span></div>

@@ -115,4 +115,5 @@ echo "준비 끝. 브라우저에 JupyterLab이 열리면 번호 순서대로 �
 echo "끝낼 때는 이 터미널에서 Ctrl+C 를 두 번 누릅니다."
 echo "Kiro로 이어서 개발하려면 새 터미널에서: .venv/bin/python connect_kiro.py --dev"
 STEP="JupyterLab 실행"
-if [ -z "$NO_LAUNCH" ]; then exec .venv/bin/python -m jupyter lab --notebook-dir=example; fi
+# caffeinate: JupyterLab이 켜져 있는 동안 컴퓨터가 잠들지 않게 한다 (잠들면 학습과 노트북 실행이 멈춘다)
+if [ -z "$NO_LAUNCH" ]; then exec caffeinate -i .venv/bin/python -m jupyter lab --notebook-dir=example; fi
