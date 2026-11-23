@@ -4,6 +4,8 @@
         .venv/bin/python connect_kiro.py --image   (images도)
         .venv/bin/python connect_kiro.py --drug    (2일차: 신약 후보 검토 도구 drug-review도)
         .venv/bin/python connect_kiro.py --team xray_team   (2일차: 내가 만든 Multi-Agent 팀. my_team도 가능)
+        .venv/bin/python connect_kiro.py --dev       (Kiro로 이 폴더에서 개발할 때: 자주 쓰는 안전한 명령은 묻지 않고 실행)
+        .venv/bin/python connect_kiro.py --dev-off   (--dev로 넣은 허용 규칙만 다시 뺀다)
 
 Kiro의 사용자 설정 ~/.kiro/settings/mcp.json 에 넣으므로 어느 폴더를 열어도 쓸 수 있다.
 """
@@ -19,6 +21,56 @@ py = lab / ".venv/bin/python"   # setup.sh가 만든 가상환경의 파이썬
 if not py.exists():
     sys.exit("❌ .venv가 없습니다. 먼저 'bash setup.sh'를 실행해 주세요.")
 py = str(py)
+
+
+def dev_rules():
+    """Kiro가 이 실습 폴더에서 일할 때 묻지 않고 해도 되는 일. 여기에 없는 것은 전처럼 매번 묻는다.
+
+    묻게 남겨 둔 것: 파일 삭제(rm), 패키지 설치(pip), 모델 받기(ollama pull), git push, 증류 학습(mlx_lm lora).
+    Kiro는 && 나 | 로 이은 명령을 하나씩 따로 검사한다.
+    """
+    venv_py = [f"{lab}/.venv/bin/python *", ".venv/bin/python *", "../.venv/bin/python *"]
+    return [
+        # 가상환경 파이썬으로 실습 코드 실행. 학습은 오래 걸리고 뜨거워지므로 매번 묻는다
+        {"capability": "shell", "effect": "allow", "match": venv_py, "exclude": ["*mlx_lm*lora*", "*train_student*", "*pip install*", "*pip uninstall*"]},
+        # 보기만 하는 명령
+        {"capability": "shell", "effect": "allow", "match": [
+            "cd *", "pwd", "ls", "ls *", "cat *", "head *", "tail *", "grep *", "wc *", "which *",
+            "git status*", "git diff*", "git log*", "git add *", "git commit *",
+            "ollama list", "ollama ps", "ollama show *", "ollama stop *",
+            "curl http://localhost*", "curl -s http://localhost*", "curl http://127.0.0.1*", "curl -s http://127.0.0.1*"]},
+        # 이 실습 폴더 안의 파일 고치기 (.git, .vscode, .kiro/agents 등은 Kiro가 언제나 묻는다)
+        {"capability": "fs_write", "effect": "allow", "match": [f"{lab}/**"], "exclude": [f"{lab}/setup.sh", f"{lab}/.venv/**"]},
+        # 실습 MCP 서버의 도구. 기억 삭제(forget)만 매번 확인
+        {"capability": "mcp", "effect": "allow", "match": ["memory/*", "images/*", "drug-review/*", "team-*/*"], "exclude": ["memory/forget"]},
+    ]
+
+
+if "--dev" in sys.argv or "--dev-off" in sys.argv:
+    import yaml
+    perm = Path(os.getenv("KIRO_PERMISSIONS", "~/.kiro/settings/permissions.yaml")).expanduser()
+    doc = (yaml.safe_load(perm.read_text(encoding="utf-8")) if perm.exists() else None) or {}
+    if not isinstance(doc, dict) or not isinstance(doc.get("rules", []), list):
+        sys.exit(f"❌ {perm} 의 형식을 읽을 수 없어 건드리지 않았습니다. 파일을 강사에게 보여 주세요.")
+    if perm.exists():
+        shutil.copy(perm, str(perm) + ".bak")
+    mine = dev_rules()
+    doc["rules"] = [r for r in doc.get("rules", []) if r not in mine]      # 전에 넣은 같은 규칙은 빼고
+    if "--dev" in sys.argv:
+        doc["rules"] += mine
+    perm.parent.mkdir(parents=True, exist_ok=True)
+    perm.write_text(yaml.safe_dump(doc, allow_unicode=True, sort_keys=False, width=200), encoding="utf-8")
+    if "--dev-off" in sys.argv:
+        print(f"✅ 허용 규칙을 뺐습니다. 이제 Kiro가 전처럼 매번 묻습니다.\n   설정 파일: {perm}")
+        sys.exit(0)
+    print(f"✅ Kiro가 이 폴더({lab})에서 묻지 않고 하는 일을 정했습니다.")
+    print("   묻지 않음: 가상환경 파이썬 실행, 파일 보기, 이 폴더 안의 파일 고치기, git 상태 보기와 commit, 실습 MCP 도구")
+    print("   매번 물음: 파일 삭제, 패키지 설치, 모델 받기, git push, 증류 학습, 그 밖의 모든 명령")
+    print(f"   설정 파일: {perm}   (되돌리기: .venv/bin/python connect_kiro.py --dev-off)")
+    print("   이제 Kiro에서 File → Open Folder로 이 폴더를 열고, 채팅창에 이렇게 입력해 보세요.")
+    print("   xray_team.py를 본보기로 my_team.py에 '복약 상담 팀'을 만들어 줘. 전문가는 두 명, 만든 뒤 질문 하나로 돌려서 확인해 줘")
+    if len([a for a in sys.argv[1:] if a.startswith("--")]) == 1:
+        sys.exit(0)
 
 data = json.loads(cfg.read_text(encoding="utf-8")) if cfg.exists() and cfg.read_text(encoding="utf-8").strip() else {}
 if cfg.exists():
