@@ -105,12 +105,13 @@ snapshot_download('mlx-community/gemma-3-1b-it-4bit')
 print('   - mlx-community/gemma-3-1b-it-4bit 준비 완료')
 "
 
-STEP="6/6 동작 확인"; echo "$STEP"
+STEP="6/6 동작 확인"; echo "$STEP (1~2분. 큰 모델을 처음 메모리에 올리느라 시간이 걸립니다)"
 logged .venv/bin/python check.py
+logged .venv/bin/python check_day2.py
 
 echo "=== 성공" >> "$LOG"
 echo
-echo "준비 끝. 브라우저에 JupyterLab이 열리면 번호 순서대로 실행하세요. (1일차 0~5, 2일차 6~9)"
+echo "준비 끝. 브라우저에 JupyterLab이 열리면 번호 순서대로 실행하세요. (1일차 0~5, 2일차 6~11)"
 echo "끝낼 때는 이 터미널에서 Ctrl+C 를 두 번 누릅니다."
 STEP="JupyterLab 실행"
 if [ -z "$NO_LAUNCH" ]; then exec .venv/bin/python -m jupyter lab --notebook-dir=example; fi

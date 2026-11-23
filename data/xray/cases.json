@@ -1,0 +1,20 @@
+[
+  {"file": "normal_pa.jpg", "label": "정상", "summary": "21세 여성. 축구 경기 중 부딪힌 뒤 왼쪽 가슴 통증으로 촬영한 흉부 엑스레이 정면(PA) 사진. 손상 소견 없는 정상 흉부.",
+   "author": "Mikael Häggström", "license": "CC0", "source": "https://commons.wikimedia.org/wiki/File:Normal_posteroanterior_(PA)_chest_radiograph_(X-ray).jpg"},
+  {"file": "normal_2.jpg", "label": "정상", "summary": "30세 건강한 남성의 흉부 엑스레이 정면 사진. 이상 소견 없음.",
+   "author": "Doctoroftcm", "license": "CC0", "source": "https://commons.wikimedia.org/wiki/File:Chest_X-ray_2346.jpg"},
+  {"file": "lobar_pneumonia.jpg", "label": "폐렴 (대엽성)", "summary": "67세 남성. 오른쪽 폐 중엽에 경화(하얗게 채워진 음영)가 보이는 대엽성 폐렴. 사진의 빨간 화살표가 병변 위치.",
+   "author": "Mikael Häggström", "license": "CC0", "source": "https://commons.wikimedia.org/wiki/File:X-ray_of_lobar_pneumonia.jpg"},
+  {"file": "pneumonia_2.jpg", "label": "폐렴 (다발성)", "summary": "88세 남성. 발열, 피로, 가벼운 기침이 시작되고 약 1주 뒤 촬영. 인플루엔자 A와 Haemophilus influenzae 검출. 주로 오른쪽 폐 상엽에 여러 군데 얼룩덜룩한 경화.",
+   "author": "Mikael Häggström", "license": "CC0", "source": "https://commons.wikimedia.org/wiki/File:Chest_radiograph_in_influensa_and_H_influenzae,_posteroanterior.jpg"},
+  {"file": "pneumothorax.png", "label": "기흉", "summary": "자연 기흉 환자의 경과를 모은 그림(여러 장을 붙인 것). 처음 왔을 때 오른쪽 기흉(화살표), 흉관을 넣은 뒤 호전, 흉관 제거 2주 뒤 회복된 모습.",
+   "author": "Alex Bonilla 외 (증례 보고)", "license": "CC BY 4.0", "source": "https://commons.wikimedia.org/wiki/File:Chest_X-ray_of_pneumothorax.png"},
+  {"file": "heart_failure.jpg", "label": "심부전 (심비대, Kerley B 선)", "summary": "83세 남성. 관상동맥 우회술 병력, 숨이 차서 내원. 뚜렷한 Kerley B 선, 커진 심장, 조금 늘어난 폐혈관, 소량의 흉수. 뚜렷한 폐부종은 없음.",
+   "author": "Mikael Häggström", "license": "CC0", "source": "https://commons.wikimedia.org/wiki/File:Chest_radiograph_of_a_lung_with_Kerley_B_lines.jpg"},
+  {"file": "pleural_effusion.jpg", "label": "흉수", "summary": "옆으로 누워 찍은 사진(측와위). 오른쪽 흉강 아래쪽에 물이 층을 이루어 고여 있음(화살표 A). 화살표 B는 폐의 정상 폭.",
+   "author": "InvictaHOG", "license": "Public domain", "source": "https://commons.wikimedia.org/wiki/File:Pleural_effusion.jpg"},
+  {"file": "tuberculosis.jpg", "label": "폐결핵 (진행성)", "summary": "진행된 양쪽 폐결핵 환자의 정면(AP) 사진. 양쪽 폐 침윤(흰 삼각형)과 오른쪽 폐 꼭대기의 공동(검은 화살표).",
+   "author": "미상 (미국 CDC 자료)", "license": "Public domain", "source": "https://commons.wikimedia.org/wiki/File:Tuberculosis-x-ray-1.jpg"},
+  {"file": "rib_fracture.jpg", "label": "늑골 골절", "summary": "54세 남성의 흉부 엑스레이. 늑골(갈비뼈) 골절.",
+   "author": "Doctoroftcm", "license": "CC0", "source": "https://commons.wikimedia.org/wiki/File:Rib_fracture_2347.jpg"}
+]

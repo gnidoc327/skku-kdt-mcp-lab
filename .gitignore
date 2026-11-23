@@ -10,3 +10,5 @@ example/reports/
 reports/
 setup.log
 .tools/
+distill/
+my_team.py
