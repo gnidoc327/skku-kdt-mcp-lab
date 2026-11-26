@@ -156,19 +156,9 @@ async def ask(request):
         return JSONResponse({"error": str(e)})
 
 
-def in_use(port: int) -> bool:
-    """이 번호를 다른 프로그램이 이미 쓰고 있는지 본다 (localhost로 열리는 두 주소 모두)."""
-    import socket
-    for family, host in ((socket.AF_INET, "127.0.0.1"), (socket.AF_INET6, "::1")):
-        with socket.socket(family, socket.SOCK_STREAM) as sock:
-            sock.settimeout(0.3)
-            if sock.connect_ex((host, port)) == 0:
-                return True
-    return False
-
-
 if __name__ == "__main__":
     port = int(sys.argv[sys.argv.index("--port") + 1]) if "--port" in sys.argv else 8000
+    from lab_ui import in_use
     first = port
     while in_use(port):         # 다른 프로그램이 쓰는 번호면 다음 번호로 옮긴다 (그대로 열면 그 프로그램의 화면이 뜬다)
         port += 1

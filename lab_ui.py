@@ -9,10 +9,12 @@ Agent나 증류의 원리와는 상관없는, 화면에 보여 주는 일만 모
     md            마크다운을 그려서 보여 준다 (굵은 글씨, 목록)
 노트북(JupyterLab)에서는 줄을 고쳐 쓰고 마크다운을 그린다. 터미널에서는 평범하게 한 줄씩 찍는다.
 """
+import logging
 import queue
 import time
 from concurrent.futures import ThreadPoolExecutor
 
+logging.getLogger("strands").setLevel(logging.ERROR)     # "reasoningContent is not supported" 같은 알림 줄을 숨긴다
 _events = queue.Queue()      # 다른 thread에서 생긴 소식을 모아 두었다가, 화면에는 한곳에서만 찍는다
 
 
@@ -138,3 +140,88 @@ def stream_answer(model, messages, who="지휘자", temperature=0.2):
     box.update(Markdown(_clean(text.strip())))
     status.done(f"✅ {who}가 답을 썼습니다  ({status.seconds():.0f}초)")
     return text.strip()
+
+
+# ---------- 팀을 웹 화면으로 띄우기, Kiro에 연결하기 (노트북의 셀에서 부른다) ----------
+import os
+import signal
+import subprocess
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent
+PID_FILE, LOG_FILE = ROOT / ".service.pid", ROOT / ".service.log"
+
+
+def in_use(port):
+    """이 번호를 다른 프로그램이 이미 쓰고 있는지 본다 (localhost로 열리는 두 주소 모두)."""
+    import socket
+    for family, host in ((socket.AF_INET, "127.0.0.1"), (socket.AF_INET6, "::1")):
+        with socket.socket(family, socket.SOCK_STREAM) as sock:
+            sock.settimeout(0.3)
+            if sock.connect_ex((host, port)) == 0:
+                return True
+    return False
+
+
+def stop_service(quiet=False):
+    """start_service로 띄운 웹 화면을 끈다."""
+    try:
+        pid = int(PID_FILE.read_text())
+        command = subprocess.run(["ps", "-p", str(pid), "-o", "command="], capture_output=True, text=True).stdout
+        if "team_service.py" in command:        # 우리가 띄운 것이 맞을 때만 끈다
+            os.kill(pid, signal.SIGTERM)
+            for _ in range(20):
+                if subprocess.run(["ps", "-p", str(pid)], capture_output=True).returncode != 0:
+                    break
+                time.sleep(0.1)
+            if not quiet:
+                print("✅ 웹 화면을 껐습니다.")
+        elif not quiet:
+            print("켜져 있는 웹 화면이 없습니다.")
+    except (FileNotFoundError, ValueError, ProcessLookupError):
+        if not quiet:
+            print("켜져 있는 웹 화면이 없습니다.")
+    PID_FILE.unlink(missing_ok=True)
+
+
+def start_service(team_file="xray_team", port=8000):
+    """팀을 웹 화면으로 띄우고 브라우저를 연다. 다시 부르면 전에 띄운 것을 끄고 새로 띄운다.
+
+    team_file은 팀이 들어 있는 파일 이름이다 (xray_team, my_team). 터미널에서
+    .venv/bin/python team_service.py xray_team 을 실행하는 것과 같은 일을 한다.
+    """
+    import urllib.request
+    import webbrowser
+    stop_service(quiet=True)
+    while in_use(port):         # 다른 프로그램이 쓰는 번호면 다음 번호로 옮긴다
+        port += 1
+    url = f"http://127.0.0.1:{port}"
+    status = Status(f"⏳ {team_file} 팀의 웹 화면을 띄우는 중입니다")
+    with open(LOG_FILE, "w", encoding="utf-8") as log:
+        proc = subprocess.Popen([sys.executable, "-u", str(ROOT / "team_service.py"), team_file, "--port", str(port), "--no-open"],
+                                cwd=ROOT, stdout=log, stderr=subprocess.STDOUT, start_new_session=True)
+    PID_FILE.write_text(str(proc.pid))
+    while status.seconds() < 90:
+        if proc.poll() is not None:
+            status.done("❌ 웹 화면을 띄우지 못했습니다. 이유:")
+            print(LOG_FILE.read_text(encoding="utf-8")[-1500:])
+            return None
+        try:
+            urllib.request.urlopen(url + "/info", timeout=1)
+            break
+        except Exception:
+            status.update(f"⏳ {team_file} 팀의 웹 화면을 띄우는 중입니다  ({status.seconds():.0f}초)")
+            time.sleep(0.5)
+    status.done(f"✅ 웹 화면이 켜졌습니다: {url}   (끄려면 stop_service())")
+    webbrowser.open(url)
+    if in_notebook():
+        from IPython.display import HTML, display
+        display(HTML(f'브라우저가 열리지 않으면 여기를 누르세요: <a href="{url}" target="_blank">{url}</a>'))
+    return url
+
+
+def connect_kiro(*args):
+    """connect_kiro.py를 실행한다. 예: connect_kiro("--team", "xray_team"). 터미널에서 실행하는 것과 같다."""
+    r = subprocess.run([sys.executable, str(ROOT / "connect_kiro.py"), *args], cwd=ROOT, capture_output=True, text=True)
+    print((r.stdout + r.stderr).strip())

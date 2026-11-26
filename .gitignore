@@ -12,3 +12,5 @@ setup.log
 .tools/
 distill/
 my_team.py
+.service.pid
+.service.log

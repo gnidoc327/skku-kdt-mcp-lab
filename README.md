@@ -227,10 +227,11 @@ bash setup.sh
 | `team_service.py` | 팀을 웹 화면이나 MCP 서버로 띄움 |
 | `data/xray/` | 공개 라이선스 흉부 엑스레이 9장과 사람이 쓴 판독 요약. 출처는 `SOURCES.md` |
 
-**웹 화면으로 쓰기** (JupyterLab은 켜 둔 채 새 터미널에서)
+**웹 화면으로 쓰기**
+
+노트북 2-3의 "5. 서비스로 띄우기" 셀을 실행하면 됩니다(`start_service("xray_team")`). 터미널에서 띄우려면 실습 폴더에서 아래를 실행합니다.
 
 ```bash
-cd ~/mcp-lab
 .venv/bin/python team_service.py xray_team
 ```
 
