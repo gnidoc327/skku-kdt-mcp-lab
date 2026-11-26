@@ -419,15 +419,15 @@ a:focus-visible, button:focus-visible { outline: 3px solid var(--eosin); outline
   <div class="bigribbon" aria-hidden="true"><i style="background:var(--hema-pale)"></i><i style="background:#C7D6F7"></i><i style="background:#8EA8EC"></i><i style="background:var(--eosin)"></i></div>
 </section>
 
-<section class="slide" data-notes="수업 전에 안내한 준비가 끝났는지 먼저 확인. 오늘 처음 온 사람과 지난 시간에 온 사람이 섞여 있으므로 손을 들게 해서 나눔. 처음 온 사람은 왼쪽 상자를 따라 함: Ollama 앱을 설치해 한 번 실행하고, 터미널에 세 줄을 붙여 넣음. 모델을 약 16GB 받아서 20~60분 걸리므로 가장 먼저 시작하게 하고, 받는 동안 설명을 듣고 옆 사람 화면을 같이 보게 함. 지난 시간에 온 사람은 오른쪽 상자의 네 줄. git checkout . 은 지난 시간에 노트북을 실행하며 남은 흔적을 지우는 것이고, 파일 이름이 바뀌어서 이 줄이 없으면 git pull이 멈춤. 두 경우 모두 '6/6 동작 확인' 아래에 ❌ 없이 ✅만 나오고 JupyterLab이 열리면 준비 끝. ❌가 나오면 폴더의 setup.log를 보여 달라고 함. Ollama 앱이 꺼져 있는 경우가 가장 흔함(메뉴 막대의 라마 아이콘 확인). 처음 온 사람도 오늘 실습(2-1부터)은 그대로 따라올 수 있음: 지난 시간의 노트북 1-1~1-6을 하지 않았어도 오늘 노트북은 따로 돌아가고, 필요한 개념(Agent, 도구, MCP)은 뒤의 '지난 시간에는 한 명, 오늘은 팀' 장에서 한 번 짚음. 지난 시간 내용이 궁금하면 수업 뒤에 1-1부터 해 보라고 안내.">
+<section class="slide" data-notes="수업 전에 안내한 준비가 끝났는지 먼저 확인. 오늘 처음 온 사람과 지난 시간에 온 사람이 섞여 있으므로 손을 들게 해서 나눔. 처음 온 사람은 왼쪽 상자를 따라 함: Ollama 앱을 내려받아 응용 프로그램 폴더로 옮기고, 터미널에 세 줄을 붙여 넣음. Ollama 앱이 꺼져 있으면 setup.sh가 대신 켜 줌(그래도 안 켜지면 응용 프로그램에서 직접 실행). 모델을 약 16GB 받아서 20~60분 걸리므로 가장 먼저 시작하게 하고, 받는 동안 설명을 듣고 옆 사람 화면을 같이 보게 함. 지난 시간에 온 사람은 오른쪽 상자의 네 줄. git checkout . 은 지난 시간에 노트북을 실행하며 남은 흔적을 지우는 것이고, 파일 이름이 바뀌어서 이 줄이 없으면 git pull이 멈춤. 두 경우 모두 '6/6 동작 확인' 아래에 ❌ 없이 ✅만 나오고 JupyterLab이 열리면 준비 끝. ❌가 나오면 폴더의 setup.log를 보여 달라고 함. Ollama 앱이 꺼져 있는 경우가 가장 흔함(메뉴 막대의 라마 아이콘 확인). 처음 온 사람도 오늘 실습(2-1부터)은 그대로 따라올 수 있음: 지난 시간의 노트북 1-1~1-6을 하지 않았어도 오늘 노트북은 따로 돌아가고, 필요한 개념(Agent, 도구, MCP)은 뒤의 '지난 시간에는 한 명, 오늘은 팀' 장에서 한 번 짚음. 지난 시간 내용이 궁금하면 수업 뒤에 1-1부터 해 보라고 안내.">
   <h2>시작 전에: 실습 준비</h2>
   <p class="small" style="margin-top:4px; font-size:18.5px">오늘 처음 오셨어도 괜찮습니다. 아래에서 내 경우를 골라 그대로 따라 하면 됩니다. 내려받는 데 시간이 걸리니 <strong>지금 바로 시작</strong>해 주세요.</p>
   <div class="cols" style="grid-template-columns:1fr 1fr; margin-top:16px; gap:36px; flex:none">
     <div>
       <h3 style="font-size:20px; color:var(--hema); margin-bottom:8px">오늘 처음 오신 분</h3>
-      <pre class="code" style="font-size:13.5px"><span class="c"># 1. Ollama 앱을 설치하고 한 번 실행</span>
+      <pre class="code" style="font-size:13.5px"><span class="c"># 1. Ollama 앱을 내려받아 설치 (실행은 안 해도 됩니다)</span>
 <span class="c">#    https://ollama.com/download</span>
-<span class="c">#    메뉴 막대에 라마 아이콘이 보이면 됩니다</span>
+<span class="c">#    내려받은 Ollama를 응용 프로그램 폴더로 옮기면 끝</span>
 
 <span class="c"># 2. 터미널을 열고 세 줄을 차례로 붙여 넣기</span>
 git clone https://github.com/gnidoc327/skku-kdt-mcp-lab.git mcp-lab
@@ -437,14 +437,14 @@ bash setup.sh</pre>
     </div>
     <div>
       <h3 style="font-size:20px; color:var(--eosin); margin-bottom:8px">지난 시간에 오신 분</h3>
-      <pre class="code" style="font-size:13.5px"><span class="c"># 1. Ollama 앱이 켜져 있는지 확인</span>
-<span class="c">#    (메뉴 막대의 라마 아이콘)</span>
-
-<span class="c"># 2. 터미널을 열고 네 줄을 차례로 붙여 넣기</span>
+      <pre class="code" style="font-size:13.5px"><span class="c"># 터미널을 열고 네 줄을 차례로 붙여 넣기</span>
 cd ~/mcp-lab
 git checkout .
 git pull
-bash setup.sh</pre>
+bash setup.sh
+
+<span class="c"># Ollama 앱이 꺼져 있으면 setup.sh가 대신 켭니다</span>
+<span class="c"># (메뉴 막대에 라마 아이콘이 생깁니다)</span></pre>
       <p class="mini" style="margin-top:8px">약 10GB를 더 받습니다. 15~40분 걸립니다. <code>git checkout .</code>은 지난 시간의 실행 흔적을 지웁니다(파일 이름이 바뀌어서 필요합니다).</p>
     </div>
   </div>

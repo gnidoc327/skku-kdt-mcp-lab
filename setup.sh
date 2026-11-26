@@ -31,12 +31,24 @@ on_exit() {
 trap on_exit EXIT
 
 STEP="1/6 Ollama 확인"; echo "$STEP"
+if ! command -v ollama >/dev/null && [ -d /Applications/Ollama.app ]; then
+  echo "   Ollama 앱을 켭니다 (설치하고 아직 한 번도 실행하지 않은 것 같습니다)..."
+  open -a Ollama; sleep 8
+fi
 if ! command -v ollama >/dev/null; then
   echo "❌ Ollama가 없습니다. https://ollama.com/download 에서 앱을 설치하고 한 번 실행한 뒤 다시 해 주세요."
   exit 1
 fi
+if ! ollama list >/dev/null 2>&1; then          # 앱이 꺼져 있으면 대신 켜 준다
+  echo "   Ollama 앱이 꺼져 있어서 켭니다..."
+  open -a Ollama 2>/dev/null || true
+  for _ in 1 2 3 4 5 6; do                    # 켜지는 데 몇 초 걸린다. 30초쯤 기다려 본다
+    ollama list >/dev/null 2>&1 && break
+    sleep 1
+  done
+fi
 if ! ollama list >/dev/null 2>&1; then
-  echo "❌ Ollama 앱이 꺼져 있습니다. 응용 프로그램에서 Ollama를 실행한 뒤 다시 해 주세요."
+  echo "❌ Ollama 앱을 켜지 못했습니다. 응용 프로그램에서 Ollama를 직접 실행하고(메뉴 막대에 라마 아이콘이 보이면 됩니다) 다시 해 주세요."
   exit 1
 fi
 echo "ollama: $(ollama --version 2>&1 | head -1)" >> "$LOG"
