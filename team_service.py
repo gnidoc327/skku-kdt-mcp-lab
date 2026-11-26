@@ -26,6 +26,7 @@ TEAM = importlib.import_module(args[0].removesuffix(".py")).TEAM
 # 모델을 다루는 일은 한 줄로 세워 한 번에 하나씩 처리한다 (작은 모델은 불러온 그 thread에서만 쓸 수 있다)
 worker = ThreadPoolExecutor(max_workers=1)
 _router = {}
+STARTED = int(time.time())     # 서버를 켠 시각. 사진 주소에 붙여서 브라우저가 예전에 받아 둔 사진을 다시 쓰지 않게 한다
 progress = {"events": [], "draft": "", "start": 0.0}      # 지금 처리 중인 질문의 진행 소식. 웹 화면이 1초마다 읽어 간다
 
 
@@ -49,9 +50,14 @@ def run(question: str, case: str = "", router: str = "teacher", watch: bool = Fa
     return worker.submit(job).result()
 
 
-def image_path(case: str):
-    """검토 대상이 이 폴더 안의 사진 파일이면 그 경로를 돌려준다. 폴더 밖의 파일은 내주지 않는다."""
-    candidates = [Path(case).expanduser()] + [d / case for d in (ROOT / "data").iterdir() if d.is_dir()]
+def image_path(case: str, marked: bool = False):
+    """검토 대상이 이 폴더 안의 사진 파일이면 그 경로를 돌려준다. 폴더 밖의 파일은 내주지 않는다.
+
+    marked=True면 사람에게 보여 주는 설명용 사진(화살표를 그려 넣은 것, data/<폴더>/marked/)을 찾는다.
+    """
+    name = Path(case).name
+    candidates = ([d / "marked" / name for d in (ROOT / "data").iterdir() if d.is_dir()] if marked else
+                  [Path(case).expanduser()] + [d / case for d in (ROOT / "data").iterdir() if d.is_dir()])
     for p in candidates:
         p = p.resolve()
         if p.is_file() and p.suffix.lower() in {".png", ".jpg", ".jpeg", ".webp"} and ROOT in p.parents:
@@ -93,7 +99,8 @@ main{max-width:1080px;margin:0 auto;padding:28px 20px 60px}h1{font-size:26px;mar
 .sub{color:var(--sub);margin:0 0 20px}.grid{display:grid;grid-template-columns:320px 1fr;gap:24px}@media(max-width:800px){.grid{grid-template-columns:1fr}}
 label{display:block;font-weight:600;font-size:14px;margin:14px 0 6px}select,textarea,button{width:100%;font:inherit;border:1px solid var(--line);border-radius:8px;padding:10px 12px;background:#fff;color:var(--ink)}
 textarea{min-height:92px;resize:vertical}button{background:var(--blue);color:#fff;border:0;font-weight:700;margin-top:16px;cursor:pointer}button:disabled{background:#9db0e6;cursor:wait}
-#preview{width:100%;border-radius:8px;border:1px solid var(--line);margin-top:10px;display:none;background:#000}
+#preview,#marked{width:100%;border-radius:8px;border:1px solid var(--line);margin-top:10px;display:none;background:#000}#marked{display:block}
+.cap{margin:4px 0 2px}[hidden]{display:none!important}
 .who{list-style:none;padding:0;margin:0}.who li{border-left:3px solid var(--line);padding:2px 0 2px 10px;margin:8px 0;font-size:14px;color:var(--sub)}.who b{color:var(--ink)}
 .who li.on{border-color:var(--teal)}.who li.on b{color:var(--teal)}
 .steps{list-style:none;margin:0;padding:0}.steps>li{padding:7px 0 7px 12px;border-left:3px solid var(--line);margin:6px 0;color:var(--sub)}
@@ -109,7 +116,8 @@ pre{white-space:pre-wrap;word-break:break-word;font:inherit;margin:0}.note{font-
 </style></head><body><main>
 <h1><span id="goal"></span></h1><p class="sub">전문가 Agent 여러 명이 각자 도구로 근거를 찾고, 지휘자가 하나의 답으로 합칩니다. 모두 이 컴퓨터 안에서 돕니다.</p>
 <div class="grid"><section>
-<div id="casebox"><label for="case">검토 대상</label><select id="case"></select><img id="preview" alt="검토 대상 사진"></div>
+<div id="casebox"><label for="case">검토 대상</label><select id="case"></select><div id="markedbox" hidden><img id="marked" alt="설명용 사진"><p class="help cap"><b>사람에게 보여 주는 사진.</b> 병변 위치에 화살표를 그려 넣은 것입니다.</p></div>
+<img id="preview" alt="검토 대상 사진"><p class="help cap" id="previewcap"></p></div>
 <label for="q">질문</label><textarea id="q">종합적으로 검토해 줘</textarea>
 <label for="router">전문가를 고르는 모델</label><select id="router"></select>
 <p class="help">질문을 보고 <b>어느 전문가를 부를지 정하는 일</b>(2단계)만 이 모델이 합니다. 전문가의 분석과 통합 답변은 어느 쪽을 골라도 큰 모델이 씁니다. 그래서 두 모델이 같은 전문가를 고르면 답의 질은 같고, 다르게 고르면 불리는 전문가가 달라집니다.</p>
@@ -130,7 +138,11 @@ async function init(){
   else $('casebox').style.display = 'none';
   $('router').innerHTML = `<option value="teacher">큰 모델 (${esc(info.teacher)})</option>` + (info.has_student ? '<option value="student" selected>증류한 작은 모델</option>' : '<option disabled>증류한 작은 모델 (아직 학습 안 함)</option>');
 }
-function preview(){ const img = $('preview'); img.onerror = () => img.style.display = 'none'; img.onload = () => img.style.display = 'block'; img.src = 'image?case=' + encodeURIComponent($('case').value); }
+function preview(){ const c = $('case').value, img = $('preview'), has = info.marked.includes(c);
+  img.onerror = () => { img.style.display = 'none'; $('previewcap').textContent = ''; };
+  img.onload = () => { img.style.display = 'block'; $('previewcap').innerHTML = has ? '<b>모델이 보는 사진.</b> 화살표가 없는 원본입니다. 모델은 이것만 봅니다.' : '<b>모델이 보는 사진.</b> 이 사진 그대로 봅니다.'; };
+  img.src = 'image?v=' + info.started + '&case=' + encodeURIComponent(c);
+  $('markedbox').hidden = !has; if(has) $('marked').src = 'image?v=' + info.started + '&marked=1&case=' + encodeURIComponent(c); }
 const card = x => `<div class="card"><h3>${esc(x.title)}</h3><div class="meta">${x.seconds}초 · 쓴 도구 ${x.tools.map(t => `<span class="tag">${esc(t)}</span>`).join('') || '없음'}</div><pre>${md(x.answer)}</pre></div>`;
 const title = k => (info.experts.find(e => e.key === k) || {}).title || k;
 function live(events, draft, now){      // 일하는 동안 보여 주는 화면: 단계별 진행, 끝난 전문가의 답, 쓰고 있는 통합 답변
@@ -192,13 +204,15 @@ async def home(request):
 
 async def info(request):
     from agent_team import EXPERT_MODEL
-    return JSONResponse({"name": TEAM.name, "goal": TEAM.goal, "cases": TEAM.cases, "teacher": EXPERT_MODEL, "has_student": TEAM.has_student(),
+    return JSONResponse({"name": TEAM.name, "goal": TEAM.goal, "cases": TEAM.cases, "teacher": EXPERT_MODEL, "has_student": TEAM.has_student(), "started": STARTED,
+                         "marked": [c for c in TEAM.cases if image_path(c, True)],      # 설명용(화살표) 사진이 따로 있는 검토 대상
                          "experts": [{"key": k, "title": v["title"], "role": v["role"]} for k, v in TEAM.experts.items()]})
 
 
 async def image(request):
-    p = image_path(request.query_params.get("case", ""))
-    return FileResponse(p) if p else JSONResponse({"error": "사진이 아닙니다"}, status_code=404)
+    p = image_path(request.query_params.get("case", ""), request.query_params.get("marked") == "1")
+    # no-cache: 사진 파일을 바꿨는데 브라우저가 예전 사진을 계속 보여 주는 일을 막는다
+    return FileResponse(p, headers={"Cache-Control": "no-cache"}) if p else JSONResponse({"error": "사진이 아닙니다"}, status_code=404)
 
 
 def compare_routers(question: str) -> dict:

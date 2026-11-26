@@ -37,6 +37,37 @@ def _look(path, prompt):
     return r["message"]["content"].strip()
 
 
+MARKED_DIR = XRAY_DIR / "marked"      # 사람에게 설명할 때 보여 주는 사진 (병변 위치에 화살표를 그려 넣은 것)
+
+
+def marked_image(case):
+    """같은 사진에 화살표를 그려 넣은 설명용 사진이 있으면 그 경로를, 없으면 None을 돌려준다.
+
+    모델에게는 언제나 화살표가 없는 원본을 준다. 화살표가 있으면 "여기를 보라"는 힌트가 되어
+    모델이 사진을 읽은 것인지 화살표를 읽은 것인지 알 수 없기 때문이다.
+    """
+    path = MARKED_DIR / Path(case).name
+    return path if path.is_file() else None
+
+
+def show_case(case, width=340):
+    """노트북에서 사진을 보여 준다. 설명용 사진이 있으면 모델이 보는 사진과 나란히 놓는다."""
+    import base64
+    from IPython.display import HTML, display
+    path = Path(case).expanduser()
+    path = path if path.is_file() else XRAY_DIR / case
+
+    def img(p, caption):
+        kind = "png" if p.suffix.lower() == ".png" else "jpeg"
+        data = base64.b64encode(p.read_bytes()).decode()
+        return (f'<figure style="margin:0"><img src="data:image/{kind};base64,{data}" width="{width}">'
+                f'<figcaption style="font-size:13px;margin-top:4px">{caption}</figcaption></figure>')
+    marked = marked_image(case)
+    parts = ([img(marked, "<b>사람에게 보여 주는 사진</b><br>병변 위치에 화살표를 그려 넣은 것")] if marked else []) + \
+            [img(path, "<b>모델이 보는 사진</b><br>" + ("화살표가 없는 원본. 모델은 이것만 봅니다" if marked else "이 사진 그대로 봅니다"))]
+    display(HTML(f'<div style="display:flex;gap:16px;align-items:flex-start">{"".join(parts)}</div>'))
+
+
 def prepare(case):
     """검토할 사진을 정하고, 모든 전문가에게 줄 기초 자료(사진 설명)를 만든다."""
     path = Path(case).expanduser()
