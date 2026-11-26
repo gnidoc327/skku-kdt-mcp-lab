@@ -1,6 +1,6 @@
 """내가 만든 Multi-Agent 팀을 서비스로 띄운다.
 
-웹 화면:   .venv/bin/python team_service.py xray_team          → 브라우저에서 http://localhost:8000
+웹 화면:   .venv/bin/python team_service.py xray_team          → 브라우저가 열린다 (http://127.0.0.1:8000, 이미 쓰는 중이면 다음 번호)
 MCP 서버:  .venv/bin/python team_service.py xray_team --mcp    → Kiro나 Claude가 ask_team 도구로 부른다
 
 첫 번째 인자는 팀이 들어 있는 파일 이름(.py 빼고)이다. 그 파일에 TEAM = Team(...)이 있어야 한다.
@@ -16,7 +16,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent
 args = [a for a in sys.argv[1:] if not a.startswith("--")]
 if not args:
-    sys.exit("사용법: .venv/bin/python team_service.py <팀 파일 이름> [--mcp] [--port 8000]\n예:     .venv/bin/python team_service.py xray_team")
+    sys.exit("사용법: .venv/bin/python team_service.py <팀 파일 이름> [--mcp] [--port 8000] [--no-open]\n예:     .venv/bin/python team_service.py xray_team")
 os.environ.setdefault("HF_HUB_DISABLE_PROGRESS_BARS", "1")
 os.environ.setdefault("HF_HUB_VERBOSITY", "error")
 sys.path.insert(0, str(ROOT))
@@ -156,8 +156,28 @@ async def ask(request):
         return JSONResponse({"error": str(e)})
 
 
+def in_use(port: int) -> bool:
+    """이 번호를 다른 프로그램이 이미 쓰고 있는지 본다 (localhost로 열리는 두 주소 모두)."""
+    import socket
+    for family, host in ((socket.AF_INET, "127.0.0.1"), (socket.AF_INET6, "::1")):
+        with socket.socket(family, socket.SOCK_STREAM) as sock:
+            sock.settimeout(0.3)
+            if sock.connect_ex((host, port)) == 0:
+                return True
+    return False
+
+
 if __name__ == "__main__":
     port = int(sys.argv[sys.argv.index("--port") + 1]) if "--port" in sys.argv else 8000
-    print(f"✅ {TEAM.goal}: 브라우저에서 http://localhost:{port} 을 여세요. 끝낼 때는 Ctrl+C")
+    first = port
+    while in_use(port):         # 다른 프로그램이 쓰는 번호면 다음 번호로 옮긴다 (그대로 열면 그 프로그램의 화면이 뜬다)
+        port += 1
+    if port != first:
+        print(f"⚠️  {first}번은 다른 프로그램이 쓰고 있어서 {port}번으로 엽니다.")
+    url = f"http://127.0.0.1:{port}"
+    print(f"✅ {TEAM.goal}: 브라우저에서 {url} 을 여세요. 끝낼 때는 Ctrl+C")
+    if "--no-open" not in sys.argv:
+        import threading, webbrowser
+        threading.Timer(1.0, webbrowser.open, [url]).start()     # 서버가 뜬 뒤 브라우저를 자동으로 연다
     app = Starlette(routes=[Route("/", home), Route("/info", info), Route("/image", image), Route("/ask", ask, methods=["POST"])])
     uvicorn.run(app, host="127.0.0.1", port=port, log_level="warning")

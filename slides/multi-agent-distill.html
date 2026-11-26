@@ -729,7 +729,7 @@ TEAM = Team(name="checkup", goal="건강검진 결과 상담 팀",
   <footer class="foot"><span>Multi-Agent와 Distillation</span><span class="pg"></span></footer>
 </section>
 
-<section class="slide" data-notes="실습 4 앞부분. JupyterLab은 켜 둔 채 새 터미널을 열어 실행. 브라우저에서 localhost:8000을 열면 사진을 고르고 질문하는 화면이 나옴. 어떤 전문가가 불렸는지, 각자 어떤 도구를 썼는지, 통합 답변이 카드로 보임. '전문가를 고르는 모델'을 큰 모델과 증류한 작은 모델로 바꿔 가며 같은 질문을 넣어 보게 함. 내 팀은 xray_team 자리에 my_team을 넣음. 이 화면은 내 컴퓨터 안에서만 열리고 밖에서는 접속할 수 없음. 끝낼 때는 Ctrl+C.">
+<section class="slide" data-notes="실습 4 앞부분. JupyterLab은 켜 둔 채 새 터미널을 열어 실행. 브라우저가 저절로 열리고 사진을 고르고 질문하는 화면이 나옴. 8000번을 다른 프로그램이 쓰고 있으면 8001번처럼 다음 번호로 열리고 주소는 터미널에 나옴(엉뚱한 화면이 뜨면 주소의 번호를 확인). 어떤 전문가가 불렸는지, 각자 어떤 도구를 썼는지, 통합 답변이 카드로 보임. '전문가를 고르는 모델'을 큰 모델과 증류한 작은 모델로 바꿔 가며 같은 질문을 넣어 보게 함. 내 팀은 xray_team 자리에 my_team을 넣음. 이 화면은 내 컴퓨터 안에서만 열리고 밖에서는 접속할 수 없음. 끝낼 때는 Ctrl+C.">
   <h2>실습 4. 팀을 웹 화면으로 띄우기</h2>
   <div class="cols" style="grid-template-columns: 1fr 1fr; gap:48px; margin-top:26px">
     <div>
@@ -737,12 +737,12 @@ TEAM = Team(name="checkup", goal="건강검진 결과 상담 팀",
 cd ~/mcp-lab
 .venv/bin/python team_service.py xray_team
 
-<span class="c"># 브라우저에서 열기</span>
-http://localhost:8000
+<span class="c"># 브라우저가 저절로 열립니다. 안 열리면 터미널에 나온 주소로</span>
+http://127.0.0.1:8000
 
 <span class="c"># 내 팀은 이름만 바꿉니다</span>
 .venv/bin/python team_service.py my_team</pre>
-      <p class="mini">끝낼 때는 터미널에서 Ctrl+C. 내 컴퓨터 안에서만 열립니다.</p>
+      <p class="mini">끝낼 때는 터미널에서 Ctrl+C. 내 컴퓨터 안에서만 열립니다.<br>8000번을 다른 프로그램이 쓰고 있으면 8001번으로 열립니다.</p>
     </div>
     <ul class="plain" style="gap:16px">
       <li style="font-size:19.5px"><strong>사진과 질문을 고르고 "질문하기"</strong><span>불린 전문가, 각자 쓴 도구, 통합 답변이 카드로 나옵니다</span></li>
