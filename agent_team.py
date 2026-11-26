@@ -18,7 +18,7 @@ import subprocess
 import sys
 import time
 from collections import Counter
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
 os.environ.setdefault("HF_HUB_DISABLE_PROGRESS_BARS", "1")      # 모델을 불러올 때 진행 막대를 숨긴다
@@ -137,10 +137,17 @@ class Team:
         keys = [k for k in (router or self.route_with_teacher)(question) if k in self.keys] or self.keys
         route_seconds = round(time.time() - t0, 2)
         say(f"🧭 고른 전문가: {', '.join(self.experts[k]['title'] for k in keys)}  (고르는 데 {route_seconds}초)")
+        say(f"⏳ 전문가 {len(keys)}명이 동시에 일하는 중입니다. 한 명에 20~40초 걸립니다.")
+        t1 = time.time()
         with ThreadPoolExecutor(max_workers=len(keys)) as pool:      # 고른 전문가들이 동시에 일한다
-            results = list(pool.map(lambda k: self.ask_expert(k, question, context), keys))
+            jobs = {pool.submit(self.ask_expert, k, question, context): k for k in keys}
+            for n, job in enumerate(as_completed(jobs), 1):          # 한 명이 끝날 때마다 알려 준다
+                say(f"   ✅ {n}/{len(keys)} {self.experts[jobs[job]]['title']} 끝  ({time.time() - t1:.0f}초)")
+            results = [job.result() for job in jobs]                 # 맡긴 순서대로 모은다
         for r in results:
             say(f"\n🧑‍🔬 {r['title']}  ({r['seconds']}초, 도구: {' → '.join(r['tools']) or '안 씀'})\n{r['answer']}")
+        if len(results) > 1:
+            say("\n⏳ 지휘자가 전문가들의 답을 하나로 합치는 중입니다. 20~40초 걸립니다.")
         answer = self.synthesize(question, context, results) if len(results) > 1 else results[0]["answer"]
         answer += "\n\n" + self.disclaimer
         seconds = round(time.time() - start)

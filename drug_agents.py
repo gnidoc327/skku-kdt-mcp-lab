@@ -7,7 +7,7 @@
 """
 import os
 import time
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import ollama
 from strands import Agent, tool
@@ -106,10 +106,16 @@ def ask_expert(key: str, question: str, context: str) -> dict:
     return {"expert": key, "title": spec["title"], "answer": text, "tools": used(), "seconds": round(time.time() - start, 1)}
 
 
-def run_experts(keys: list, question: str, context: str) -> list:
-    """고른 전문가들에게 동시에 일을 맡긴다."""
+def run_experts(keys: list, question: str, context: str, say=None) -> list:
+    """고른 전문가들에게 동시에 일을 맡긴다. say에 print를 넘기면 한 명이 끝날 때마다 알려 준다."""
+    say = say or (lambda *a: None)
+    say(f"⏳ 전문가 {len(keys)}명이 동시에 일하는 중입니다. 한 명에 20~40초 걸립니다.")
+    start = time.time()
     with ThreadPoolExecutor(max_workers=len(keys)) as pool:
-        return list(pool.map(lambda k: ask_expert(k, question, context), keys))
+        jobs = {pool.submit(ask_expert, k, question, context): k for k in keys}
+        for n, job in enumerate(as_completed(jobs), 1):
+            say(f"   ✅ {n}/{len(keys)} {EXPERTS[jobs[job]]['title']} 끝  ({time.time() - start:.0f}초)")
+        return [job.result() for job in jobs]
 
 
 def synthesize(question: str, context: str, results: list) -> str:
@@ -137,9 +143,11 @@ def consult(question: str, drug: str, router) -> str:
     keys = router(question)
     print(f"👤 질문: {question}")
     print(f"🧭 고른 전문가: {', '.join(EXPERTS[k]['title'] for k in keys)}  (고르는 데 {time.time() - t0:.2f}초)")
-    results = run_experts(keys, question, context)
+    results = run_experts(keys, question, context, say=print)
     for r in results:
         print(f"\n🧑‍🔬 {r['title']}  ({r['seconds']}초, 도구: {' → '.join(r['tools']) or '안 씀'})\n{r['answer']}")
+    if len(results) > 1:
+        print("\n⏳ 지휘자가 전문가들의 답을 하나로 합치는 중입니다. 20~40초 걸립니다.")
     answer = synthesize(question, context, results) if len(results) > 1 else results[0]["answer"]
     print("\n📋 통합 답변\n" + answer)
     print(f"\n⏱️ {time.time() - start:.0f}초, 전문가 {len(keys)}명")
