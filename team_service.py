@@ -10,6 +10,7 @@ MCP 서버:  .venv/bin/python team_service.py xray_team --mcp    → Kiro나 Cla
 import importlib
 import os
 import sys
+import time
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
@@ -25,14 +26,24 @@ TEAM = importlib.import_module(args[0].removesuffix(".py")).TEAM
 # 모델을 다루는 일은 한 줄로 세워 한 번에 하나씩 처리한다 (작은 모델은 불러온 그 thread에서만 쓸 수 있다)
 worker = ThreadPoolExecutor(max_workers=1)
 _router = {}
+progress = {"events": [], "draft": "", "start": 0.0}      # 지금 처리 중인 질문의 진행 소식. 웹 화면이 1초마다 읽어 간다
 
 
-def run(question: str, case: str = "", router: str = "teacher") -> dict:
+def on_event(event):
+    if event["type"] == "draft":
+        progress["draft"] = event["text"]       # 쓰고 있는 통합 답변은 가장 최근 것만 둔다
+    else:
+        progress["events"].append({**event, "at": round(time.time() - progress["start"])})
+
+
+def run(question: str, case: str = "", router: str = "teacher", watch: bool = False) -> dict:
     def job():
+        if watch:
+            progress.update(events=[], draft="", start=time.time())
         fn = None
         if router == "student" and TEAM.has_student():
             fn = _router.get("student") or _router.setdefault("student", TEAM.load_student())
-        result = TEAM.ask(question, case=case, router=fn, quiet=True)
+        result = TEAM.ask(question, case=case, router=fn, quiet=True, on_event=on_event if watch else None)
         result["router"] = "student" if fn else "teacher"
         return result
     return worker.submit(job).result()
@@ -85,6 +96,13 @@ textarea{min-height:92px;resize:vertical}button{background:var(--blue);color:#ff
 #preview{width:100%;border-radius:8px;border:1px solid var(--line);margin-top:10px;display:none;background:#000}
 .who{list-style:none;padding:0;margin:0}.who li{border-left:3px solid var(--line);padding:2px 0 2px 10px;margin:8px 0;font-size:14px;color:var(--sub)}.who b{color:var(--ink)}
 .who li.on{border-color:var(--teal)}.who li.on b{color:var(--teal)}
+.steps{list-style:none;margin:0;padding:0}.steps>li{padding:7px 0 7px 12px;border-left:3px solid var(--line);margin:6px 0;color:var(--sub)}
+.steps>li.run{border-color:var(--blue)}.steps>li.run b{color:var(--blue)}.steps>li.done{border-color:var(--teal)}.steps>li.done b{color:var(--ink)}
+.steps .n{display:inline-block;min-width:34px;font-weight:700;font-size:13px}.t{font-size:13px;color:var(--sub);font-weight:400}.steps .log{margin:4px 0 0 38px}
+#compare{margin-top:8px;background:#fff;color:var(--blue);border:1px solid var(--blue)}#compare:disabled{color:#9db0e6;border-color:#9db0e6;background:#fff}
+.help{font-size:13px;color:var(--sub);margin:6px 0 0}
+.log{font-size:14px;color:var(--sub);margin:0;padding:0;list-style:none}.log li{padding:2px 0}.log li b{color:var(--ink)}
+.who li.work{border-color:var(--blue)}.who li.work b{color:var(--blue)}
 .card{border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin-bottom:14px}.card h3{margin:0 0 6px;font-size:16px}.card.final{border-color:var(--blue);background:var(--soft)}
 .meta{font-size:13px;color:var(--sub);margin-bottom:8px}.tag{display:inline-block;background:#e3f5f2;color:#0b6f62;border-radius:4px;padding:1px 7px;font-size:12px;margin-right:4px}
 pre{white-space:pre-wrap;word-break:break-word;font:inherit;margin:0}.note{font-size:13px;color:var(--sub);margin-top:22px}
@@ -94,9 +112,11 @@ pre{white-space:pre-wrap;word-break:break-word;font:inherit;margin:0}.note{font-
 <div id="casebox"><label for="case">검토 대상</label><select id="case"></select><img id="preview" alt="검토 대상 사진"></div>
 <label for="q">질문</label><textarea id="q">종합적으로 검토해 줘</textarea>
 <label for="router">전문가를 고르는 모델</label><select id="router"></select>
+<p class="help">질문을 보고 <b>어느 전문가를 부를지 정하는 일</b>(2단계)만 이 모델이 합니다. 전문가의 분석과 통합 답변은 어느 쪽을 골라도 큰 모델이 씁니다. 그래서 두 모델이 같은 전문가를 고르면 답의 질은 같고, 다르게 고르면 불리는 전문가가 달라집니다.</p>
 <button id="go">질문하기</button>
+<button id="compare">두 모델이 고르는 전문가만 비교하기</button>
 <label>전문가</label><ul class="who" id="who"></ul>
-</section><section id="out"><div class="card"><div class="meta">질문을 넣고 "질문하기"를 누르세요. 전문가가 많이 필요한 질문은 1~2분 걸립니다.</div></div></section></div>
+</section><section id="out"><div class="card"><div class="meta">질문을 넣고 "질문하기"를 누르세요. 전문가가 많이 필요한 질문은 1~2분 걸립니다. 일하는 동안 진행 상황이 여기에 나옵니다.</div></div></section></div>
 <p class="note">교육·연구용 실습입니다. 진료나 임상 판단을 대신하지 않습니다.</p>
 </main><script>
 const $ = id => document.getElementById(id), esc = s => String(s).replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
@@ -111,20 +131,56 @@ async function init(){
   $('router').innerHTML = `<option value="teacher">큰 모델 (${esc(info.teacher)})</option>` + (info.has_student ? '<option value="student" selected>증류한 작은 모델</option>' : '<option disabled>증류한 작은 모델 (아직 학습 안 함)</option>');
 }
 function preview(){ const img = $('preview'); img.onerror = () => img.style.display = 'none'; img.onload = () => img.style.display = 'block'; img.src = 'image?case=' + encodeURIComponent($('case').value); }
+const card = x => `<div class="card"><h3>${esc(x.title)}</h3><div class="meta">${x.seconds}초 · 쓴 도구 ${x.tools.map(t => `<span class="tag">${esc(t)}</span>`).join('') || '없음'}</div><pre>${md(x.answer)}</pre></div>`;
+const title = k => (info.experts.find(e => e.key === k) || {}).title || k;
+function live(events, draft, now){      // 일하는 동안 보여 주는 화면: 단계별 진행, 끝난 전문가의 답, 쓰고 있는 통합 답변
+  const names = (events.find(e => e.type === 'steps') || {names: []}).names, steps = names.map((name, i) => ({n: i + 1, name, state: 'wait', sub: []}));
+  const done = []; let cur = null;
+  for(const e of events){
+    if(e.type === 'step'){ cur = steps[e.n - 1]; cur.state = 'run'; cur.from = e.at; }
+    if(e.type === 'step_done'){ const st = steps[e.n - 1]; st.state = 'done'; st.seconds = e.seconds; st.note = e.note; }
+    if(e.type === 'route') e.experts.forEach(k => document.querySelector(`#who li[data-k="${k}"]`).classList.add('work'));
+    if(e.type === 'tool' && cur) cur.sub.push(`🔧 ${esc(e.title)}: ${esc(e.name)}(${esc(e.args)})  (${e.at}초)`);
+    if(e.type === 'expert'){ if(cur) cur.sub.push(`✅ <b>${esc(e.result.title)}</b> 끝  (${e.result.seconds}초)`); done.push(e.result);
+      const li = document.querySelector(`#who li[data-k="${e.result.expert}"]`); li.classList.remove('work'); li.classList.add('on'); }
+  }
+  const row = st => `<li class="${st.state}"><span class="n">${st.n}/${steps.length}</span> <b>${esc(st.name)}</b> `
+    + (st.state === 'done' ? `<span class="t">끝 · ${st.seconds}초${st.note ? ' · ' + esc(st.note) : ''}</span>`
+       : st.state === 'run' ? `<span class="t">진행 중 · ${Math.max(0, now - st.from)}초째</span>` : '<span class="t">기다리는 중</span>')
+    + (st.sub.length ? `<ul class="log">${st.sub.map(l => `<li>${l}</li>`).join('')}</ul>` : '') + '</li>';
+  $('out').innerHTML = `<div class="card"><h3>진행 상황 <span class="t">전체 ${now}초째</span></h3><ol class="steps">${steps.map(row).join('') || '<li class="run">시작하는 중…</li>'}</ol></div>`
+    + (draft ? `<div class="card final"><h3>통합 답변 (쓰는 중)</h3><pre>${md(draft)} ▌</pre></div>` : '') + done.map(card).join('');
+}
 $('go').onclick = async () => {
   const btn = $('go'); btn.disabled = true; const t0 = Date.now();
   const tick = setInterval(() => btn.textContent = `전문가들이 일하는 중… ${Math.round((Date.now()-t0)/1000)}초`, 500);
-  document.querySelectorAll('#who li').forEach(li => li.classList.remove('on'));
+  document.querySelectorAll('#who li').forEach(li => li.classList.remove('on', 'work'));
+  const events = []; let watching = true, draft = ''; const sec = () => Math.round((Date.now() - t0) / 1000); live(events, draft, 0);
+  const watch = (async () => { while(watching){ await new Promise(r => setTimeout(r, 800)); if(!watching) break;
+    try{ const p = await (await fetch('progress?since=' + events.length)).json(); events.push(...p.events); draft = p.draft; if(watching) live(events, draft, sec()); }catch(e){} } })();
   try{
     const res = await fetch('ask', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({question: $('q').value, case: info.cases.length ? $('case').value : '', router: $('router').value})});
-    const r = await res.json();
+    const r = await res.json(); watching = false;
     if(r.error) throw new Error(r.error);
+    document.querySelectorAll('#who li').forEach(li => li.classList.remove('work'));
     r.experts.forEach(k => document.querySelector(`#who li[data-k="${k}"]`).classList.add('on'));
     $('out').innerHTML = `<div class="card final"><h3>통합 답변</h3><div class="meta">${r.seconds}초 · 전문가 ${r.experts.length}명 · 고른 모델: ${r.router === 'student' ? '증류한 작은 모델' : '큰 모델'} (${r.route_seconds}초)</div><pre>${md(r.answer)}</pre></div>`
-      + r.results.map(x => `<div class="card"><h3>${esc(x.title)}</h3><div class="meta">${x.seconds}초 · 쓴 도구 ${x.tools.map(t => `<span class="tag">${esc(t)}</span>`).join('') || '없음'}</div><pre>${md(x.answer)}</pre></div>`).join('')
+      + `<div class="card"><h3>단계별로 걸린 시간</h3><ol class="steps">${r.steps.map(st => `<li class="done"><span class="n">${st.n}/${r.steps.length}</span> <b>${esc(st.name)}</b> <span class="t">${st.seconds}초${st.note ? ' · ' + esc(st.note) : ''}</span></li>`).join('')}</ol></div>`
+      + r.results.map(card).join('')
       + (r.context ? `<div class="card"><h3>모든 전문가에게 준 기초 자료</h3><pre>${esc(r.context)}</pre></div>` : '');
   }catch(e){ $('out').innerHTML = `<div class="card"><h3>실패했습니다</h3><pre>${esc(e.message)}\n\nOllama 앱이 켜져 있는지 확인하고 다시 눌러 주세요.</pre></div>`; }
-  clearInterval(tick); btn.disabled = false; btn.textContent = '질문하기';
+  watching = false; clearInterval(tick); btn.disabled = false; btn.textContent = '질문하기';
+};
+$('compare').onclick = async () => {     // 전문가는 부르지 않고, 두 모델이 누구를 고르는지와 걸린 시간만 본다
+  const btn = $('compare'); btn.disabled = true; btn.textContent = '두 모델에게 물어보는 중…';
+  try{
+    const r = await (await fetch('route', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({question: $('q').value})})).json();
+    if(r.error) throw new Error(r.error);
+    const line = (name, x) => x ? `<li class="done"><b>${name}</b> <span class="t">${x.seconds}초</span><ul class="log"><li>${x.experts.map(k => esc(title(k))).join(', ')}</li></ul></li>` : `<li><b>${name}</b> <span class="t">아직 학습하지 않았습니다 (노트북 2-4)</span></li>`;
+    $('out').innerHTML = `<div class="card final"><h3>"${esc(r.question)}"에 누구를 부를까</h3><ol class="steps">${line('큰 모델 (' + esc(info.teacher) + ')', r.teacher)}${line('증류한 작은 모델', r.student)}</ol>`
+      + (r.student ? `<p class="help">${r.same ? '⭕ 두 모델이 같은 전문가를 골랐습니다. 이 질문은 어느 모델로 골라도 같은 전문가가 일합니다.' : '❌ 두 모델이 다르게 골랐습니다. 작은 모델이 배우지 못한 말투이거나 스승도 헷갈리는 질문입니다. 말투를 바꿔 가며 어디서 달라지는지 찾아보세요.'}</p>` : '') + '</div>';
+  }catch(e){ $('out').innerHTML = `<div class="card"><h3>실패했습니다</h3><pre>${esc(e.message)}</pre></div>`; }
+  btn.disabled = false; btn.textContent = '두 모델이 고르는 전문가만 비교하기';
 };
 init();
 </script></body></html>"""
@@ -145,13 +201,43 @@ async def image(request):
     return FileResponse(p) if p else JSONResponse({"error": "사진이 아닙니다"}, status_code=404)
 
 
+def compare_routers(question: str) -> dict:
+    """전문가를 부르지 않고, 큰 모델과 증류한 작은 모델이 각각 누구를 고르는지와 걸린 시간만 잰다."""
+    def job():
+        TEAM.route_with_teacher(question)       # 큰 모델을 미리 메모리에 올려 두고 잰다
+        t0 = time.time(); a = TEAM.route_with_teacher(question); t1 = time.time()
+        out = {"question": question, "teacher": {"experts": a, "seconds": round(t1 - t0, 2)}, "student": None, "same": None}
+        if TEAM.has_student():
+            fn = _router.get("student") or _router.setdefault("student", TEAM.load_student())
+            t2 = time.time(); b = fn(question); t3 = time.time()
+            out.update(student={"experts": b, "seconds": round(t3 - t2, 2)}, same=a == b)
+        return out
+    return worker.submit(job).result()
+
+
+async def route_view(request):
+    question = str((await request.json()).get("question", "")).strip()
+    if not question:
+        return JSONResponse({"error": "질문이 비어 있습니다."})
+    try:
+        return JSONResponse(await run_in_threadpool(compare_routers, question))
+    except BaseException as e:
+        return JSONResponse({"error": str(e)})
+
+
+async def progress_view(request):
+    """지금 처리 중인 질문의 진행 소식. since번째 뒤의 소식과, 쓰고 있는 통합 답변을 돌려준다."""
+    since = int(request.query_params.get("since", 0))
+    return JSONResponse({"events": progress["events"][since:], "draft": progress["draft"]})
+
+
 async def ask(request):
     body = await request.json()
     question = str(body.get("question", "")).strip()
     if not question:
         return JSONResponse({"error": "질문이 비어 있습니다."})
     try:
-        return JSONResponse(await run_in_threadpool(run, question, str(body.get("case", "")), body.get("router", "teacher")))
+        return JSONResponse(await run_in_threadpool(run, question, str(body.get("case", "")), body.get("router", "teacher"), True))
     except BaseException as e:      # 팀 코드의 SystemExit도 화면에 보여 준다
         return JSONResponse({"error": str(e)})
 
@@ -169,5 +255,6 @@ if __name__ == "__main__":
     if "--no-open" not in sys.argv:
         import threading, webbrowser
         threading.Timer(1.0, webbrowser.open, [url]).start()     # 서버가 뜬 뒤 브라우저를 자동으로 연다
-    app = Starlette(routes=[Route("/", home), Route("/info", info), Route("/image", image), Route("/ask", ask, methods=["POST"])])
+    app = Starlette(routes=[Route("/", home), Route("/info", info), Route("/image", image), Route("/ask", ask, methods=["POST"]),
+                            Route("/progress", progress_view), Route("/route", route_view, methods=["POST"])])
     uvicorn.run(app, host="127.0.0.1", port=port, log_level="warning")

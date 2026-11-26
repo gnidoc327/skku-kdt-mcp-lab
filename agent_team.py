@@ -25,6 +25,7 @@ os.environ.setdefault("HF_HUB_DISABLE_PROGRESS_BARS", "1")      # 모델을 불�
 
 import ollama
 from strands import Agent, tool
+from strands.hooks import BeforeToolCallEvent
 
 from lab_ui import Status, md, run_together, stream_answer, tool_log, wait_for
 from strands.models.ollama import OllamaModel
@@ -117,13 +118,17 @@ class Team:
             r = ollama.chat(**kw)
         return self._sorted(json.loads(r["message"]["content"])["experts"])
 
-    def ask_expert(self, key, question, context="", quiet=True):
+    def ask_expert(self, key, question, context="", quiet=True, on_event=None):
         """전문가 한 명에게 묻는다. 매번 새 Agent를 만들어 다른 질문의 기억이 섞이지 않게 한다."""
         spec = self.experts[key]
         agent = Agent(model=OllamaModel(host=OLLAMA_HOST, model_id=EXPERT_MODEL, temperature=0.2),
                       system_prompt=spec["prompt"] + self.rules, tools=spec["tools"], callback_handler=None)
         if not quiet:
             tool_log(agent, spec["title"])      # 도구를 부를 때마다 화면에 한 줄 알려 준다
+        if on_event:                            # 웹 화면에도 같은 소식을 보낸다
+            agent.hooks.add_callback(BeforeToolCallEvent, lambda e: on_event(
+                {"type": "tool", "expert": key, "title": spec["title"], "name": e.tool_use.get("name"),
+                 "args": ", ".join(f"{k}={str(v)[:50]!r}" for k, v in (e.tool_use.get("input") or {}).items())}))
         used = lambda: [b["toolUse"]["name"] for m in agent.messages for b in m.get("content", []) if "toolUse" in b]
         start = time.time()
         try:
@@ -134,7 +139,7 @@ class Team:
             text = f"(분석 실패: {e})"
         return {"expert": key, "title": spec["title"], "answer": text, "tools": used(), "seconds": round(time.time() - start, 1)}
 
-    def synthesize(self, question, context, results, quiet=True):
+    def synthesize(self, question, context, results, quiet=True, on_text=None):
         """지휘자가 전문가들의 답을 모아 하나로 쓴다. quiet=False면 쓰는 대로 화면에 보여 준다."""
         parts = "\n\n".join(f"### {r['title']}의 분석\n{r['answer']}" for r in results)
         prompt = (f"너는 {self.goal}의 지휘자다. 아래 전문가 분석만 근거로 한국어 통합 답변을 쓴다.\n"
@@ -143,46 +148,84 @@ class Team:
         messages = [{"role": "user", "content": prompt}]
         if not quiet:
             return stream_answer(EXPERT_MODEL, messages, who="지휘자")
+        if on_text:                             # 웹 화면: 쓰는 대로 지금까지의 글을 넘겨 준다
+            text = ""
+            for chunk in ollama.chat(model=EXPERT_MODEL, messages=messages, options={"temperature": 0.2}, stream=True):
+                text += chunk.message.content or ""
+                on_text(text)
+            return text.strip()
         r = ollama.chat(model=EXPERT_MODEL, messages=messages, options={"temperature": 0.2})
         return r["message"]["content"].strip()
 
-    def ask(self, question, case="", router=None, quiet=False):
+    def ask(self, question, case="", router=None, quiet=False, on_event=None):
         """질문 하나를 처음부터 끝까지 처리한다.
 
         case   : 검토 대상 (예: 사진 파일 이름). prepare 함수가 있을 때만 쓴다
         router : 질문을 받아 전문가 키 목록을 돌려주는 함수. 비워 두면 큰 모델이 고른다.
                  증류한 작은 모델로 바꾸려면 router=team.load_student()
+        on_event : 진행 소식을 받을 함수 (웹 화면이 쓴다). 사진 읽기, 고른 전문가, 도구 호출, 끝난 전문가의 답, 쓰고 있는 통합 답변
         """
+        tell = on_event or (lambda e: None)
         say = (lambda *a: None) if quiet else print
         start = time.time()
+        names = (["기초 자료 만들기"] if self.prepare else []) + ["전문가 고르기", "전문가들이 일하기", "지휘자가 답을 합치기"]
+        steps = []                              # 단계마다 걸린 시간을 적어 둔다
+
+        def step(name):
+            """단계를 시작한다고 알리고, 끝났을 때 부를 함수를 돌려준다."""
+            n, t = names.index(name) + 1, time.time()
+            tell({"type": "step", "n": n, "total": len(names), "name": name})
+            say(f"\n[{n}/{len(names)}] {name}")
+
+            def done(note=""):
+                steps.append({"n": n, "name": name, "seconds": round(time.time() - t, 1), "note": note})
+                tell({"type": "step_done", **steps[-1]})
+            return done
+
         say(f"👤 질문: {question}" + (f"   (대상: {case})" if case else ""))
-        if not self.prepare:
-            context = ""
-        elif quiet:
-            context = self.prepare(case)
-        else:                                   # 기초 자료 만들기(사진 읽기 등)도 오래 걸리므로 진행을 보여 준다
-            context = wait_for("기초 자료 만들기", lambda: self.prepare(case))
+        tell({"type": "steps", "names": names})
+        context = ""
+        if self.prepare:                        # 기초 자료 만들기(사진 읽기 등)도 오래 걸리므로 진행을 보여 준다
+            done = step("기초 자료 만들기")
+            context = self.prepare(case) if quiet else wait_for("기초 자료 만들기", lambda: self.prepare(case))
+            done()
+
+        done = step("전문가 고르기")
         t0 = time.time()
         keys = [k for k in (router or self.route_with_teacher)(question) if k in self.keys] or self.keys
         route_seconds = round(time.time() - t0, 2)
         say(f"🧭 고른 전문가: {', '.join(self.experts[k]['title'] for k in keys)}  (고르는 데 {route_seconds}초)")
+        tell({"type": "route", "experts": keys, "seconds": route_seconds})
+        done(", ".join(self.experts[k]["title"] for k in keys))
+
+        done = step("전문가들이 일하기")
         if quiet:
+            def work(k):
+                r = self.ask_expert(k, question, context, on_event=on_event)
+                tell({"type": "expert", "result": r})
+                return r
             with ThreadPoolExecutor(max_workers=len(keys)) as pool:      # 고른 전문가들이 동시에 일한다
-                results = list(pool.map(lambda k: self.ask_expert(k, question, context), keys))
+                results = list(pool.map(work, keys))
         else:                                   # 같은 일을 하되, 도구 호출과 끝난 사람의 답을 바로바로 보여 준다
             show = lambda name, r: md(f"**🧑‍🔬 {r['title']}**  ({r['seconds']}초, 도구: {' → '.join(r['tools']) or '안 씀'})\n\n{r['answer']}")
             results = run_together({self.experts[k]["title"]: (lambda k=k: self.ask_expert(k, question, context, quiet=False))
                                     for k in keys}, on_done=show)
+        done(f"{len(keys)}명")
+
+        done = step("지휘자가 답을 합치기")
         if len(results) > 1:
-            say("\n📋 통합 답변")
-            answer = self.synthesize(question, context, results, quiet=quiet)
-        else:
+            answer = self.synthesize(question, context, results, quiet=quiet,
+                                     on_text=(lambda t: tell({"type": "draft", "text": t})) if on_event else None)
+            done()
+        else:                                   # 한 명이면 그 답이 곧 답이다
             answer = results[0]["answer"]
+            say("전문가가 한 명이라 합칠 것이 없습니다. 그 답이 곧 답입니다.")
+            done("전문가가 한 명이라 건너뜀")
         answer += "\n\n" + self.disclaimer
         seconds = round(time.time() - start)
-        say(f"\n{self.disclaimer}\n\n⏱️ {seconds}초, 전문가 {len(keys)}명")
+        say(f"\n{self.disclaimer}\n\n⏱️ 전체 {seconds}초  (" + ", ".join(f"{x['name']} {x['seconds']}초" for x in steps) + ")")
         return {"question": question, "case": case, "context": context, "experts": keys, "route_seconds": route_seconds,
-                "results": results, "answer": answer, "seconds": seconds}
+                "results": results, "answer": answer, "seconds": seconds, "steps": steps}
 
     # ---------- 2) 증류: "전문가 고르기"를 작은 모델에게 가르치기 ----------
     @property

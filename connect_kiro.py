@@ -5,7 +5,8 @@
         .venv/bin/python connect_kiro.py --drug    (2일차: 신약 후보 검토 도구 drug-review도)
         .venv/bin/python connect_kiro.py --team xray_team   (2일차: 내가 만든 Multi-Agent 팀. my_team도 가능)
         .venv/bin/python connect_kiro.py --dev       (Kiro로 이 폴더에서 개발할 때: 자주 쓰는 안전한 명령은 묻지 않고 실행)
-        .venv/bin/python connect_kiro.py --dev-off   (--dev로 넣은 허용 규칙만 다시 뺀다)
+        .venv/bin/python connect_kiro.py --dev-all   (Kiro가 아무것도 묻지 않고 전부 하게 한다. 모든 폴더에 적용되니 실습 때만)
+        .venv/bin/python connect_kiro.py --dev-off   (--dev, --dev-all로 넣은 허용 규칙만 다시 뺀다)
 
 Kiro의 사용자 설정 ~/.kiro/settings/mcp.json 에 넣으므로 어느 폴더를 열어도 쓸 수 있다.
 """
@@ -48,7 +49,19 @@ def dev_rules():
     ]
 
 
-if "--dev" in sys.argv or "--dev-off" in sys.argv:
+def all_rules():
+    """Kiro가 묻지 않고 전부 하게 하는 규칙. 이 폴더뿐 아니라 Kiro로 여는 모든 폴더에 적용된다.
+
+    되돌릴 수 없는 몇 가지만 막아 둔다(deny는 allow보다 먼저 적용된다): 관리자 권한(sudo),
+    홈 폴더나 컴퓨터 전체를 지우는 명령. Kiro가 원래 지키는 것(.git, .vscode, Kiro 설정 파일)은 이 규칙과 상관없이 남는다.
+    """
+    return [
+        {"capability": "all", "effect": "allow"},
+        {"capability": "shell", "effect": "deny", "match": ["sudo *", "rm -rf /", "rm -rf /*", "rm -rf ~", "rm -rf ~/", "rm -rf ~/*", "rm -rf $HOME*"]},
+    ]
+
+
+if "--dev" in sys.argv or "--dev-all" in sys.argv or "--dev-off" in sys.argv:
     import yaml
     perm = Path(os.getenv("KIRO_PERMISSIONS", "~/.kiro/settings/permissions.yaml")).expanduser()
     doc = (yaml.safe_load(perm.read_text(encoding="utf-8")) if perm.exists() else None) or {}
@@ -57,21 +70,32 @@ if "--dev" in sys.argv or "--dev-off" in sys.argv:
     if perm.exists():
         shutil.copy(perm, str(perm) + ".bak")
     mine = dev_rules()
-    ours = lambda r: r in mine or (isinstance(r, dict) and any(str(lab) in str(m) for m in r.get("match", [])))
+    ours = lambda r: r in mine or r in all_rules() or (isinstance(r, dict) and any(str(lab) in str(m) for m in r.get("match", [])))
     doc["rules"] = [r for r in doc.get("rules", []) if not ours(r)]      # 전에 넣은 규칙은 빼고
-    if "--dev" in sys.argv:
+    if "--dev-all" in sys.argv:
+        doc["rules"] += all_rules()
+    elif "--dev" in sys.argv:
         doc["rules"] += mine
     perm.parent.mkdir(parents=True, exist_ok=True)
     perm.write_text(yaml.safe_dump(doc, allow_unicode=True, sort_keys=False, width=200), encoding="utf-8")
     if "--dev-off" in sys.argv:
         print(f"✅ 허용 규칙을 뺐습니다. 이제 Kiro가 전처럼 매번 묻습니다.\n   설정 파일: {perm}")
         sys.exit(0)
-    print(f"✅ Kiro가 이 폴더({lab})에서 묻지 않고 하는 일을 정했습니다.")
-    print("   묻지 않음: 가상환경 파이썬 실행, 파일 보기, 이 폴더 안의 파일 고치기, git 상태 보기와 commit, 실습 MCP 도구")
-    print("   매번 물음: 파일 삭제, 패키지 설치, 모델 받기, git push, 증류 학습, 그 밖의 모든 명령")
-    print(f"   설정 파일: {perm}   (되돌리기: .venv/bin/python connect_kiro.py --dev-off)")
-    print("   이제 Kiro에서 File → Open Folder로 이 폴더를 열고, 채팅창에 이렇게 입력해 보세요.")
-    print("   xray_team.py를 본보기로 my_team.py에 '복약 상담 팀'을 만들어 줘. 전문가는 두 명, 만든 뒤 질문 하나로 돌려서 확인해 줘")
+    if "--dev-all" in sys.argv:
+        print("✅ 이제 Kiro가 묻지 않고 전부 합니다 (명령 실행, 파일 고치기와 지우기, 패키지 설치, 증류 학습, MCP 도구).")
+        print("   ⚠️  이 폴더뿐 아니라 Kiro로 여는 모든 폴더에 적용됩니다. 실습이 끝나면 꼭 되돌리세요.")
+        print("   막아 둔 것: sudo, 홈 폴더나 컴퓨터 전체를 지우는 명령. .git과 Kiro 설정 파일은 Kiro가 여전히 묻거나 막습니다.")
+        print(f"   설정 파일: {perm}   (되돌리기: .venv/bin/python connect_kiro.py --dev-off)")
+        print("   Kiro가 폴더를 믿느냐고 물으면 믿는다를 골라야 적용됩니다.")
+        if len([a for a in sys.argv[1:] if a.startswith("--")]) == 1:
+            sys.exit(0)
+    else:
+        print(f"✅ Kiro가 이 폴더({lab})에서 묻지 않고 하는 일을 정했습니다.")
+        print("   묻지 않음: 가상환경 파이썬 실행, 파일 보기, 이 폴더 안의 파일 고치기, git 상태 보기와 commit, 실습 MCP 도구")
+        print("   매번 물음: 파일 삭제, 패키지 설치, 모델 받기, git push, 증류 학습, 그 밖의 모든 명령")
+        print(f"   설정 파일: {perm}   (되돌리기: .venv/bin/python connect_kiro.py --dev-off)")
+        print("   이제 Kiro에서 File → Open Folder로 이 폴더를 열고, 채팅창에 이렇게 입력해 보세요.")
+        print("   xray_team.py를 본보기로 my_team.py에 '복약 상담 팀'을 만들어 줘. 전문가는 두 명, 만든 뒤 질문 하나로 돌려서 확인해 줘")
     if len([a for a in sys.argv[1:] if a.startswith("--")]) == 1:
         sys.exit(0)
 
