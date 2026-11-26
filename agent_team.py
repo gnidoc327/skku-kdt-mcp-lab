@@ -9,6 +9,7 @@
 완성 예시는 xray_team.py, 설명은 example/2-3_my_multi_agent.ipynb 에 있다.
 교육·연구용이며 진료나 임상 판단을 대신하지 않는다.
 """
+import hashlib
 import itertools
 import json
 import os
@@ -278,7 +279,53 @@ class Team:
         count_tokens("지휘자 (답 합치기)", r)
         return r["message"]["content"].strip()
 
-    def ask(self, question, case="", router=None, quiet=False, on_event=None, discuss="medium"):
+    def _ask_file(self, question, case, depth, router):
+        """같은 질문을 전에 돌린 결과를 넣어 두는 파일. 질문, 대상, 대화하는 노력, 고르는 모델이 같으면 같은 파일이다."""
+        key = json.dumps([question, case, depth, "student" if router else "teacher"], ensure_ascii=False)
+        return self.folder / "asks" / (hashlib.sha1(key.encode()).hexdigest()[:16] + ".json")
+
+    def _replay(self, r, quiet, tell):
+        """전에 돌려 둔 결과를 다시 보여 준다. 모델을 부르지 않으므로 바로 끝난다."""
+        say = (lambda *a: None) if quiet else print
+        labels = {1: "서로의 답을 읽고 묻고 지적합니다", 2: "받은 질문과 남은 쟁점에 답합니다 (필요하면 도구를 다시 씁니다)", 3: "대화를 읽고 지금의 입장을 밝힙니다"}
+        say(f"✅ 전에 돌려 둔 결과를 그대로 보여 줍니다. 모델을 다시 부르지 않습니다. (그때 걸린 시간 {r['seconds']}초)")
+        say(f"👤 질문: {r['question']}" + (f"   (대상: {r['case']})" if r["case"] else ""))
+        USAGE.clear()
+        USAGE.extend({**u, "live": 0} for u in r["usage"]["by"])
+        tell({"type": "steps", "names": [x["name"] for x in r["steps"]]})
+        for x in r["steps"]:
+            tell({"type": "step", "n": x["n"], "total": len(r["steps"]), "name": x["name"]})
+            say(f"\n[{x['n']}/{len(r['steps'])}] {x['name']}  ({x['seconds']}초" + (f", {x['note']}" if x["note"] else "") + ")")
+            if x["name"] == "전문가 고르기":
+                tell({"type": "route", "experts": r["experts"], "seconds": r["route_seconds"]})
+            if x["name"] == "전문가들이 일하기":
+                for e in r["results"]:
+                    tell({"type": "expert", "result": e})
+                    if not quiet:
+                        md(f"**🧑‍🔬 {e['title']}**  ({e['seconds']}초, 도구: {' → '.join(e['tools']) or '안 씀'})\n\n{e['answer']}")
+            if x["name"] == "전문가끼리 의견 나누기":
+                for i, t in enumerate(r["talks"]):
+                    if i % max(1, len(r["experts"])) == 0:
+                        n = i // max(1, len(r["experts"])) + 1
+                        tell({"type": "round", "n": n, "label": labels.get(t["round"], "")})
+                        say(f"\n  대화 {n}: {labels.get(t['round'], '')}")
+                    tell({"type": "talk", **t})
+                    if not quiet:
+                        md(f"**💬 {t['title']}** → {', '.join(t['to'])}  ({t['seconds']}초" + (f", 도구: {' → '.join(t['tools'])}" if t.get("tools") else "") + f")\n\n{t['text']}")
+            if x["name"] == "지휘자가 답을 합치기" and not quiet:
+                md("**📋 통합 답변**\n\n" + r["answer"])
+            tell({"type": "step_done", **x})
+            if quiet:
+                time.sleep(0.3)                 # 웹 화면에서 단계가 차례로 보이게 아주 잠깐 쉰다
+        if not quiet:
+            u = r["usage"]
+            say(f"\n⏱️ 그때 걸린 시간 {r['seconds']}초  (" + ", ".join(f"{x['name']} {x['seconds']}초" for x in r["steps"]) + ")")
+            md("\n".join(["**쓴 token**", "", "| 누가 | 모델을 부른 횟수 | 보낸 token | 받은 token |", "|---|---|---|---|"]
+                         + [f"| {x['who']} | {x['calls']} | {x['in']:,} | {x['out']:,} |" for x in u["by"]]
+                         + [f"| **합계** | {u['total']['calls']} | **{u['total']['in']:,}** | **{u['total']['out']:,}** |"]))
+        return {**r, "replayed": True}
+
+    def ask(self, question, case="", router=None, quiet=False, on_event=None, discuss="medium", reuse=False):
         """질문 하나를 처음부터 끝까지 처리한다.
 
         case   : 검토 대상 (예: 사진 파일 이름). prepare 함수가 있을 때만 쓴다
@@ -290,9 +337,15 @@ class Team:
                   "medium" 묻기 → 받은 질문에 답하기(도구를 다시 쓸 수 있다) → 입장 밝히기
                   "high"   답하기와 입장 밝히기를 모두 동의할 때까지 되풀이한다 (많아야 세 바퀴. 가장 오래 걸린다)
                   False    대화하지 않고 바로 지휘자에게 넘긴다
+        reuse   : True면 같은 질문을 전에 돌린 결과가 있을 때 모델을 다시 부르지 않고 그 결과를 보여 준다 (수업 시연용).
+                  결과는 돌릴 때마다 distill/<팀 이름>/asks/ 에 저장된다
         """
         tell = on_event or (lambda e: None)
         say = (lambda *a: None) if quiet else print
+        depth = {False: "", 0: "", "off": "", 1: "low", "low": "low", True: "medium", 3: "medium", "medium": "medium", "high": "high"}.get(discuss, "medium")
+        saved = self._ask_file(question, case, depth, router)
+        if reuse and saved.exists():
+            return self._replay(json.loads(saved.read_text(encoding="utf-8")), quiet, tell)
         start = time.time()
         names = ((["기초 자료 만들기"] if self.prepare else []) + ["전문가 고르기", "전문가들이 일하기"]
                  + (["전문가끼리 의견 나누기"] if discuss not in (False, 0, "off") else []) + ["지휘자가 답을 합치기"])
@@ -341,7 +394,6 @@ class Team:
                                     for k in keys}, on_done=show)
         done(f"{len(keys)}명")
 
-        depth = {False: "", 0: "", "off": "", 1: "low", "low": "low", True: "medium", 3: "medium", "medium": "medium", "high": "high"}.get(discuss, "medium")
         talks = []
         if depth:                             # 각자 답한 뒤 대화한다: 묻고 지적하기 → 답하기(도구를 다시 쓸 수 있다) → 마지막 입장
             done = step("전문가끼리 의견 나누기")
@@ -401,8 +453,14 @@ class Team:
                           "| 누가 | 모델을 부른 횟수 | 보낸 token | 받은 token |", "|---|---|---|---|"]
                          + [f"| {u['who']} | {u['calls']} | {u['in']:,} | {u['out']:,} |" for u in usage["by"]]
                          + [f"| **합계** | {usage['total']['calls']} | **{usage['total']['in']:,}** | **{usage['total']['out']:,}** |"]))
-        return {"question": question, "case": case, "context": context, "experts": keys, "route_seconds": route_seconds,
-                "results": results, "talks": talks, "answer": answer, "seconds": seconds, "steps": steps, "usage": usage}
+        result = {"question": question, "case": case, "context": context, "experts": keys, "route_seconds": route_seconds,
+                  "results": results, "talks": talks, "answer": answer, "seconds": seconds, "steps": steps, "usage": usage}
+        try:                                    # 다음에 reuse=True로 바로 보여 줄 수 있게 저장해 둔다
+            saved.parent.mkdir(parents=True, exist_ok=True)
+            saved.write_text(json.dumps(result, ensure_ascii=False), encoding="utf-8")
+        except Exception:
+            pass
+        return result
 
     # ---------- 2) 증류: "전문가 고르기"를 작은 모델에게 가르치기 ----------
     @property

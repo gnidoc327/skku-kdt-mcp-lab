@@ -37,14 +37,14 @@ def on_event(event):
         progress["events"].append({**event, "at": round(time.time() - progress["start"])})
 
 
-def run(question: str, case: str = "", router: str = "teacher", watch: bool = False, discuss="off") -> dict:
+def run(question: str, case: str = "", router: str = "teacher", watch: bool = False, discuss="off", reuse: bool = False) -> dict:
     def job():
         if watch:
             progress.update(events=[], draft="", start=time.time())
         fn = None
         if router == "student" and TEAM.has_student():
             fn = _router.get("student") or _router.setdefault("student", TEAM.load_student())
-        result = TEAM.ask(question, case=case, router=fn, quiet=True, on_event=on_event if watch else None, discuss=discuss)
+        result = TEAM.ask(question, case=case, router=fn, quiet=True, on_event=on_event if watch else None, discuss=discuss, reuse=reuse)
         result["router"] = "student" if fn else "teacher"
         return result
     return worker.submit(job).result()
@@ -138,6 +138,7 @@ pre{white-space:pre-wrap;word-break:break-word;font:inherit;margin:0}.note{font-
 <option value="medium" selected>medium: 묻기 → 답하기 → 입장 밝히기</option>
 <option value="high">high: 모두 동의할 때까지 되풀이 (가장 오래 걸림)</option></select>
 <p class="help">노력을 올리면 서로의 답을 더 확인하지만 시간과 token이 늘어납니다. 노력을 많이 들인다고 늘 더 맞는 결론이 나오는 것은 아닙니다. 모델이 못 보는 것은 여러 번 대화해도 못 봅니다. 같은 질문을 노력만 바꿔 물어보고 결론과 token이 어떻게 달라지는지 견줘 보세요.</p>
+<label class="check"><input type="checkbox" id="reuse"> 같은 질문을 전에 돌린 적이 있으면 그 결과를 바로 보여 주기 (모델을 다시 부르지 않음)</label>
 <button id="go">질문하기</button>
 <button id="compare">두 모델이 고르는 전문가만 비교하기</button>
 <label>전문가</label><ul class="who" id="who"></ul>
@@ -232,12 +233,12 @@ $('go').onclick = async () => {
   const pull = async () => { const p = await (await fetch('progress?since=' + events.length)).json(); events.push(...p.events); draft = p.draft; liveUsage = p.usage; };
   const watch = (async () => { while(watching){ await new Promise(r => setTimeout(r, 800)); if(!watching) break; try{ await pull(); if(watching) live(events, draft, sec()); }catch(e){} } })();
   try{
-    const res = await fetch('ask', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({question: asked.q, case: asked.c, router: $('router').value, discuss: $('discuss').value})});
+    const res = await fetch('ask', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({question: asked.q, case: asked.c, router: $('router').value, discuss: $('discuss').value, reuse: $('reuse').checked})});
     const r = await res.json(); watching = false;
     if(r.error) throw new Error(r.error);
     try{ await pull(); }catch(e){}
     mark(events); document.querySelectorAll('#who li').forEach(li => li.classList.remove('work'));
-    const meta = `${r.seconds}초 · 전문가 ${r.experts.length}명 · 고른 모델: ${r.router === 'student' ? '증류한 작은 모델' : '큰 모델'} (${r.route_seconds}초)`;
+    const meta = `${r.replayed ? '전에 돌려 둔 결과 · 그때 ' : ''}${r.seconds}초 · 전문가 ${r.experts.length}명 · 고른 모델: ${r.router === 'student' ? '증류한 작은 모델' : '큰 모델'} (${r.route_seconds}초)`;
     $('out').innerHTML = stepsCard(events, r.seconds, true) + usageCard(events, r.usage, r.seconds) + chat(events, '', {meta, answer: r.answer})
       + (r.context ? `<div class="card"><h3>모든 전문가에게 준 기초 자료</h3><pre>${esc(r.context)}</pre></div>` : '');
   }catch(e){ $('out').innerHTML = `<div class="card"><h3>실패했습니다</h3><pre>${esc(e.message)}\n\nOllama 앱이 켜져 있는지 확인하고 다시 눌러 주세요.</pre></div>`; }
@@ -312,7 +313,7 @@ async def ask(request):
     if not question:
         return JSONResponse({"error": "질문이 비어 있습니다."})
     try:
-        return JSONResponse(await run_in_threadpool(run, question, str(body.get("case", "")), body.get("router", "teacher"), True, str(body.get("discuss", "medium"))))
+        return JSONResponse(await run_in_threadpool(run, question, str(body.get("case", "")), body.get("router", "teacher"), True, str(body.get("discuss", "medium")), bool(body.get("reuse"))))
     except BaseException as e:      # 팀 코드의 SystemExit도 화면에 보여 준다
         return JSONResponse({"error": str(e)})
 
