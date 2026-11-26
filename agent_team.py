@@ -25,6 +25,8 @@ os.environ.setdefault("HF_HUB_DISABLE_PROGRESS_BARS", "1")      # 모델을 불�
 
 import ollama
 from strands import Agent, tool
+
+from lab_ui import Status, md, run_together, stream_answer, tool_log, wait_for
 from strands.models.ollama import OllamaModel
 
 ROOT = Path(__file__).resolve().parent
@@ -53,6 +55,23 @@ def fill(template, word):
         plain = final == 0 or (m.group(1) == "로" and final == 8)
         return word + (m.group(1) if plain else JOSA[m.group(1)])
     return re.sub(r"\{d\}(가|와|를|는|로)(?=[\s,?.]|$)", josa, template).replace("{d}", word)
+
+
+def follow_training(proc, iters):
+    """학습 프로그램(mlx_lm lora)이 찍는 줄을 읽어 진행 상황을 보여 준다. 읽은 줄 전체를 돌려준다."""
+    status, log = Status(f"⏳ 학습을 시작합니다. {iters}번 반복하고 5분쯤 걸립니다. 모델을 불러오는 중"), []
+    for line in proc.stdout:
+        line = re.sub(r"\x1b\[[0-9;]*m", "", line).rstrip()
+        log.append(line)
+        m = re.match(r"\s*(\d+)\s+(val\s+)?([\d.]+)", line)
+        if "Trainable" in line:
+            print("   " + line.strip())
+        elif m and m[2]:        # 중간 시험: 학습에 쓰지 않은 문제로 틀린 정도를 잰다
+            print(f"   {int(m[1]):>4}/{iters}번  중간 시험에서 틀린 정도(val loss) {float(m[3]):.3f}  ({status.seconds():.0f}초)")
+        elif m:
+            status.update(f"⏳ 학습 중: {int(m[1])}/{iters}번  틀린 정도(loss) {float(m[3]):.3f}  ({status.seconds():.0f}초)")
+    status.done(f"✅ {iters}번 반복을 마쳤습니다  ({status.seconds():.0f}초)")
+    return log
 
 
 class Team:
@@ -98,11 +117,13 @@ class Team:
             r = ollama.chat(**kw)
         return self._sorted(json.loads(r["message"]["content"])["experts"])
 
-    def ask_expert(self, key, question, context=""):
+    def ask_expert(self, key, question, context="", quiet=True):
         """전문가 한 명에게 묻는다. 매번 새 Agent를 만들어 다른 질문의 기억이 섞이지 않게 한다."""
         spec = self.experts[key]
         agent = Agent(model=OllamaModel(host=OLLAMA_HOST, model_id=EXPERT_MODEL, temperature=0.2),
                       system_prompt=spec["prompt"] + self.rules, tools=spec["tools"], callback_handler=None)
+        if not quiet:
+            tool_log(agent, spec["title"])      # 도구를 부를 때마다 화면에 한 줄 알려 준다
         used = lambda: [b["toolUse"]["name"] for m in agent.messages for b in m.get("content", []) if "toolUse" in b]
         start = time.time()
         try:
@@ -113,13 +134,16 @@ class Team:
             text = f"(분석 실패: {e})"
         return {"expert": key, "title": spec["title"], "answer": text, "tools": used(), "seconds": round(time.time() - start, 1)}
 
-    def synthesize(self, question, context, results):
-        """지휘자가 전문가들의 답을 모아 하나로 쓴다."""
+    def synthesize(self, question, context, results, quiet=True):
+        """지휘자가 전문가들의 답을 모아 하나로 쓴다. quiet=False면 쓰는 대로 화면에 보여 준다."""
         parts = "\n\n".join(f"### {r['title']}의 분석\n{r['answer']}" for r in results)
         prompt = (f"너는 {self.goal}의 지휘자다. 아래 전문가 분석만 근거로 한국어 통합 답변을 쓴다.\n"
                   f"형식: {self.report}. 전문가 분석에 없는 내용은 쓰지 않는다. 전문가끼리 말이 다르면 다르다고 적는다. 전체 12줄 이내.\n\n"
                   + (f"[기초 자료]\n{context}\n\n" if context else "") + f"[질문]\n{question}\n\n{parts}")
-        r = ollama.chat(model=EXPERT_MODEL, messages=[{"role": "user", "content": prompt}], options={"temperature": 0.2})
+        messages = [{"role": "user", "content": prompt}]
+        if not quiet:
+            return stream_answer(EXPERT_MODEL, messages, who="지휘자")
+        r = ollama.chat(model=EXPERT_MODEL, messages=messages, options={"temperature": 0.2})
         return r["message"]["content"].strip()
 
     def ask(self, question, case="", router=None, quiet=False):
@@ -131,28 +155,32 @@ class Team:
         """
         say = (lambda *a: None) if quiet else print
         start = time.time()
-        context = self.prepare(case) if self.prepare else ""
         say(f"👤 질문: {question}" + (f"   (대상: {case})" if case else ""))
+        if not self.prepare:
+            context = ""
+        elif quiet:
+            context = self.prepare(case)
+        else:                                   # 기초 자료 만들기(사진 읽기 등)도 오래 걸리므로 진행을 보여 준다
+            context = wait_for("기초 자료 만들기", lambda: self.prepare(case))
         t0 = time.time()
         keys = [k for k in (router or self.route_with_teacher)(question) if k in self.keys] or self.keys
         route_seconds = round(time.time() - t0, 2)
         say(f"🧭 고른 전문가: {', '.join(self.experts[k]['title'] for k in keys)}  (고르는 데 {route_seconds}초)")
-        say(f"⏳ 전문가 {len(keys)}명이 동시에 일하는 중입니다. 한 명에 30초~1분쯤 걸립니다.")
-        t1 = time.time()
-        with ThreadPoolExecutor(max_workers=len(keys)) as pool:      # 고른 전문가들이 동시에 일한다
-            jobs = {pool.submit(self.ask_expert, k, question, context): k for k in keys}
-            for n, job in enumerate(as_completed(jobs), 1):          # 한 명이 끝날 때마다 알려 준다
-                say(f"   ✅ {n}/{len(keys)} {self.experts[jobs[job]]['title']} 끝  ({time.time() - t1:.0f}초)")
-            results = [job.result() for job in jobs]                 # 맡긴 순서대로 모은다
-        for r in results:
-            say(f"\n🧑‍🔬 {r['title']}  ({r['seconds']}초, 도구: {' → '.join(r['tools']) or '안 씀'})\n{r['answer']}")
+        if quiet:
+            with ThreadPoolExecutor(max_workers=len(keys)) as pool:      # 고른 전문가들이 동시에 일한다
+                results = list(pool.map(lambda k: self.ask_expert(k, question, context), keys))
+        else:                                   # 같은 일을 하되, 도구 호출과 끝난 사람의 답을 바로바로 보여 준다
+            show = lambda name, r: md(f"**🧑‍🔬 {r['title']}**  ({r['seconds']}초, 도구: {' → '.join(r['tools']) or '안 씀'})\n\n{r['answer']}")
+            results = run_together({self.experts[k]["title"]: (lambda k=k: self.ask_expert(k, question, context, quiet=False))
+                                    for k in keys}, on_done=show)
         if len(results) > 1:
-            say("\n⏳ 지휘자가 전문가들의 답을 하나로 합치는 중입니다. 20~40초 걸립니다.")
-        answer = self.synthesize(question, context, results) if len(results) > 1 else results[0]["answer"]
+            say("\n📋 통합 답변")
+            answer = self.synthesize(question, context, results, quiet=quiet)
+        else:
+            answer = results[0]["answer"]
         answer += "\n\n" + self.disclaimer
         seconds = round(time.time() - start)
-        say("\n📋 통합 답변\n" + answer)
-        say(f"\n⏱️ {seconds}초, 전문가 {len(keys)}명")
+        say(f"\n{self.disclaimer}\n\n⏱️ {seconds}초, 전문가 {len(keys)}명")
         return {"question": question, "case": case, "context": context, "experts": keys, "route_seconds": route_seconds,
                 "results": results, "answer": answer, "seconds": seconds}
 
@@ -174,11 +202,11 @@ class Team:
             return list(dict.fromkeys(q.strip() for q in qs))        # 같은 질문은 한 번만
 
         def label(questions, what):
-            rows, start = [], time.time()
+            rows, status = [], Status(f"⏳ 스승이 {what} 질문 {len(questions)}개에 답을 답니다")
             for i, q in enumerate(questions, 1):
                 rows.append({"question": q, "experts": ",".join(self.route_with_teacher(q))})
-                if i % 60 == 0 or i == len(questions):
-                    print(f"   {what}: {i}/{len(questions)}  ({time.time() - start:.0f}초)")
+                status.update(f"⏳ 스승이 {what} 질문에 답을 다는 중: {i}/{len(questions)}  ({status.seconds():.0f}초)")
+            status.done(f"✅ {what} 질문 {len(questions)}개에 답을 달았습니다  ({status.seconds():.0f}초)")
             return rows
 
         rng = random.Random(seed)
@@ -217,16 +245,13 @@ class Team:
         adapter = self.folder / "adapter"
         cmd = [sys.executable, "-m", "mlx_lm", "lora", "--model", STUDENT_MODEL, "--train", "--data", str(self.folder / "data"),
                "--iters", str(iters), "--batch-size", "8", "--num-layers", "8", "--learning-rate", str(learning_rate),
-               "--adapter-path", str(adapter), "--steps-per-report", "100", "--steps-per-eval", "200", "--mask-prompt"]
-        env = {**os.environ, "NO_COLOR": "1", "TERM": "dumb", "HF_HUB_DISABLE_PROGRESS_BARS": "1"}
+               "--adapter-path", str(adapter), "--steps-per-report", "10", "--steps-per-eval", "200", "--mask-prompt"]
+        env = {**os.environ, "NO_COLOR": "1", "TERM": "dumb", "HF_HUB_DISABLE_PROGRESS_BARS": "1", "PYTHONUNBUFFERED": "1"}
         start = time.time()
         proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, env=env)
-        for line in proc.stdout:
-            line = line.rstrip()
-            if any(k in line for k in ["Trainable", "train_loss", "val", "save", "Error", "error"]) and "│" not in line:
-                print(line)
+        log = follow_training(proc, iters)
         if proc.wait() != 0:
-            raise SystemExit("❌ 학습이 실패했습니다. 위의 메시지를 확인해 주세요.")
+            raise SystemExit("❌ 학습이 실패했습니다.\n" + "\n".join(log[-15:]))
         size_mb = (adapter / "adapters.safetensors").stat().st_size / 1e6
         print(f"\n✅ 학습 완료  {time.time() - start:.0f}초   Adapter 파일 {size_mb:.1f}MB  ({adapter})")
 
@@ -258,11 +283,14 @@ class Team:
         """제자가 스승과 똑같은 조합을 고른 비율. split은 "valid"(본 유형) 또는 "test"(처음 보는 유형)."""
         self._need_data()
         items = [json.loads(l)["messages"] for l in open(self.folder / "data" / f"{split}.jsonl", encoding="utf-8")]
-        correct = 0
+        kind = "본 유형" if split == "valid" else "처음 보는 유형"
+        correct, status = 0, Status(f"⏳ 제자가 시험을 봅니다 ({kind} {len(items)}문제). 모델을 불러오는 중")
         for i, (user, assistant) in enumerate(items):
             q = user["content"].split("질문: ", 1)[1]
             out = self._generate(q, trained)
             correct += out == assistant["content"]
             if i < show:
                 print(f"   {'⭕' if out == assistant['content'] else '❌'} {q[:34]:<36} 제자: {out[:30]:<32} 스승: {assistant['content']}")
+            status.update(f"⏳ 제자가 시험 보는 중 ({kind}): {i + 1}/{len(items)}문제  ({status.seconds():.0f}초)")
+        status.done(f"✅ 시험 끝 ({kind}): {len(items)}문제 가운데 {correct}문제가 스승과 같음  ({status.seconds():.0f}초)")
         return correct / len(items)

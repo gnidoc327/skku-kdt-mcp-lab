@@ -7,13 +7,13 @@
 """
 import os
 import time
-from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import ollama
 from strands import Agent, tool
 from strands.models.ollama import OllamaModel
 
 import drug_tools as dt
+from lab_ui import md, run_together, stream_answer, tool_log
 
 EXPERT_MODEL = os.getenv("EXPERT_MODEL", "gemma4:e4b")
 OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://localhost:11434")
@@ -95,6 +95,7 @@ def ask_expert(key: str, question: str, context: str) -> dict:
     spec = EXPERTS[key]
     agent = Agent(model=OllamaModel(host=OLLAMA_HOST, model_id=EXPERT_MODEL, temperature=0.2),
                   system_prompt=spec["prompt"], tools=spec["tools"], callback_handler=None)
+    tool_log(agent, spec["title"])      # 도구를 부를 때마다 화면에 한 줄 알려 준다
     start = time.time()
     used = lambda: [b["toolUse"]["name"] for m in agent.messages for b in m.get("content", []) if "toolUse" in b]
     try:
@@ -106,16 +107,15 @@ def ask_expert(key: str, question: str, context: str) -> dict:
     return {"expert": key, "title": spec["title"], "answer": text, "tools": used(), "seconds": round(time.time() - start, 1)}
 
 
-def run_experts(keys: list, question: str, context: str, say=None) -> list:
-    """고른 전문가들에게 동시에 일을 맡긴다. say에 print를 넘기면 한 명이 끝날 때마다 알려 준다."""
-    say = say or (lambda *a: None)
-    say(f"⏳ 전문가 {len(keys)}명이 동시에 일하는 중입니다. 한 명에 30초~1분쯤 걸립니다.")
-    start = time.time()
-    with ThreadPoolExecutor(max_workers=len(keys)) as pool:
-        jobs = {pool.submit(ask_expert, k, question, context): k for k in keys}
-        for n, job in enumerate(as_completed(jobs), 1):
-            say(f"   ✅ {n}/{len(keys)} {EXPERTS[jobs[job]]['title']} 끝  ({time.time() - start:.0f}초)")
-        return [job.result() for job in jobs]
+def show(name: str, r: dict) -> None:
+    """전문가 한 명의 답을 화면에 그린다."""
+    md(f"**🧑‍🔬 {r['title']}**  ({r['seconds']}초, 도구: {' → '.join(r['tools']) or '안 씀'})\n\n{r['answer']}")
+
+
+def run_experts(keys: list, question: str, context: str) -> list:
+    """고른 전문가들에게 동시에 일을 맡긴다. 도구 호출과 끝난 사람의 답을 바로바로 보여 준다."""
+    jobs = {EXPERTS[k]["title"]: (lambda k=k: ask_expert(k, question, context)) for k in keys}
+    return run_together(jobs, on_done=show)
 
 
 def synthesize(question: str, context: str, results: list) -> str:
@@ -131,8 +131,7 @@ def synthesize(question: str, context: str, results: list) -> str:
 {question}
 
 {parts}"""
-    r = ollama.chat(model=EXPERT_MODEL, messages=[{"role": "user", "content": prompt}], options={"temperature": 0.2})
-    return r["message"]["content"].strip()
+    return stream_answer(EXPERT_MODEL, [{"role": "user", "content": prompt}], who="지휘자")     # 쓰는 대로 화면에 보여 준다
 
 
 def consult(question: str, drug: str, router) -> str:
@@ -143,12 +142,11 @@ def consult(question: str, drug: str, router) -> str:
     keys = router(question)
     print(f"👤 질문: {question}")
     print(f"🧭 고른 전문가: {', '.join(EXPERTS[k]['title'] for k in keys)}  (고르는 데 {time.time() - t0:.2f}초)")
-    results = run_experts(keys, question, context, say=print)
-    for r in results:
-        print(f"\n🧑‍🔬 {r['title']}  ({r['seconds']}초, 도구: {' → '.join(r['tools']) or '안 씀'})\n{r['answer']}")
+    results = run_experts(keys, question, context)
     if len(results) > 1:
-        print("\n⏳ 지휘자가 전문가들의 답을 하나로 합치는 중입니다. 20~40초 걸립니다.")
-    answer = synthesize(question, context, results) if len(results) > 1 else results[0]["answer"]
-    print("\n📋 통합 답변\n" + answer)
+        print("\n📋 통합 답변")
+        answer = synthesize(question, context, results)
+    else:
+        answer = results[0]["answer"]
     print(f"\n⏱️ {time.time() - start:.0f}초, 전문가 {len(keys)}명")
     return answer
