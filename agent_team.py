@@ -256,14 +256,6 @@ class Team:
         test_templates는 학습에 쓰지 않는다. 처음 보는 유형에도 맞는지 시험하는 데 쓴다.
         reuse=True면 전에 만들어 둔 학습 자료가 있을 때 스승에게 다시 묻지 않고 그것을 쓴다.
         """
-        if reuse and (self.folder / "data" / "train.jsonl").exists():
-            def read(name):
-                rows = [json.loads(l)["messages"] for l in open(self.folder / "data" / f"{name}.jsonl", encoding="utf-8")]
-                return [{"question": u["content"].split("질문: ", 1)[1], "experts": a["content"]} for u, a in rows]
-            train_rows, test_rows = read("train") + read("valid"), read("test")
-            print(f"✅ 전에 만들어 둔 학습 자료를 그대로 씁니다. 스승에게 다시 묻지 않습니다.  ({self.folder / 'data'})")
-            print(f"   학습용 {len(train_rows)}개, 처음 보는 유형의 시험용 {len(test_rows)}개")
-            return train_rows, test_rows
         def expand(templates):
             qs = [fill(t, s) if "{d}" in t else t for t, s in itertools.product(templates, subjects)]
             return list(dict.fromkeys(q.strip() for q in qs))        # 같은 질문은 한 번만
@@ -279,6 +271,20 @@ class Team:
         rng = random.Random(seed)
         train_q, test_q = expand(train_templates), expand(test_templates)
         rng.shuffle(train_q), rng.shuffle(test_q)
+        self._rebuilt = False
+        if reuse and (self.folder / "data" / "train.jsonl").exists():
+            def read(name):
+                rows = [json.loads(l)["messages"] for l in open(self.folder / "data" / f"{name}.jsonl", encoding="utf-8")]
+                return [{"question": u["content"].split("질문: ", 1)[1], "experts": a["content"]} for u, a in rows]
+            train_rows, test_rows = read("train") + read("valid"), read("test")
+            same_questions = {r["question"] for r in train_rows + test_rows} == set(train_q + test_q)
+            same_experts = all(e in self.keys for r in train_rows + test_rows for e in r["experts"].split(","))
+            if same_questions and same_experts:     # 팀 파일이 그때와 같을 때만 다시 쓴다
+                print(f"✅ 전에 만들어 둔 학습 자료를 그대로 씁니다. 스승에게 다시 묻지 않습니다.  ({self.folder / 'data'})")
+                print(f"   학습용 {len(train_rows)}개, 처음 보는 유형의 시험용 {len(test_rows)}개")
+                return train_rows, test_rows
+            print("⚠️  팀 파일의 전문가나 질문 틀이 전에 학습 자료를 만들 때와 달라졌습니다. 학습 자료를 새로 만들고, 학습도 다시 합니다.")
+            self._rebuilt = True
         print(f"학습용 질문 {len(train_q)}개, 처음 보는 유형의 시험용 질문 {len(test_q)}개에 스승({EXPERT_MODEL})이 답을 답니다.")
         train_rows, test_rows = label(train_q, "학습용"), label(test_q, "시험용")
         fixed = {t.strip() for t in train_templates if "{d}" not in t}       # 낱말 자리가 없는 질문
@@ -313,7 +319,7 @@ class Team:
         """
         self._need_data()
         adapter = self.folder / "adapter"
-        if reuse and self.has_student():
+        if reuse and self.has_student() and not getattr(self, "_rebuilt", False):
             saved = ", ".join(str(n) for n in self.checkpoints())
             print(f"✅ 전에 학습해 둔 모델을 그대로 씁니다. 학습을 건너뜁니다.  ({adapter})")
             print(f"   저장된 중간 모델: {saved}번 반복 시점" if saved else "")
