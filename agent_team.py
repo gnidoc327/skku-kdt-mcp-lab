@@ -14,6 +14,7 @@ import json
 import os
 import random
 import re
+import shutil
 import subprocess
 import sys
 import time
@@ -247,13 +248,22 @@ class Team:
         """제자에게 주는 짧은 지시문. 긴 역할 설명 없이도 답하도록 가르치는 것이 목표다."""
         return f"질문에 답하는 데 필요한 전문가를 {', '.join(self.keys)} 중에서 골라 쉼표로만 답하라.\n질문: "
 
-    def build_distill_data(self, train_templates, test_templates, subjects=("",), n_valid=40, seed=7):
+    def build_distill_data(self, train_templates, test_templates, subjects=("",), n_valid=40, seed=7, reuse=False):
         """질문 틀과 낱말을 조합해 질문을 만들고, 스승(큰 모델)이 고른 전문가를 정답으로 붙여 저장한다.
 
         질문 틀의 {d} 자리에 subjects의 낱말이 하나씩 들어간다. {d}가 없는 틀은 질문이 하나뿐이라
         시험용으로 빠지지 않게 항상 학습에 넣고, 묻히지 않도록 세 번 넣는다.
         test_templates는 학습에 쓰지 않는다. 처음 보는 유형에도 맞는지 시험하는 데 쓴다.
+        reuse=True면 전에 만들어 둔 학습 자료가 있을 때 스승에게 다시 묻지 않고 그것을 쓴다.
         """
+        if reuse and (self.folder / "data" / "train.jsonl").exists():
+            def read(name):
+                rows = [json.loads(l)["messages"] for l in open(self.folder / "data" / f"{name}.jsonl", encoding="utf-8")]
+                return [{"question": u["content"].split("질문: ", 1)[1], "experts": a["content"]} for u, a in rows]
+            train_rows, test_rows = read("train") + read("valid"), read("test")
+            print(f"✅ 전에 만들어 둔 학습 자료를 그대로 씁니다. 스승에게 다시 묻지 않습니다.  ({self.folder / 'data'})")
+            print(f"   학습용 {len(train_rows)}개, 처음 보는 유형의 시험용 {len(test_rows)}개")
+            return train_rows, test_rows
         def expand(templates):
             qs = [fill(t, s) if "{d}" in t else t for t, s in itertools.product(templates, subjects)]
             return list(dict.fromkeys(q.strip() for q in qs))        # 같은 질문은 한 번만
@@ -295,14 +305,26 @@ class Team:
         if not (self.folder / "data" / "train.jsonl").exists():
             raise SystemExit(f"❌ 학습 자료가 없습니다. 먼저 build_distill_data()를 실행해 주세요. ({self.folder})")
 
-    def train_student(self, iters=600, learning_rate=1e-4):
-        """스승의 답으로 작은 모델을 학습시킨다 (MLX LoRA). 아이맥에서 5분쯤 걸린다."""
+    def train_student(self, iters=200, learning_rate=1e-4, reuse=False):
+        """스승의 답으로 작은 모델을 학습시킨다 (MLX LoRA). 200번 반복에 아이맥에서 2분쯤 걸린다.
+
+        100번 반복할 때마다 그때의 모델을 따로 저장해 둔다. compare_checkpoints()로 서로 비교할 수 있다.
+        reuse=True면 전에 학습해 둔 모델이 있을 때 학습을 건너뛰고 그것을 쓴다.
+        """
         self._need_data()
-        self._student.clear()
         adapter = self.folder / "adapter"
+        if reuse and self.has_student():
+            saved = ", ".join(str(n) for n in self.checkpoints())
+            print(f"✅ 전에 학습해 둔 모델을 그대로 씁니다. 학습을 건너뜁니다.  ({adapter})")
+            print(f"   저장된 중간 모델: {saved}번 반복 시점" if saved else "")
+            return
+        self._student.clear()
+        for old in adapter.glob("*_adapters.safetensors"):      # 지난 학습의 중간 모델은 지운다
+            old.unlink()
+        shutil.rmtree(self.folder / "checkpoints", ignore_errors=True)
         cmd = [sys.executable, "-m", "mlx_lm", "lora", "--model", STUDENT_MODEL, "--train", "--data", str(self.folder / "data"),
                "--iters", str(iters), "--batch-size", "8", "--num-layers", "8", "--learning-rate", str(learning_rate),
-               "--adapter-path", str(adapter), "--steps-per-report", "10", "--steps-per-eval", "200", "--mask-prompt"]
+               "--adapter-path", str(adapter), "--steps-per-report", "10", "--steps-per-eval", "100", "--save-every", "100", "--mask-prompt"]
         env = {**os.environ, "NO_COLOR": "1", "TERM": "dumb", "HF_HUB_DISABLE_PROGRESS_BARS": "1", "PYTHONUNBUFFERED": "1"}
         start = time.time()
         for attempt in (1, 2):
@@ -322,11 +344,25 @@ class Team:
     def has_student(self):
         return (self.folder / "adapter" / "adapters.safetensors").exists()
 
+    def checkpoints(self):
+        """학습 도중에 저장된 중간 모델들의 반복 횟수 (예: [100, 200, 300])."""
+        return sorted(int(f.name.split("_")[0]) for f in (self.folder / "adapter").glob("*_adapters.safetensors"))
+
+    def _adapter_at(self, n):
+        """n번 반복 시점의 중간 모델을 불러올 수 있게 폴더를 하나 만들어 준다."""
+        folder = self.folder / "checkpoints" / str(n)
+        if not (folder / "adapters.safetensors").exists():
+            folder.mkdir(parents=True, exist_ok=True)
+            shutil.copy(self.folder / "adapter" / "adapter_config.json", folder / "adapter_config.json")
+            shutil.copy(self.folder / "adapter" / f"{n:07d}_adapters.safetensors", folder / "adapters.safetensors")
+        return str(folder)
+
     def _generate(self, question, trained):
-        """작은 모델에게 묻는다. trained=False면 학습 전의 모델."""
+        """작은 모델에게 묻는다. trained=False면 학습 전의 모델, 숫자면 그만큼 반복한 시점의 중간 모델."""
         from mlx_lm import generate, load
         if trained not in self._student:
-            self._student[trained] = load(STUDENT_MODEL, adapter_path=str(self.folder / "adapter") if trained else None)
+            path = None if trained is False else str(self.folder / "adapter") if trained is True else self._adapter_at(trained)
+            self._student[trained] = load(STUDENT_MODEL, adapter_path=path)
         model, tokenizer = self._student[trained]
         prompt = tokenizer.apply_chat_template([{"role": "user", "content": self.instruction + question}],
                                                add_generation_prompt=True, tokenize=False)
@@ -343,11 +379,50 @@ class Team:
         route_with_student("준비")                            # 모델을 미리 메모리에 올려 둔다
         return route_with_student
 
-    def exam(self, split="test", trained=True, show=0):
-        """제자가 스승과 똑같은 조합을 고른 비율. split은 "valid"(본 유형) 또는 "test"(처음 보는 유형)."""
+    def compare_checkpoints(self):
+        """학습을 100번, 200번, ... 했을 때의 모델을 같은 시험으로 비교한다. 표와 그래프로 보여 준다.
+
+        "학습을 얼마나 해야 충분한가"를 눈으로 보기 위한 것이다. 0번은 학습 전의 모델이다.
+        """
+        self._need_data()
+        points = self.checkpoints()
+        if not points:
+            raise SystemExit("❌ 저장된 중간 모델이 없습니다. 먼저 train_student()로 학습해 주세요.")
+        rows, status = [], Status(f"⏳ 학습 전과 {', '.join(map(str, points))}번 시점의 모델에게 같은 시험을 보게 합니다")
+        for n in [0] + points:
+            status.update(f"⏳ {n}번 반복 시점의 모델이 시험 보는 중  ({status.seconds():.0f}초)")
+            which = False if n == 0 else n
+            rows.append({"iters": n, "valid": self.exam("valid", trained=which, quiet=True), "test": self.exam("test", trained=which, quiet=True)})
+            if n:
+                self._student.pop(n, None)      # 다 쓴 중간 모델은 메모리에서 내린다
+        status.done(f"✅ 모델 {len(rows)}개의 시험이 끝났습니다  ({status.seconds():.0f}초)")
+        print("\n   반복 횟수    본 유형    처음 보는 유형")
+        for r in rows:
+            print(f"   {str(r['iters']) + '번':>8}    {r['valid']:>6.0%}    {r['test']:>10.0%}" + ("   (학습 전)" if r["iters"] == 0 else ""))
+        try:
+            import matplotlib.pyplot as plt
+            plt.rcParams["font.family"], plt.rcParams["axes.unicode_minus"] = "AppleGothic", False
+            fig, ax = plt.subplots(figsize=(7, 3.4))
+            xs = [r["iters"] for r in rows]
+            ax.plot(xs, [r["valid"] * 100 for r in rows], marker="o", color="#1F4ED8", label="본 유형")
+            ax.plot(xs, [r["test"] * 100 for r in rows], marker="o", color="#0E8A74", label="처음 보는 유형")
+            ax.set(xlabel="학습 반복 횟수", ylabel="스승과 같은 답 (%)", ylim=(0, 105), xticks=xs)
+            ax.grid(alpha=0.3), ax.legend(loc="lower right"), ax.spines[["top", "right"]].set_visible(False)
+            plt.show()
+        except Exception:
+            pass                                 # 그래프를 못 그려도 표는 이미 보여 줬다
+        return rows
+
+    def exam(self, split="test", trained=True, show=0, quiet=False):
+        """제자가 스승과 똑같은 조합을 고른 비율. split은 "valid"(본 유형) 또는 "test"(처음 보는 유형).
+
+        trained에 숫자를 넣으면 그만큼 반복한 시점의 중간 모델로 시험을 본다.
+        """
         self._need_data()
         items = [json.loads(l)["messages"] for l in open(self.folder / "data" / f"{split}.jsonl", encoding="utf-8")]
         kind = "본 유형" if split == "valid" else "처음 보는 유형"
+        if quiet:
+            return sum(self._generate(u["content"].split("질문: ", 1)[1], trained) == a["content"] for u, a in items) / len(items)
         correct, status = 0, Status(f"⏳ 제자가 시험을 봅니다 ({kind} {len(items)}문제). 모델을 불러오는 중")
         for i, (user, assistant) in enumerate(items):
             q = user["content"].split("질문: ", 1)[1]

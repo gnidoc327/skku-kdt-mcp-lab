@@ -443,7 +443,7 @@ bash setup.sh</pre>
   <footer class="foot"><div class="src">실습 코드: <a href="https://github.com/gnidoc327/skku-kdt-mcp-lab" target="_blank" rel="noopener">github.com/gnidoc327/skku-kdt-mcp-lab</a></div><span>실습 준비</span><span class="pg"></span></footer>
 </section>
 
-<section class="slide" data-notes="2시간 배분. 설명은 짧게 하고 노트북을 돌리는 시간에 설명을 얹음. 특히 증류 학습 5~6분은 기다리는 시간이므로 그때 증류 원리 슬라이드를 넘김. 시간이 밀리면 Kiro 부분을 시연으로만 보여 주고 넘어감.">
+<section class="slide" data-notes="2시간 배분. 설명은 짧게 하고 노트북을 돌리는 시간에 설명을 얹음. 특히 증류 학습 2분쯤은 기다리는 시간이므로 그때 증류 원리 슬라이드를 넘김. 시간이 밀리면 Kiro 부분을 시연으로만 보여 주고 넘어감.">
   <h2>오늘 2시간 순서</h2>
   <div class="agenda">
     <div><div class="n">10분</div><b>왜 팀으로 나누나</b><span>지난 시간의 Agent 한 명에서 출발해 Multi-Agent가 무엇인지, 실제 사례 하나</span></div>
@@ -679,7 +679,7 @@ TEAM = Team(name="checkup", goal="건강검진 결과 상담 팀",
     <ul class="plain" style="gap:12px">
       <li style="font-size:19px"><strong>사람이 정답을 달지 않습니다</strong><span>스승의 답이 정답 노릇을 합니다</span></li>
       <li style="font-size:19px"><strong>LoRA(로라)로 조금만 고칩니다</strong><span>모델 전체가 아니라 덧붙인 작은 부분만 학습. 결과 파일 8MB</span></li>
-      <li style="font-size:19px"><strong>내 맥에서 5~6분</strong><span>애플의 MLX로 학습합니다. 비용이 들지 않습니다</span></li>
+      <li style="font-size:19px"><strong>내 맥에서 2분쯤</strong><span>애플의 MLX로 학습합니다. 비용이 들지 않습니다</span></li>
     </ul>
   </div>
   <footer class="foot"><span>Multi-Agent와 Distillation</span><span class="pg"></span></footer>
@@ -709,25 +709,28 @@ TEAM = Team(name="checkup", goal="건강검진 결과 상담 팀",
   <footer class="foot"><span>Multi-Agent와 Distillation</span><span class="pg"></span></footer>
 </section>
 
-<section class="slide" data-notes="실습 3. 노트북 2-4를 위에서부터 실행(8~9분). 맨 위의 TEAM_FILE을 'xray_team'으로 두면 완성 예시로, 'my_team'으로 바꾸면 방금 만든 내 팀으로 진행. 시간이 빠듯하면 전원 xray_team으로 통일. 학습 셀이 5~6분 걸리므로 이때 앞의 증류 슬라이드 두 장을 설명. 속도를 꼭 짚을 것: 이 맥에서는 스승도 0.1~0.3초 만에 고르므로 제자가 더 빠르지 않음. 증류의 이득은 작은 모델로도 된다는 것(메모리, 그리고 큰 모델이 유료 API일 때의 비용). 학습 전 시험이 0%로 나오는 이유: 제자가 전문가 이름(reader, cases 등)을 아직 모르기 때문. 숫자는 발표자 맥에서 세 번 돌린 범위이고 실행할 때마다 조금씩 달라짐. 컴퓨터가 뜨거워지는 것은 정상. 실행 중에 컴퓨터가 잠들면 멈추므로 화면을 가끔 건드리게 함(발표자 맥은 10분 잠들어 그만큼 늦어졌음).">
+<section class="slide" data-notes="실습 3. 노트북 2-4를 위에서부터 실행(6분쯤). 발표자는 수업 전에 한 번 돌려 두고, 수업에서는 맨 위 셀의 REUSE = True 줄의 # 을 지워 실행하면 스승에게 묻기와 학습을 건너뛰고 바로 결과를 보여 줄 수 있음(600번까지 미리 학습해 두면 비교 셀에 100~600번이 모두 나옴). 맨 위의 TEAM_FILE을 'xray_team'으로 두면 완성 예시로, 'my_team'으로 바꾸면 방금 만든 내 팀으로 진행. 시간이 빠듯하면 전원 xray_team으로 통일. 학습 셀이 2분쯤 걸리므로 이때 앞의 증류 슬라이드를 설명. 오른쪽 표를 꼭 짚을 것: 300번에서 처음 보는 유형이 60%로 떨어졌다가 400번에 96%로 오름. 본 유형은 그대로인데 처음 보는 유형만 흔들리는 것은 학습 자료의 말투에 맞춰지기 때문이고, 시험 문제가 50개뿐이라 몇 문제 차이로 크게 보임. 노트북의 6번 셀이 수강생 자기 모델로 같은 비교를 해 줌. 학습 도중 웹 화면에서 질문을 돌리면 GPU가 바빠 학습이 멈출 수 있으니 학습 중에는 다른 것을 돌리지 않게 함(멈추면 20초 뒤 자동으로 한 번 더 시도). 속도를 꼭 짚을 것: 이 맥에서는 스승도 0.1~0.3초 만에 고르므로 제자가 더 빠르지 않음. 증류의 이득은 작은 모델로도 된다는 것(메모리, 그리고 큰 모델이 유료 API일 때의 비용). 학습 전 시험이 0%로 나오는 이유: 제자가 전문가 이름(reader, cases 등)을 아직 모르기 때문. 숫자는 발표자 맥에서 한 번 돌린 결과이고 컴퓨터마다 조금씩 다를 수 있음. 컴퓨터가 뜨거워지는 것은 정상. 실행 중에 컴퓨터가 잠들면 멈추므로 화면을 가끔 건드리게 함(발표자 맥은 10분 잠들어 그만큼 늦어졌음).">
   <h2>실습 3. 지휘자를 증류하기 <span style="font-size:26px; color:var(--muted); font-weight:500">노트북 2-4</span></h2>
   <div class="cols" style="grid-template-columns: 1fr 1fr; gap:56px; margin-top:26px">
-    <div class="steps" style="gap:18px">
-      <div><div class="n">1</div><div><b>질문 만들기</b><span>질문 틀 30여 개 × 낱말 12개 → 약 260개</span></div></div>
-      <div><div class="n">2</div><div><b>스승이 답 달기</b><span>약 1분</span></div></div>
+    <div class="steps" style="gap:13px">
+      <div><div class="n">1</div><div><b>질문 만들기</b><span>질문 틀 30여 개 × 낱말 12개 → 약 300개</span></div></div>
+      <div><div class="n">2</div><div><b>스승이 답 달기</b><span>1~2분</span></div></div>
       <div><div class="n">3</div><div><b>학습 전 시험</b><span>제자는 아직 전문가 이름도 모릅니다</span></div></div>
-      <div><div class="n">4</div><div><b>학습</b><span>5~6분. 컴퓨터가 뜨거워지는 것은 정상입니다</span></div></div>
-      <div><div class="n">5</div><div><b>학습 후 시험, 팀에 넣어 실행</b><span>제자가 고르고, 전문가들은 그대로 큰 모델</span></div></div>
+      <div><div class="n">4</div><div><b>학습 200번</b><span>2분쯤. 컴퓨터가 뜨거워지는 것은 정상입니다</span></div></div>
+      <div><div class="n">5</div><div><b>학습 후 시험, 100번마다 비교</b><span>100번 학습한 모델과 200번 학습한 모델에게 같은 시험</span></div></div>
+      <div><div class="n">6</div><div><b>팀에 넣어 실행</b><span>제자가 고르고, 전문가들은 그대로 큰 모델</span></div></div>
     </div>
     <div>
-      <h3 style="font-size:21px; color:var(--ink)">스승과 같은 답을 고른 비율</h3>
-      <div class="bars sm" style="margin-top:16px">
-        <div class="bar"><div class="when">학습 전</div><div class="track"><div class="fill" style="width:3px; background:var(--rule)"></div><div class="val">0%</div></div></div>
-        <div class="bar"><div class="when">본 유형</div><div class="track"><div class="fill" style="width:280px"></div><div class="val">90~95%</div></div></div>
-        <div class="bar"><div class="when">처음 보는 유형</div><div class="track"><div class="fill" style="width:265px"></div><div class="val">86~98%</div></div></div>
-      </div>
-      <p class="mini" style="margin-top:14px">발표자 맥(M1 Max)에서 네 번 돌린 범위입니다. 실행할 때마다 조금씩 달라집니다.</p>
-      <div class="punch" style="margin-top:16px; font-size:17.5px">고르는 시간은 스승 0.1~0.3초, 제자 약 0.2초로 <strong>비슷했습니다.</strong> 얻는 것은 속도가 아니라 크기입니다. 제자는 스승의 10분의 1 이하입니다.</div>
+      <h3 style="font-size:21px; color:var(--ink)">학습 횟수별로 스승과 같은 답을 고른 비율</h3>
+      <table class="tbl compact" style="margin-top:10px; font-size:16px">
+        <thead><tr><th>학습 반복</th><th>0번</th><th>100</th><th>200</th><th>300</th><th>400</th><th>500</th><th>600</th></tr></thead>
+        <tbody>
+          <tr><td style="color:var(--ink); font-weight:400">본 유형</td><td>0%</td><td>90%</td><td>88%</td><td>92%</td><td>92%</td><td>92%</td><td>92%</td></tr>
+          <tr><td style="color:var(--ink); font-weight:400">처음 보는 유형</td><td>0%</td><td>78%</td><td><strong>92%</strong></td><td style="color:var(--hema)"><strong>60%</strong></td><td>96%</td><td>84%</td><td>88%</td></tr>
+        </tbody>
+      </table>
+      <p class="mini" style="margin-top:10px">발표자 맥(M1 Max)에서 600번까지 한 번 학습하며 100번마다 잰 결과입니다. 오래 학습한다고 늘 좋아지지 않았습니다. 시험 문제가 50개뿐이라 몇 문제 차이로도 크게 흔들립니다. 그래서 실습은 200번만 합니다.</p>
+      <div class="punch" style="margin-top:12px; font-size:17px">고르는 시간은 스승 0.1~0.3초, 제자 약 0.2초로 <strong>비슷했습니다.</strong> 얻는 것은 속도가 아니라 크기입니다. 제자는 스승의 10분의 1 이하입니다.</div>
     </div>
   </div>
   <footer class="foot"><div class="src">맨 위 셀의 <code>TEAM_FILE</code>을 <code>"my_team"</code>으로 바꾸면 내가 만든 팀으로 같은 과정을 돌립니다.</div><span>실습 3</span><span class="pg"></span></footer>
@@ -806,7 +809,7 @@ open_kiro()             <span class="c"># Kiro에서 실습 폴더 열기</span>
     <tbody>
       <tr><td>Agent 틀</td><td>Strands Agents</td><td>Strands Agents</td><td>코드가 거의 그대로 갑니다</td></tr>
       <tr><td>두뇌</td><td>Ollama의 gemma4:e4b</td><td>Amazon Bedrock의 모델</td><td>더 똑똑하지만 쓴 만큼 돈을 냅니다</td></tr>
-      <tr><td>증류</td><td>MLX LoRA, 맥에서 5~6분</td><td>SageMaker 학습, Bedrock Model Distillation</td><td>더 큰 모델과 자료로 할 수 있습니다</td></tr>
+      <tr><td>증류</td><td>MLX LoRA, 맥에서 2분쯤</td><td>SageMaker 학습, Bedrock Model Distillation</td><td>더 큰 모델과 자료로 할 수 있습니다</td></tr>
       <tr><td>서비스</td><td>내 컴퓨터의 웹 화면</td><td>Bedrock AgentCore, 컨테이너</td><td>여러 사람이 쓰고, 접근 기록이 남습니다</td></tr>
     </tbody>
   </table>
