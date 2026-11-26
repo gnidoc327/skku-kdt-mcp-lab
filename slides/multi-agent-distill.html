@@ -257,6 +257,8 @@ ol.rank li.dim::before { content: "·"; }
 .cols3.tight ul.plain { gap: 10px; }
 .cols3.tight ul.plain li { font-size: 17px; line-height: 1.5; }
 .cols3.tight ul.plain li span { font-size: 15px; }
+td.tools div { display: grid; grid-template-columns: 215px 1fr; align-items: baseline; gap: 12px; padding: 2px 0; }
+td.tools span { font-size: 16px; color: var(--ink); font-weight: 400; }
 .punch { margin-top: 26px; padding: 16px 22px; background: var(--eosin-pale); font-size: 19px; line-height: 1.55; }
 .events.dated li { grid-template-columns: 120px 1fr; }
 .events.tight li { padding: 10px 0; font-size: 18px; }
@@ -510,17 +512,17 @@ bash setup.sh</pre>
   <footer class="foot"><div class="src">출처: AWS 기술 블로그, <a href="https://aws.amazon.com/ko/blogs/tech/agentic-ai-drug-development-workflow-automation-challenge/" target="_blank" rel="noopener">Agentic AI 기반 신약 개발 워크플로 자동화: SK바이오팜 참가팀</a> (2025.11.18)</div><span>Multi-Agent와 Distillation</span><span class="pg"></span></footer>
 </section>
 
-<section class="slide" data-notes="실습 1. 노트북 2-1을 먼저 실행(1분): 도구 여섯 개를 하나씩 불러 보고 전문가 한 명을 만듦. 이어서 노트북 2-2(3~4분): 전문가 세 명과 지휘자. 두 가지 방식을 비교하게 함. '종합 분석'은 세 명 전원, '스마트 컨설팅'은 질문에 필요한 사람만. 예: '이부프로펜의 부작용은?'은 임상약리 전문가 한 명만 불림. 도구는 모두 공개 데이터베이스를 조회하며 무료. openFDA의 숫자는 자발적으로 보고된 건수이지 발생률이 아니라는 점을 짚어 줌.">
+<section class="slide" data-notes="실습 1. 노트북 2-1을 먼저 실행(1분): 도구 여섯 개를 하나씩 불러 보고 전문가 한 명을 만듦. 이어서 노트북 2-2(3~4분): 전문가 세 명과 지휘자. 두 가지 방식을 비교하게 함. '종합 분석'은 세 명 전원, '스마트 컨설팅'은 질문에 필요한 사람만. 예: '이부프로펜의 부작용은?'은 임상약리 전문가 한 명만 불림. 도구는 모두 공개 데이터베이스를 조회하며 무료이고 API 키도 필요 없음. PubChem은 화합물 정보, PubMed는 의학 논문, ClinicalTrials.gov는 임상시험 등록 정보, openFDA는 미국 FDA에 보고된 부작용 자료. molecule_properties만 인터넷 조회가 아니라 RDKit이라는 계산 도구로 내 컴퓨터에서 계산함. openFDA의 숫자는 자발적으로 보고된 건수이지 발생률이 아니라는 점을 짚어 줌.">
   <h2>실습 1. 신약 후보 검토 팀 <span style="font-size:26px; color:var(--muted); font-weight:500">노트북 2-1, 2-2</span></h2>
-  <table class="tbl wide" style="margin-top:22px; font-size:18.5px">
-    <thead><tr><th>전문가</th><th>보는 것</th><th>쓰는 도구</th></tr></thead>
+  <table class="tbl wide" style="margin-top:14px; font-size:18px">
+    <thead><tr><th>전문가</th><th>보는 것</th><th>쓰는 도구와 하는 일</th></tr></thead>
     <tbody>
-      <tr><td style="color:var(--hema); font-weight:700">의약화학</td><td style="font-weight:400; color:var(--ink)">구조, 물리화학적 특성</td><td><code>compound_info</code>, <code>molecule_properties</code>, <code>similar_compounds</code></td></tr>
-      <tr><td style="color:var(--hema); font-weight:700">임상약리</td><td style="font-weight:400; color:var(--ink)">안전성, 독성, 상호작용</td><td><code>pubmed_search</code>, <code>adverse_events</code></td></tr>
-      <tr><td style="color:var(--hema); font-weight:700">임상·규제 전략</td><td style="font-weight:400; color:var(--ink)">임상시험 현황, 허가 경로</td><td><code>clinical_trials</code>, <code>pubmed_search</code></td></tr>
+      <tr><td style="color:var(--hema); font-weight:700">의약화학</td><td style="font-weight:400; color:var(--ink)">구조, 물리화학적 특성</td><td class="tools"><div><code>compound_info</code><span>약 이름으로 PubChem에서 기본 정보와 구조식 찾기</span></div><div><code>molecule_properties</code><span>구조식으로 분자량, 지용성 같은 특성 계산 (RDKit)</span></div><div><code>similar_compounds</code><span>PubChem에서 구조가 비슷한 화합물 찾기</span></div></td></tr>
+      <tr><td style="color:var(--hema); font-weight:700">임상약리</td><td style="font-weight:400; color:var(--ink)">안전성, 독성, 상호작용</td><td class="tools"><div><code>pubmed_search</code><span>PubMed에서 논문 찾기</span></div><div><code>adverse_events</code><span>openFDA에 보고된 부작용과 보고 건수 보기</span></div></td></tr>
+      <tr><td style="color:var(--hema); font-weight:700">임상·규제 전략</td><td style="font-weight:400; color:var(--ink)">임상시험 현황, 허가 경로</td><td class="tools"><div><code>clinical_trials</code><span>ClinicalTrials.gov에서 임상시험 찾기</span></div><div><code>pubmed_search</code><span>PubMed에서 논문 찾기 (임상약리와 같은 도구)</span></div></td></tr>
     </tbody>
   </table>
-  <div class="cols" style="margin-top:26px; gap:40px; flex:none">
+  <div class="cols" style="margin-top:18px; gap:40px; flex:none">
     <div class="aws"><b>종합 분석</b><span>세 명 모두에게 묻고 리포트로 합칩니다. "다음 단계로 진행해도 될까?" 같은 질문.</span></div>
     <div class="aws mac"><b>스마트 컨설팅</b><span>지휘자가 필요한 전문가만 고릅니다. "부작용은?"이면 임상약리 한 명.</span></div>
   </div>
@@ -796,6 +798,30 @@ cd ~/mcp-lab
   <footer class="foot"><span>Multi-Agent와 Distillation</span><span class="pg"></span></footer>
 </section>
 
+<section class="slide" data-notes="오늘 만든 것을 일하는 방식으로 넓혀 보는 한 장. 2분 안에. Product Engineer는 PostHog 같은 회사가 널리 알린 말로, 남이 써 준 기획서를 구현하는 사람이 아니라 무엇을 만들지 정하고, 만들어 내보내고, 결과를 재는 일까지 맡는 개발자를 뜻함. 직함의 뜻은 회사마다 조금씩 다르고 아직 정해진 정의는 없음. Multi-Agent가 되면 내가 모르는 분야마다 전문가 Agent를 한 명씩 둘 수 있어서 한 사람이 맡을 수 있는 범위가 넓어짐. 오늘 실습이 바로 그 모양: 수강생이 지휘자가 되어 영상 판독, 유사 사례, 문헌 전문가를 팀에 둠. 꼭 짚을 것: '혼자서 다 된다'가 아님. 전문가 Agent의 답이 맞는지 가려내는 일은 사람에게 남고, 그 일은 그 분야를 아는 사람만 할 수 있음. 앞의 'AI는 사진을 틀리게 읽습니다' 장과 연결. 의료와 바이오를 아는 수강생에게는 이 점이 강점. 진로를 정해 주려는 것이 아니라 일하는 방식이 이렇게 바뀌고 있다는 흐름으로 소개.">
+  <h2>혼자서 팀을 꾸리는 사람: Product Engineer</h2>
+  <div class="split" style="margin-top:28px">
+    <div class="later">
+      <h3>예전: 역할마다 사람 한 명</h3>
+      <ul class="plain">
+        <li>기획, 디자인, 개발, 자료 분석을 서로 다른 사람이 맡습니다</li>
+        <li>앞사람이 정한 것을 다음 사람에게 넘기며 일합니다</li>
+        <li>넘길 때마다 기다리고, 뜻이 조금씩 달라집니다</li>
+      </ul>
+    </div>
+    <div class="now">
+      <h3>지금: 한 사람 + 전문가 Agent 팀</h3>
+      <ul class="plain">
+        <li>무엇을 만들지 정하고, 만들고, 결과를 재는 일까지 한 사람이 맡습니다<span>이런 개발자를 Product Engineer(프로덕트 엔지니어)라고 부릅니다</span></li>
+        <li>내가 모르는 분야에는 전문가 Agent를 한 명씩 둡니다<span>오늘 한 일: 영상 판독, 유사 사례, 문헌 전문가를 내 팀에 두기</span></li>
+        <li>사람은 지휘자입니다. 누구에게 무엇을 시킬지 정하고 답을 확인합니다</li>
+      </ul>
+    </div>
+  </div>
+  <div class="punch" style="margin-top:20px"><strong>혼자서 다 된다는 뜻은 아닙니다.</strong> 전문가 Agent의 답이 맞는지 가려내는 일은 사람에게 남습니다. 그 일은 그 분야를 아는 사람만 할 수 있어서, <strong>의료와 바이오를 아는 사람</strong>이 이 방식에서 유리합니다.</div>
+  <footer class="foot"><div class="src">Product Engineer의 뜻: PostHog, What is a product engineer. 직함의 뜻은 회사마다 조금씩 다릅니다.</div><span>정리</span><span class="pg"></span></footer>
+</section>
+
 <section class="slide" data-notes="정리. 세 문장만 기억하게 함. 과제는 선택: 노트북 2-5, 2-6은 신약 검토 팀의 지휘자를 같은 방법으로 증류하는 것(질문 약 500개, 학습 약 5분). 발표자 맥에서는 처음 보는 유형 정답률이 68~71%로 엑스레이 팀보다 낮았음. 왜 낮은지 생각해 보게 함(질문이 더 다양하고 전문가 역할이 겹침). 또 하나의 과제는 내 팀의 질문 틀을 늘려 제자의 점수를 올려 보는 것.">
   <h2>오늘 기억할 세 가지</h2>
   <div class="cols3" style="margin-top:40px">
@@ -817,6 +843,7 @@ cd ~/mcp-lab
     <li>MLX LM: 애플 실리콘 맥에서 LoRA 학습<br><a href="https://github.com/ml-explore/mlx-lm" target="_blank" rel="noopener">github.com/ml-explore/mlx-lm</a></li>
     <li>흉부 엑스레이 예시 사진: Wikimedia Commons (CC0, Public domain, CC BY 4.0)<br>파일별 저작자와 라이선스는 실습 저장소 <code>data/xray/SOURCES.md</code></li>
     <li>조회한 공개 데이터베이스: PubChem, PubMed, ClinicalTrials.gov, openFDA</li>
+    <li>PostHog, What is a product engineer<br><a href="https://posthog.com/blog/what-is-a-product-engineer" target="_blank" rel="noopener">posthog.com/blog/what-is-a-product-engineer</a></li>
     <li>Kiro 권한 설정과 요금<br><a href="https://kiro.dev/docs/permissions/" target="_blank" rel="noopener">kiro.dev/docs/permissions</a> · <a href="https://kiro.dev/pricing/" target="_blank" rel="noopener">kiro.dev/pricing</a></li>
     <li>이 자료의 숫자(실행 시간, 정답률)는 발표자 맥(M1 Max 32GB)에서 잰 것입니다. 수강생 아이맥에서는 다를 수 있습니다.</li>
   </ul>
