@@ -58,6 +58,20 @@ def fill(template, word):
     return re.sub(r"\{d\}(가|와|를|는|로)(?=[\s,?.]|$)", josa, template).replace("{d}", word)
 
 
+def free_gpu():
+    """Ollama가 메모리에 올려 둔 모델을 내린다. 학습과 큰 모델이 GPU를 함께 쓰면 학습이 멈출 수 있다."""
+    try:
+        for m in ollama.ps().models:
+            ollama.generate(model=m.model, prompt="", keep_alive=0)
+    except Exception:
+        pass
+
+
+def gpu_was_busy(log):
+    """학습이 'GPU가 바빠서' 멈춘 것인지 본다 (macOS가 화면이 버벅이지 않게 작업을 끊는 경우)."""
+    return any("Impacting Interactivity" in line or "Command buffer execution failed" in line for line in log)
+
+
 def follow_training(proc, iters):
     """학습 프로그램(mlx_lm lora)이 찍는 줄을 읽어 진행 상황을 보여 준다. 읽은 줄 전체를 돌려준다."""
     status, log = Status(f"⏳ 학습을 시작합니다. {iters}번 반복하고 5분쯤 걸립니다. 모델을 불러오는 중"), []
@@ -291,9 +305,16 @@ class Team:
                "--adapter-path", str(adapter), "--steps-per-report", "10", "--steps-per-eval", "200", "--mask-prompt"]
         env = {**os.environ, "NO_COLOR": "1", "TERM": "dumb", "HF_HUB_DISABLE_PROGRESS_BARS": "1", "PYTHONUNBUFFERED": "1"}
         start = time.time()
-        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, env=env)
-        log = follow_training(proc, iters)
-        if proc.wait() != 0:
+        for attempt in (1, 2):
+            free_gpu()                          # 큰 모델을 메모리에서 내려 학습에 자리를 내준다
+            proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, env=env)
+            log = follow_training(proc, iters)
+            if proc.wait() == 0:
+                break
+            if attempt == 1 and gpu_was_busy(log):
+                print("⚠️  그래픽 장치(GPU)가 바빠서 학습이 중간에 멈췄습니다. 웹 화면이나 다른 노트북에서 모델을 쓰고 있다면 잠시 멈춰 주세요. 20초 뒤 한 번 더 해 봅니다.")
+                time.sleep(20)
+                continue
             raise SystemExit("❌ 학습이 실패했습니다.\n" + "\n".join(log[-15:]))
         size_mb = (adapter / "adapters.safetensors").stat().st_size / 1e6
         print(f"\n✅ 학습 완료  {time.time() - start:.0f}초   Adapter 파일 {size_mb:.1f}MB  ({adapter})")
