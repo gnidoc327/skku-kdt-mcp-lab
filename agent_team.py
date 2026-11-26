@@ -400,6 +400,55 @@ class Team:
         ]))
         return z
 
+    def show_cost(self, prices=None, computer_usd=600, years=3, watts_idle=7, watts_busy=30, kwh_usd=0.12):
+        """전문가 고르기를 "싼 클라우드 모델에 지시문으로 시킬 때"와 "증류한 제자를 내 컴퓨터에서 돌릴 때"의 비용을 비교한다.
+
+        질문 하나의 token 수와 제자가 답하는 시간은 이 컴퓨터에서 실제로 잰다. 나머지는 가정이므로 바꿔서 다시 계산해 본다.
+          prices       : {모델 이름: (입력, 출력)} 100만 token당 달러. 비워 두면 2026년 11월에 알려진 요금 세 가지
+          computer_usd : 제자를 돌릴 컴퓨터 값 (기본값: 메모리 16GB 맥 미니 정도)
+          years        : 그 컴퓨터를 몇 년 쓰고 바꾸는지 (부품은 수명이 있으므로 값을 이 기간에 나눠 낸다고 본다)
+          watts_idle, watts_busy : 쉴 때와 일할 때 쓰는 전력(W).  kwh_usd : 전기 1kWh 요금(달러)
+        """
+        prices = prices or {"GPT-6 Luna (가장 싼 축)": (0.10, 0.50), "GPT-6.1 Terra": (1, 5), "Claude Opus 5.5": (4, 20)}
+        question = "이 질문은 누구에게 보내야 할까?"
+        # 1) 질문 하나에 token이 몇 개 드는지: 큰 모델에게 지시문과 함께 물어서 센다
+        schema = {"type": "object", "required": ["experts"], "properties": {"experts": {
+            "type": "array", "minItems": 1, "maxItems": len(self.keys), "items": {"type": "string", "enum": self.keys}}}}
+        kw = dict(model=EXPERT_MODEL, format=schema, options={"temperature": 0},
+                  messages=[{"role": "system", "content": self.router_prompt}, {"role": "user", "content": question}])
+        try:
+            r = ollama.chat(think=False, **kw)
+        except Exception:
+            r = ollama.chat(**kw)
+        tok_in, tok_out = r.prompt_eval_count, r.eval_count
+        # 2) 제자가 질문 하나에 몇 초 걸리는지: 다섯 번 돌려 평균을 낸다
+        self._generate(question, True)
+        t0 = time.time()
+        for _ in range(5):
+            self._generate(question, True)
+        sec = (time.time() - t0) / 5
+        # 3) 계산
+        own_call = sec / 3600 * (watts_busy - watts_idle) / 1000 * kwh_usd       # 질문 하나에 더 드는 전기 요금
+        own_day = computer_usd / (years * 365) + 24 * watts_idle / 1000 * kwh_usd  # 컴퓨터를 새로 사서 켜 두는 하루 고정비
+        capacity = int(86400 / sec)
+        usd = lambda v: f"${v:,.2f}" if v >= 0.01 else f"${v:.6f}".rstrip("0") if v >= 0.000001 else "$0.000001 미만"
+        rows = []
+        for name, (p_in, p_out) in prices.items():
+            call = (tok_in * p_in + tok_out * p_out) / 1e6
+            even = own_day / (call - own_call) if call > own_call else None
+            rows.append({"model": name, "call": call, "break_even_per_day": even})
+        lines = [f"질문 하나: 지시문과 질문 **{tok_in} token** + 답 **{tok_out} token**. 제자는 질문 하나에 **{sec:.2f}초**, 하루에 최대 약 {capacity:,}번.", "",
+                 "| | 질문 하나 | 하루 1,000번 | 하루 100,000번 | 새 컴퓨터를 사도 본전인 횟수 |", "|---|---|---|---|---|"]
+        for x in rows:
+            even = "본전을 못 뽑음" if x["break_even_per_day"] is None else f"하루 약 {x['break_even_per_day']:,.0f}번부터" + (" (제자 한 대의 한계를 넘음)" if x["break_even_per_day"] > capacity else "")
+            lines.append(f"| {x['model']}에 지시문으로 | {usd(x['call'])} | {usd(x['call'] * 1000)} | {usd(x['call'] * 100000)} | {even} |")
+        lines.append(f"| **증류한 제자** (이미 있는 컴퓨터) | {usd(own_call)} | {usd(own_call * 1000)} | {usd(own_call * 100000)} | 첫 질문부터 더 쌈 (전기 요금뿐) |")
+        lines.append(f"| **증류한 제자** (컴퓨터를 새로 삼) | | {usd(own_day + own_call * 1000)} | {usd(own_day + own_call * 100000)} | 하루 고정비 {usd(own_day)} |")
+        lines += ["", f"가정: 컴퓨터 ${computer_usd:,}를 {years}년 쓰고 바꿈, 전력은 쉴 때 {watts_idle}W와 일할 때 {watts_busy}W, 전기 1kWh에 ${kwh_usd}. "
+                      "요금은 100만 token당 달러(입력, 출력): " + ", ".join(f"{n} {a}/{b}" for n, (a, b) in prices.items()) + ". 값을 바꿔 다시 계산해 보세요."]
+        md("\n".join(lines))
+        return {"tokens_in": tok_in, "tokens_out": tok_out, "student_seconds": round(sec, 3), "own_per_call": own_call, "own_per_day": own_day, "rows": rows}
+
     def checkpoints(self):
         """학습 도중에 저장된 중간 모델들의 반복 횟수 (예: [100, 200, 300])."""
         return sorted(int(f.name.split("_")[0]) for f in (self.folder / "adapter").glob("*_adapters.safetensors"))
