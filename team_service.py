@@ -37,14 +37,14 @@ def on_event(event):
         progress["events"].append({**event, "at": round(time.time() - progress["start"])})
 
 
-def run(question: str, case: str = "", router: str = "teacher", watch: bool = False) -> dict:
+def run(question: str, case: str = "", router: str = "teacher", watch: bool = False, discuss: bool = False) -> dict:
     def job():
         if watch:
             progress.update(events=[], draft="", start=time.time())
         fn = None
         if router == "student" and TEAM.has_student():
             fn = _router.get("student") or _router.setdefault("student", TEAM.load_student())
-        result = TEAM.ask(question, case=case, router=fn, quiet=True, on_event=on_event if watch else None)
+        result = TEAM.ask(question, case=case, router=fn, quiet=True, on_event=on_event if watch else None, discuss=discuss)
         result["router"] = "student" if fn else "teacher"
         return result
     return worker.submit(job).result()
@@ -108,6 +108,13 @@ textarea{min-height:92px;resize:vertical}button{background:var(--blue);color:#ff
 .steps .n{display:inline-block;min-width:34px;font-weight:700;font-size:13px}.t{font-size:13px;color:var(--sub);font-weight:400}.steps .log{margin:4px 0 0 38px}
 #compare{margin-top:8px;background:#fff;color:var(--blue);border:1px solid var(--blue)}#compare:disabled{color:#9db0e6;border-color:#9db0e6;background:#fff}
 .help{font-size:13px;color:var(--sub);margin:6px 0 0}
+label.check{font-weight:400;font-size:14px;display:flex;gap:8px;align-items:flex-start;margin-top:14px}label.check input{margin-top:4px}
+.room{background:#f6f8fc}.msg{display:flex;gap:10px;margin:14px 0;align-items:flex-start}.msg .av{flex:none;width:34px;height:34px;border-radius:50%;color:#fff;font-weight:700;font-size:15px;display:flex;align-items:center;justify-content:center}
+.msg .say{min-width:0;max-width:88%}.msg .name{font-size:13px;font-weight:700;margin-bottom:3px}.msg .bubble{background:#fff;border:1px solid var(--line);border-radius:4px 14px 14px 14px;padding:10px 14px}
+.msg.me{justify-content:flex-end}.msg.me .name{text-align:right}.msg.me .bubble{background:var(--blue);color:#fff;border-color:var(--blue);border-radius:14px 4px 14px 14px}.msg.me .t{color:#dbe4ff}
+.msg.reply .bubble{background:#eefaf7;border-color:#bfe6de}.msg.final .bubble{border:2px solid var(--blue)}
+.sys{text-align:center;font-size:12.5px;color:var(--sub);margin:12px 0}.dots{letter-spacing:4px;color:#9db0e6;animation:blink 1.2s infinite}@keyframes blink{50%{opacity:.3}}
+.talk{border-left:3px solid var(--teal);padding:6px 0 6px 12px;margin:10px 0}.talk .who2{font-size:13px;color:var(--sub);margin-bottom:2px}.talk .who2 b{color:var(--teal)}
 .sizes{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:10px}.sizes th,.sizes td{text-align:left;padding:4px 6px 4px 0;border-bottom:1px solid var(--line);vertical-align:top}.sizes th{color:var(--sub);font-weight:600}
 .log{font-size:14px;color:var(--sub);margin:0;padding:0;list-style:none}.log li{padding:2px 0}.log li b{color:var(--ink)}
 .who li.work{border-color:var(--blue)}.who li.work b{color:var(--blue)}
@@ -124,6 +131,7 @@ pre{white-space:pre-wrap;word-break:break-word;font:inherit;margin:0}.note{font-
 <p class="help">질문을 보고 <b>어느 전문가를 부를지 정하는 일</b>(2단계)만 이 모델이 합니다. 전문가의 분석과 통합 답변은 어느 쪽을 골라도 큰 모델이 씁니다. 그래서 두 모델이 같은 전문가를 고르면 답의 질은 같고, 다르게 고르면 불리는 전문가가 달라집니다.</p>
 <table class="sizes" id="sizes"></table>
 <p class="help">GPT와 Claude는 크기를 공개하지 않아, 성능이 가깝다고 알려진 공개 모델로 대신 가늠했습니다. 전문가 고르기처럼 <b>답의 형태가 정해진 일</b>은 그런 큰 모델을 부르지 않아도, 이렇게 작은 모델을 직접 가르쳐 내 컴퓨터에서 돌릴 수 있습니다. 작은 모델은 배운 이 일 하나만 합니다.</p>
+<label class="check"><input type="checkbox" id="discuss" checked> 전문가끼리 서로의 답을 읽고 의견 나누기 (20~40초 더 걸림)</label>
 <button id="go">질문하기</button>
 <button id="compare">두 모델이 고르는 전문가만 비교하기</button>
 <label>전문가</label><ul class="who" id="who"></ul>
@@ -151,42 +159,69 @@ function preview(){ const c = $('case').value, img = $('preview'), has = info.ma
   img.onload = () => { img.style.display = 'block'; $('previewcap').innerHTML = has ? '<b>모델이 보는 사진.</b> 화살표가 없는 원본입니다. 모델은 이것만 봅니다.' : '<b>모델이 보는 사진.</b> 이 사진 그대로 봅니다.'; };
   img.src = 'image?v=' + info.started + '&case=' + encodeURIComponent(c);
   $('markedbox').hidden = !has; if(has) $('marked').src = 'image?v=' + info.started + '&marked=1&case=' + encodeURIComponent(c); }
-const card = x => `<div class="card"><h3>${esc(x.title)}</h3><div class="meta">${x.seconds}초 · 쓴 도구 ${x.tools.map(t => `<span class="tag">${esc(t)}</span>`).join('') || '없음'}</div><pre>${md(x.answer)}</pre></div>`;
 const title = k => (info.experts.find(e => e.key === k) || {}).title || k;
-function live(events, draft, now){      // 일하는 동안 보여 주는 화면: 단계별 진행, 끝난 전문가의 답, 쓰고 있는 통합 답변
-  const names = (events.find(e => e.type === 'steps') || {names: []}).names, steps = names.map((name, i) => ({n: i + 1, name, state: 'wait', sub: []}));
-  const done = []; let cur = null;
+const COLORS = ['#1f4fd8', '#0f9d8a', '#b45309', '#7c3aed', '#be185d'];
+const color = k => COLORS[Math.max(0, info.experts.findIndex(e => e.key === k)) % COLORS.length];
+const keyOf = t => (info.experts.find(e => e.title === t) || {}).key;
+let asked = {q: '', c: ''};
+// ----- 단체 대화방: 지휘자와 전문가들이 주고받는 말을 순서대로 말풍선으로 보여 준다 -----
+const bubble = (name, bg, initial, meta, body, cls = '') => `<div class="msg ${cls}"><div class="av" style="background:${bg}">${initial}</div><div class="say"><div class="name">${esc(name)} <span class="t">${meta}</span></div><div class="bubble"><pre>${body}</pre></div></div></div>`;
+const boss = (meta, body, cls = '') => bubble('지휘자', '#16203a', '🧭', meta, body, cls);
+const sys = text => `<div class="sys">${text}</div>`;
+function chat(events, draft, final){
+  const out = [`<div class="msg me"><div class="say"><div class="name">나</div><div class="bubble"><pre>${esc(asked.q)}${asked.c ? '\\n<span class="t">대상: ' + esc(asked.c) + '</span>' : ''}</pre></div></div></div>`];
   for(const e of events){
-    if(e.type === 'step'){ cur = steps[e.n - 1]; cur.state = 'run'; cur.from = e.at; }
-    if(e.type === 'step_done'){ const st = steps[e.n - 1]; st.state = 'done'; st.seconds = e.seconds; st.note = e.note; }
-    if(e.type === 'route') e.experts.forEach(k => document.querySelector(`#who li[data-k="${k}"]`).classList.add('work'));
-    if(e.type === 'tool' && cur) cur.sub.push(`🔧 ${esc(e.title)}: ${esc(e.name)}(${esc(e.args)})  (${e.at}초)`);
-    if(e.type === 'expert'){ if(cur) cur.sub.push(`✅ <b>${esc(e.result.title)}</b> 끝  (${e.result.seconds}초)`); done.push(e.result);
-      const li = document.querySelector(`#who li[data-k="${e.result.expert}"]`); li.classList.remove('work'); li.classList.add('on'); }
+    if(e.type === 'step' && e.name === '기초 자료 만들기') out.push(sys('지휘자가 검토 대상의 기초 자료를 만듭니다 (사진이면 큰 모델이 먼저 읽습니다)'));
+    if(e.type === 'route') out.push(boss(`고르는 데 ${e.seconds}초`, `이 질문은 <b>${e.experts.map(k => esc(title(k))).join(', ')}</b>에게 맡기겠습니다. 각자 도구로 근거를 찾아 주세요.`));
+    if(e.type === 'tool') out.push(sys(`🔧 <b style="color:${color(e.expert)}">${esc(e.title)}</b>가 도구를 씁니다: ${esc(e.name)}(${esc(e.args)})`));
+    if(e.type === 'expert'){ const x = e.result; out.push(bubble(x.title, color(x.expert), esc(x.title[0]), `${x.seconds}초 · 쓴 도구 ${x.tools.map(esc).join(', ') || '없음'}`, md(x.answer))); }
+    if(e.type === 'step' && e.name === '전문가끼리 의견 나누기') out.push(sys('전문가들이 서로의 답을 읽고 의견을 나눕니다'));
+    if(e.type === 'talk') out.push(bubble(e.title, color(e.expert), esc(e.title[0]), `→ ${esc(e.to.join(', '))}에게 · ${e.seconds}초`, md(e.text), 'reply'));
+    if(e.type === 'step' && e.name === '지휘자가 답을 합치기') out.push(sys('지휘자가 모든 답과 의견을 읽고 정리합니다'));
+  }
+  if(final) out.push(boss(final.meta, md(final.answer), 'final'));
+  else if(draft) out.push(boss('쓰는 중', md(draft) + ' ▌', 'final'));
+  else out.push(sys('<span class="dots">●●●</span>'));
+  return `<div class="card room"><h3>대화방 <span class="t">지휘자와 전문가들이 주고받은 말</span></h3>${out.join('')}</div>`;
+}
+function stepsCard(events, now, done){     // 단계별 진행: 몇 번째 단계인지와 단계마다 걸린 시간
+  const names = (events.find(e => e.type === 'steps') || {names: []}).names, steps = names.map((name, i) => ({n: i + 1, name, state: 'wait'}));
+  for(const e of events){
+    if(e.type === 'step'){ steps[e.n - 1].state = 'run'; steps[e.n - 1].from = e.at; }
+    if(e.type === 'step_done') Object.assign(steps[e.n - 1], {state: 'done', seconds: e.seconds, note: e.note});
   }
   const row = st => `<li class="${st.state}"><span class="n">${st.n}/${steps.length}</span> <b>${esc(st.name)}</b> `
-    + (st.state === 'done' ? `<span class="t">끝 · ${st.seconds}초${st.note ? ' · ' + esc(st.note) : ''}</span>`
-       : st.state === 'run' ? `<span class="t">진행 중 · ${Math.max(0, now - st.from)}초째</span>` : '<span class="t">기다리는 중</span>')
-    + (st.sub.length ? `<ul class="log">${st.sub.map(l => `<li>${l}</li>`).join('')}</ul>` : '') + '</li>';
-  $('out').innerHTML = `<div class="card"><h3>진행 상황 <span class="t">전체 ${now}초째</span></h3><ol class="steps">${steps.map(row).join('') || '<li class="run">시작하는 중…</li>'}</ol></div>`
-    + (draft ? `<div class="card final"><h3>통합 답변 (쓰는 중)</h3><pre>${md(draft)} ▌</pre></div>` : '') + done.map(card).join('');
+    + (st.state === 'done' ? `<span class="t">끝 · ${st.seconds}초${st.note ? ' · ' + esc(st.note) : ''}</span>` : st.state === 'run' ? `<span class="t">진행 중 · ${Math.max(0, now - st.from)}초째</span>` : '<span class="t">기다리는 중</span>') + '</li>';
+  return `<div class="card"><h3>${done ? '단계별로 걸린 시간' : '진행 상황'} <span class="t">전체 ${now}초${done ? '' : '째'}</span></h3><ol class="steps">${steps.map(row).join('') || '<li class="run">시작하는 중…</li>'}</ol></div>`;
+}
+function mark(events){                    // 왼쪽 전문가 목록에 일하는 사람과 끝난 사람을 표시한다
+  for(const e of events){
+    if(e.type === 'route') e.experts.forEach(k => { const li = document.querySelector(`#who li[data-k="${k}"]`); if(!li.classList.contains('on')) li.classList.add('work'); });
+    if(e.type === 'expert'){ const li = document.querySelector(`#who li[data-k="${e.result.expert}"]`); li.classList.remove('work'); li.classList.add('on'); }
+  }
+}
+function live(events, draft, now){
+  mark(events);
+  const box = $('out'), stick = window.innerHeight + window.scrollY >= document.body.scrollHeight - 80;
+  box.innerHTML = stepsCard(events, now, false) + chat(events, draft, null);
+  if(stick) window.scrollTo(0, document.body.scrollHeight);     // 맨 아래를 보고 있었다면 새 말풍선을 따라 내려간다
 }
 $('go').onclick = async () => {
   const btn = $('go'); btn.disabled = true; const t0 = Date.now();
   const tick = setInterval(() => btn.textContent = `전문가들이 일하는 중… ${Math.round((Date.now()-t0)/1000)}초`, 500);
   document.querySelectorAll('#who li').forEach(li => li.classList.remove('on', 'work'));
+  asked = {q: $('q').value, c: info.cases.length ? $('case').value : ''};
   const events = []; let watching = true, draft = ''; const sec = () => Math.round((Date.now() - t0) / 1000); live(events, draft, 0);
-  const watch = (async () => { while(watching){ await new Promise(r => setTimeout(r, 800)); if(!watching) break;
-    try{ const p = await (await fetch('progress?since=' + events.length)).json(); events.push(...p.events); draft = p.draft; if(watching) live(events, draft, sec()); }catch(e){} } })();
+  const pull = async () => { const p = await (await fetch('progress?since=' + events.length)).json(); events.push(...p.events); draft = p.draft; };
+  const watch = (async () => { while(watching){ await new Promise(r => setTimeout(r, 800)); if(!watching) break; try{ await pull(); if(watching) live(events, draft, sec()); }catch(e){} } })();
   try{
-    const res = await fetch('ask', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({question: $('q').value, case: info.cases.length ? $('case').value : '', router: $('router').value})});
+    const res = await fetch('ask', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({question: asked.q, case: asked.c, router: $('router').value, discuss: $('discuss').checked})});
     const r = await res.json(); watching = false;
     if(r.error) throw new Error(r.error);
-    document.querySelectorAll('#who li').forEach(li => li.classList.remove('work'));
-    r.experts.forEach(k => document.querySelector(`#who li[data-k="${k}"]`).classList.add('on'));
-    $('out').innerHTML = `<div class="card final"><h3>통합 답변</h3><div class="meta">${r.seconds}초 · 전문가 ${r.experts.length}명 · 고른 모델: ${r.router === 'student' ? '증류한 작은 모델' : '큰 모델'} (${r.route_seconds}초)</div><pre>${md(r.answer)}</pre></div>`
-      + `<div class="card"><h3>단계별로 걸린 시간</h3><ol class="steps">${r.steps.map(st => `<li class="done"><span class="n">${st.n}/${r.steps.length}</span> <b>${esc(st.name)}</b> <span class="t">${st.seconds}초${st.note ? ' · ' + esc(st.note) : ''}</span></li>`).join('')}</ol></div>`
-      + r.results.map(card).join('')
+    try{ await pull(); }catch(e){}
+    mark(events); document.querySelectorAll('#who li').forEach(li => li.classList.remove('work'));
+    const meta = `${r.seconds}초 · 전문가 ${r.experts.length}명 · 고른 모델: ${r.router === 'student' ? '증류한 작은 모델' : '큰 모델'} (${r.route_seconds}초)`;
+    $('out').innerHTML = stepsCard(events, r.seconds, true) + chat(events, '', {meta, answer: r.answer})
       + (r.context ? `<div class="card"><h3>모든 전문가에게 준 기초 자료</h3><pre>${esc(r.context)}</pre></div>` : '');
   }catch(e){ $('out').innerHTML = `<div class="card"><h3>실패했습니다</h3><pre>${esc(e.message)}\n\nOllama 앱이 켜져 있는지 확인하고 다시 눌러 주세요.</pre></div>`; }
   watching = false; clearInterval(tick); btn.disabled = false; btn.textContent = '질문하기';
@@ -259,7 +294,7 @@ async def ask(request):
     if not question:
         return JSONResponse({"error": "질문이 비어 있습니다."})
     try:
-        return JSONResponse(await run_in_threadpool(run, question, str(body.get("case", "")), body.get("router", "teacher"), True))
+        return JSONResponse(await run_in_threadpool(run, question, str(body.get("case", "")), body.get("router", "teacher"), True, bool(body.get("discuss", True))))
     except BaseException as e:      # 팀 코드의 SystemExit도 화면에 보여 준다
         return JSONResponse({"error": str(e)})
 

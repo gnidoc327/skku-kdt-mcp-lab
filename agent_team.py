@@ -168,9 +168,33 @@ class Team:
             text = f"(분석 실패: {e})"
         return {"expert": key, "title": spec["title"], "answer": text, "tools": used(), "seconds": round(time.time() - start, 1)}
 
-    def synthesize(self, question, context, results, quiet=True, on_text=None):
+    def comment(self, key, question, results):
+        """전문가 한 명이 다른 전문가들의 답을 읽고 의견을 말한다. 도구는 쓰지 않고 짧게 말한다."""
+        mine = next(r for r in results if r["expert"] == key)
+        others = "\n\n".join(f"[{r['title']}의 답]\n{r['answer'][:900]}" for r in results if r["expert"] != key)
+        prompt = (f"너는 {self.goal}의 {mine['title']}다. 같은 질문에 다른 전문가들이 아래와 같이 답했다.\n"
+                  "네가 찾은 근거에 비추어, 다른 전문가 한 명 한 명에게 이름을 부르며 말을 건다.\n"
+                  "각 전문가에게 (1) 네 근거와 맞는 점 또는 어긋나는 점 하나, (2) 그 전문가가 더 확인해 주면 좋을 것 하나를 말한다.\n"
+                  "한국어로, 전문가 한 명당 두 문장 이내. 네 답과 다른 전문가의 답에 없는 사실은 새로 지어내지 않는다.\n\n"
+                  f"[질문]\n{question}\n\n[네가 한 답]\n{mine['answer'][:900]}\n\n{others}")
+        kw = dict(model=EXPERT_MODEL, messages=[{"role": "user", "content": prompt}], options={"temperature": 0.2})
+        start = time.time()
+        try:
+            try:
+                r = ollama.chat(think=False, **kw)
+            except Exception:
+                r = ollama.chat(**kw)
+            text = r["message"]["content"].strip()
+        except Exception as e:
+            text = f"(의견을 받지 못함: {e})"
+        return {"expert": key, "title": mine["title"], "to": [r["title"] for r in results if r["expert"] != key],
+                "text": text, "seconds": round(time.time() - start, 1)}
+
+    def synthesize(self, question, context, results, quiet=True, on_text=None, talks=()):
         """지휘자가 전문가들의 답을 모아 하나로 쓴다. quiet=False면 쓰는 대로 화면에 보여 준다."""
         parts = "\n\n".join(f"### {r['title']}의 분석\n{r['answer']}" for r in results)
+        if talks:
+            parts += "\n\n### 전문가끼리 주고받은 의견\n" + "\n".join(f"- {t['title']}: {t['text']}" for t in talks)
         prompt = (f"너는 {self.goal}의 지휘자다. 아래 전문가 분석만 근거로 한국어 통합 답변을 쓴다.\n"
                   f"형식: {self.report}. 전문가 분석에 없는 내용은 쓰지 않는다. 전문가끼리 말이 다르면 다르다고 적는다. 전체 12줄 이내.\n\n"
                   + (f"[기초 자료]\n{context}\n\n" if context else "") + f"[질문]\n{question}\n\n{parts}")
@@ -186,18 +210,20 @@ class Team:
         r = ollama.chat(model=EXPERT_MODEL, messages=messages, options={"temperature": 0.2})
         return r["message"]["content"].strip()
 
-    def ask(self, question, case="", router=None, quiet=False, on_event=None):
+    def ask(self, question, case="", router=None, quiet=False, on_event=None, discuss=True):
         """질문 하나를 처음부터 끝까지 처리한다.
 
         case   : 검토 대상 (예: 사진 파일 이름). prepare 함수가 있을 때만 쓴다
         router : 질문을 받아 전문가 키 목록을 돌려주는 함수. 비워 두면 큰 모델이 고른다.
                  증류한 작은 모델로 바꾸려면 router=team.load_student()
         on_event : 진행 소식을 받을 함수 (웹 화면이 쓴다). 사진 읽기, 고른 전문가, 도구 호출, 끝난 전문가의 답, 쓰고 있는 통합 답변
+        discuss : True면 전문가들이 각자 답한 뒤 서로의 답을 읽고 의견을 주고받는다 (20~40초 더 걸린다). False면 건너뛴다
         """
         tell = on_event or (lambda e: None)
         say = (lambda *a: None) if quiet else print
         start = time.time()
-        names = (["기초 자료 만들기"] if self.prepare else []) + ["전문가 고르기", "전문가들이 일하기", "지휘자가 답을 합치기"]
+        names = ((["기초 자료 만들기"] if self.prepare else []) + ["전문가 고르기", "전문가들이 일하기"]
+                 + (["전문가끼리 의견 나누기"] if discuss else []) + ["지휘자가 답을 합치기"])
         steps = []                              # 단계마다 걸린 시간을 적어 둔다
 
         def step(name):
@@ -241,9 +267,28 @@ class Team:
                                     for k in keys}, on_done=show)
         done(f"{len(keys)}명")
 
+        talks = []
+        if discuss:                             # 각자 답한 뒤, 서로의 답을 읽고 의견을 주고받는다
+            done = step("전문가끼리 의견 나누기")
+            if len(results) < 2:
+                say("전문가가 한 명이라 의견을 나눌 상대가 없습니다.")
+                done("전문가가 한 명이라 건너뜀")
+            elif quiet:
+                def speak(k):
+                    t = self.comment(k, question, results)
+                    tell({"type": "talk", **t})
+                    return t
+                with ThreadPoolExecutor(max_workers=len(keys)) as pool:
+                    talks = list(pool.map(speak, keys))
+                done(f"{len(talks)}명이 말함")
+            else:
+                heard = lambda name, t: md(f"**💬 {t['title']}** → {', '.join(t['to'])}  ({t['seconds']}초)\n\n{t['text']}")
+                talks = run_together({self.experts[k]["title"]: (lambda k=k: self.comment(k, question, results)) for k in keys}, on_done=heard)
+                done(f"{len(talks)}명이 말함")
+
         done = step("지휘자가 답을 합치기")
         if len(results) > 1:
-            answer = self.synthesize(question, context, results, quiet=quiet,
+            answer = self.synthesize(question, context, results, quiet=quiet, talks=talks,
                                      on_text=(lambda t: tell({"type": "draft", "text": t})) if on_event else None)
             done()
         else:                                   # 한 명이면 그 답이 곧 답이다
@@ -254,7 +299,7 @@ class Team:
         seconds = round(time.time() - start)
         say(f"\n{self.disclaimer}\n\n⏱️ 전체 {seconds}초  (" + ", ".join(f"{x['name']} {x['seconds']}초" for x in steps) + ")")
         return {"question": question, "case": case, "context": context, "experts": keys, "route_seconds": route_seconds,
-                "results": results, "answer": answer, "seconds": seconds, "steps": steps}
+                "results": results, "talks": talks, "answer": answer, "seconds": seconds, "steps": steps}
 
     # ---------- 2) 증류: "전문가 고르기"를 작은 모델에게 가르치기 ----------
     @property
