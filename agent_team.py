@@ -130,6 +130,7 @@ class Team:
         self.experts = {k: {**v, "tools": [t if hasattr(t, "tool_spec") else tool(t) for t in v["tools"]]}
                         for k, v in experts.items()}
         self.keys = list(self.experts)
+        self.careful = True
         self.folder = ROOT / "distill" / name
         self._student = {}
 
@@ -159,6 +160,30 @@ class Team:
         count_tokens("지휘자 (전문가 고르기)", r)
         return self._sorted(json.loads(r["message"]["content"])["experts"])
 
+    @staticmethod
+    def _facts(agent):
+        """Agent가 도구를 불러 돌려받은 결과를 모은다: [{"tool", "input", "output"}]. 전문가의 말이 아니라 도구가 준 값이다."""
+        calls, facts = {}, []
+        for m in agent.messages:
+            for b in m.get("content", []):
+                if "toolUse" in b:
+                    calls[b["toolUse"].get("toolUseId")] = b["toolUse"]
+                if "toolResult" in b:
+                    use = calls.get(b["toolResult"].get("toolUseId"), {})
+                    out = " ".join(str(c.get("text", c.get("json", ""))) for c in b["toolResult"].get("content", []))
+                    facts.append({"tool": use.get("name", "?"), "input": json.dumps(use.get("input", {}), ensure_ascii=False)[:120], "output": out[:400]})
+        return facts
+
+    @staticmethod
+    def _fact_lines(rows):
+        """여러 전문가의 도구 결과를 지시문에 넣을 글로 만든다."""
+        lines = [f"- {r['title']}의 도구 {f['tool']}({f['input']}) → {f['output']}" for r in rows for f in r.get("facts", [])]
+        return "\n".join(lines) or "(도구 결과 없음)"
+
+    # 대화할 때 지킬 것 (careful=True일 때 지시문에 넣는다). 도구로 확인한 값과 짐작을 같은 무게로 섞지 않게 한다
+    TALK_RULE = ("지켜야 할 것: 다른 전문가가 도구로 얻은 결과(계산, 기준표 조회, 검색)는 받아들인다. 네 기억이나 짐작으로 그것을 뒤집지 않는다. "
+                 "네 도구로 확인할 수 없는 항목에는 판정을 내리지 말고 '내 도구로는 확인할 수 없다'고 말한다.\n")
+
     def ask_expert(self, key, question, context="", quiet=True, on_event=None):
         """전문가 한 명에게 묻는다. 매번 새 Agent를 만들어 다른 질문의 기억이 섞이지 않게 한다."""
         spec = self.experts[key]
@@ -181,7 +206,8 @@ class Team:
             settle_tokens(agent)
         except Exception as e:
             text = f"(분석 실패: {e})"
-        return {"expert": key, "title": spec["title"], "answer": text, "tools": used(), "seconds": round(time.time() - start, 1)}
+        return {"expert": key, "title": spec["title"], "answer": text, "tools": used(), "seconds": round(time.time() - start, 1),
+                "facts": self._facts(agent)}
 
     def comment(self, key, question, results):
         """전문가 한 명이 다른 전문가들의 답을 읽고 의견을 말한다. 도구는 쓰지 않고 짧게 말한다."""
@@ -190,8 +216,9 @@ class Team:
         prompt = (f"너는 {self.goal}의 {mine['title']}다. 같은 질문에 다른 전문가들이 아래와 같이 답했다.\n"
                   "네가 찾은 근거에 비추어, 다른 전문가 한 명 한 명에게 이름을 부르며 말을 건다.\n"
                   "각 전문가에게 (1) 네 근거와 맞는 점 또는 어긋나는 점 하나, (2) 그 전문가가 더 확인해 주면 좋을 것 하나를 말한다.\n"
-                  "한국어로, 전문가 한 명당 두 문장 이내. 네 답과 다른 전문가의 답에 없는 사실은 새로 지어내지 않는다.\n\n"
-                  f"[질문]\n{question}\n\n[네가 한 답]\n{mine['answer'][:900]}\n\n{others}")
+                  "한국어로, 전문가 한 명당 두 문장 이내. 네 답과 다른 전문가의 답에 없는 사실은 새로 지어내지 않는다.\n"
+                  + (self.TALK_RULE + f"\n[전문가들이 도구로 얻은 결과]\n{self._fact_lines(results)}\n" if self.careful else "")
+                  + f"\n[질문]\n{question}\n\n[네가 한 답]\n{mine['answer'][:900]}\n\n{others}")
         kw = dict(model=EXPERT_MODEL, messages=[{"role": "user", "content": prompt}], options={"temperature": 0.2})
         start = time.time()
         try:
@@ -223,14 +250,18 @@ class Team:
             out = agent((f"[기초 자료]\n{context}\n\n" if context else "") + f"[질문]\n{question}\n\n[네가 처음 한 답]\n{mine['answer'][:900]}\n\n"
                              f"아래는 지금까지 다른 전문가들이 한 말이다. 이 가운데 너({spec['title']})에게 한 질문과 지적, "
                              f"그리고 '남은 것'으로 적힌 쟁점 가운데 네 도구로 확인할 수 있는 것에 답하라. 이미 답한 것은 되풀이하지 않는다.\n{said[-3500:]}\n\n"
-                             "답하는 법: 확인이 필요하면 네 도구를 한 번만 더 써서 확인한다(꼭 필요할 때만). 질문한 전문가의 이름을 부르며 한 명당 두세 문장으로 답한다. "
+                             + ("답하는 법: 의견이 갈린 항목이나 너에게 확인을 요청한 항목은 네 도구로 다시 확인한 뒤 답한다. "
+                                "네 도구로 확인할 수 없는 것은 판정하지 말고 '내 도구로는 확인할 수 없다'고 말한다. "
+                                "다른 전문가가 도구로 얻은 결과는 받아들이고, 네 기억이나 짐작으로 뒤집지 않는다. " if self.careful else
+                                "답하는 법: 확인이 필요하면 네 도구를 한 번만 더 써서 확인한다(꼭 필요할 때만). ")
+                             + "질문한 전문가의 이름을 부르며 한 명당 두세 문장으로 답한다. "
                              "네 처음 답을 고쳐야 하면 고친다고 말한다. 확인하지 못한 것은 확인하지 못했다고 쓴다. 한국어로 쓴다.")
             text = str(out).strip()
             settle_tokens(agent)
         except Exception as e:
             text = f"(답을 받지 못함: {e})"
         return {"expert": key, "title": spec["title"], "to": [r["title"] for r in results if r["expert"] != key],
-                "text": text, "seconds": round(time.time() - start, 1), "round": 2, "tools": used()}
+                "text": text, "seconds": round(time.time() - start, 1), "round": 2, "tools": used(), "facts": self._facts(agent)}
 
     def stance(self, key, question, results, talks):
         """대화를 다 읽은 뒤 전문가 한 명이 마지막 입장을 밝힌다: 합의하는지, 팀의 결론은 무엇인지, 남은 쟁점은 무엇인지."""
@@ -241,8 +272,10 @@ class Team:
                   "첫 줄: 다른 전문가들과 결론이 같으면 '동의', 다르면 '이견' 한 낱말만.\n"
                   "둘째 줄: '결론: ' 뒤에 팀이 내릴 결론을 한 문장으로.\n"
                   "셋째 줄: '남은 것: ' 뒤에 아직 풀리지 않은 쟁점이나 사람이 꼭 확인할 것을 한 문장으로.\n"
-                  "대화에 없는 사실은 지어내지 않는다. 한국어로 쓴다.\n\n"
-                  f"[질문]\n{question}\n\n[네가 처음 한 답]\n{mine['answer'][:600]}\n\n[대화]\n{log}")
+                  "대화에 없는 사실은 지어내지 않는다. 한국어로 쓴다.\n"
+                  + (self.TALK_RULE + "도구로 얻은 결과가 있는 항목은 그 결과를 결론으로 삼는다. 그런 항목을 두고 '이견'이라고 하지 않는다.\n"
+                     f"\n[전문가들이 도구로 얻은 결과]\n{self._fact_lines(list(results) + [t for t in talks if t.get('facts')])}\n" if self.careful else "")
+                  + f"\n[질문]\n{question}\n\n[네가 처음 한 답]\n{mine['answer'][:600]}\n\n[대화]\n{log}")
         kw = dict(model=EXPERT_MODEL, messages=[{"role": "user", "content": prompt}], options={"temperature": 0.2})
         start = time.time()
         try:
@@ -261,9 +294,17 @@ class Team:
         if talks:
             parts += ("\n\n### 전문가끼리 주고받은 대화 (뒤로 갈수록 나중에 한 말이다. 처음 분석과 다르면 대화에서 고친 내용을 따른다)\n"
                       + "\n".join(f"- [{t['round']}차] {t['title']}: {t['text'][:600]}" for t in talks))
+        rule = ""
+        if self.careful:                        # 도구가 돌려준 결과를 전문가의 의견보다 앞세우게 한다
+            facts = self._fact_lines(list(results) + [t for t in talks if t.get("facts")])
+            rule = ("근거에는 순서가 있다. (가) 도구가 돌려준 결과 (나) 전문가의 설명과 의견.\n"
+                    "도구가 돌려준 결과가 있는 항목은 그 결과대로 적는다. 다른 전문가의 의견으로 바꾸거나 '판정할 수 없다'고 쓰지 않는다. "
+                    "도구 결과가 있는 항목은 하나도 빠뜨리지 않는다. 의견이 달랐다면 도구 결과를 먼저 적고 다른 의견이 있었다고 덧붙인다.\n"
+                    "단, 도구가 AI의 판단을 돌려준 것(사진을 보고 쓴 설명 등)은 틀릴 수 있다고 적는다.\n\n"
+                    f"[도구가 돌려준 결과]\n{facts}\n\n")
         prompt = (f"너는 {self.goal}의 지휘자다. 아래 전문가 분석만 근거로 한국어 통합 답변을 쓴다.\n"
-                  f"형식: {self.report}. 전문가 분석에 없는 내용은 쓰지 않는다. 전문가끼리 말이 다르면 다르다고 적는다. 전체 12줄 이내.\n\n"
-                  + (f"[기초 자료]\n{context}\n\n" if context else "") + f"[질문]\n{question}\n\n{parts}")
+                  f"형식: {self.report}. 전문가 분석에 없는 내용은 쓰지 않는다. 전문가끼리 말이 다르면 다르다고 적는다. 전체 {'16' if self.careful else '12'}줄 이내.\n\n"
+                  + rule + (f"[기초 자료]\n{context}\n\n" if context else "") + f"[질문]\n{question}\n\n{parts}")
         messages = [{"role": "user", "content": prompt}]
         if not quiet:
             return stream_answer(EXPERT_MODEL, messages, who="지휘자")
@@ -325,7 +366,7 @@ class Team:
                          + [f"| **합계** | {u['total']['calls']} | **{u['total']['in']:,}** | **{u['total']['out']:,}** |"]))
         return {**r, "replayed": True}
 
-    def ask(self, question, case="", router=None, quiet=False, on_event=None, discuss="medium", reuse=False):
+    def ask(self, question, case="", router=None, quiet=False, on_event=None, discuss="medium", reuse=False, careful=True):
         """질문 하나를 처음부터 끝까지 처리한다.
 
         case   : 검토 대상 (예: 사진 파일 이름). prepare 함수가 있을 때만 쓴다
@@ -337,13 +378,17 @@ class Team:
                   "medium" 묻기 → 받은 질문에 답하기(도구를 다시 쓸 수 있다) → 입장 밝히기
                   "high"   답하기와 입장 밝히기를 모두 동의할 때까지 되풀이한다 (많아야 세 바퀴. 가장 오래 걸린다)
                   False    대화하지 않고 바로 지휘자에게 넘긴다
+        careful : True(기본)면 도구가 돌려준 결과를 전문가의 의견보다 앞세운다. 대화할 때 남이 도구로 확인한 값을 짐작으로 뒤집지 않고,
+                  의견이 갈리면 도구로 다시 확인하며, 자기 도구로 확인할 수 없는 것에는 판정하지 않는다.
+                  False면 이런 규칙 없이 전문가의 말을 모두 같은 무게로 다룬다 (구성에 따라 결과가 어떻게 달라지는지 견줘 볼 때 쓴다)
         reuse   : True면 같은 질문을 전에 돌린 결과가 있을 때 모델을 다시 부르지 않고 그 결과를 보여 준다 (수업 시연용).
                   결과는 돌릴 때마다 distill/<팀 이름>/asks/ 에 저장된다
         """
         tell = on_event or (lambda e: None)
         say = (lambda *a: None) if quiet else print
         depth = {False: "", 0: "", "off": "", 1: "low", "low": "low", True: "medium", 3: "medium", "medium": "medium", "high": "high"}.get(discuss, "medium")
-        saved = self._ask_file(question, case, depth, router)
+        self.careful = careful
+        saved = self._ask_file(question, case, depth + ("|careful" if careful else ""), router)
         if reuse and saved.exists():
             return self._replay(json.loads(saved.read_text(encoding="utf-8")), quiet, tell)
         start = time.time()
