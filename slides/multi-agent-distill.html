@@ -752,14 +752,14 @@ start_service("my_team")</pre>
   <footer class="foot"><span>실습 4</span><span class="pg"></span></footer>
 </section>
 
-<section class="slide" data-notes="실습 4 뒷부분. Kiro는 원래 명령을 실행하거나 파일을 고칠 때마다 허락을 구함. connect_kiro.py --dev 한 줄이 실습에 늘 쓰는 일만 미리 허락해 둠. 그다음 Kiro에서 mcp-lab 폴더를 열고(폴더를 믿느냐고 물으면 믿는다를 고름) 말로 시킴. 폴더 안의 안내 문서(.kiro/steering/mcp-lab.md)를 Kiro가 먼저 읽기 때문에 실행 방법과 파일 구성을 이미 알고 있음. 모델은 auto로 둘 것(가장 싼 모델은 MCP 도구를 못 찾는 일이 있었음). 주의 두 가지를 꼭 말함: 이 설정은 편의 기능이지 안전장치가 아님. 무료 요금제는 한 달 50 credit이라 한 번에 할 일을 분명하게 적어 시킬 것. 시간이 없으면 발표자가 시연만.">
+<section class="slide" data-notes="실습 4 뒷부분. Kiro는 원래 명령을 실행하거나 파일을 고칠 때마다 허락을 구함. 터미널을 열 필요 없이 노트북 2-3의 5번에 있는 셀을 실행: connect_kiro("--dev")가 실습에 늘 쓰는 일만 미리 허락해 두고, open_kiro()가 Kiro에서 실습 폴더를 엶(폴더를 믿느냐고 물으면 믿는다를 고름). Kiro에 로그인이 안 되어 있으면 먼저 로그인. 그다음 말로 시킴. 폴더 안의 안내 문서(.kiro/steering/mcp-lab.md)를 Kiro가 먼저 읽기 때문에 실행 방법과 파일 구성을 이미 알고 있음. 모델은 auto로 둘 것(가장 싼 모델은 MCP 도구를 못 찾는 일이 있었음). 주의 두 가지를 꼭 말함: 이 설정은 편의 기능이지 안전장치가 아님. 무료 요금제는 한 달 50 credit이라 한 번에 할 일을 분명하게 적어 시킬 것. 시간이 없으면 발표자가 시연만.">
   <h2>Kiro에게 말로 시켜 계속 고치기</h2>
   <div class="cols" style="grid-template-columns: 1fr 1fr; gap:44px; margin-top:22px">
     <div>
-      <pre class="code" style="font-size:14.5px"><span class="c"># 한 번만 실행: 늘 쓰는 일은 묻지 않게</span>
-cd ~/mcp-lab
-.venv/bin/python connect_kiro.py --dev</pre>
-      <p style="font-size:18px; margin-top:16px">Kiro에서 <strong>mcp-lab 폴더를 열고</strong> 채팅창에 입력합니다.</p>
+      <pre class="code" style="font-size:14.5px"><span class="c"># 노트북 2-3의 5번에 있는 셀을 실행 (한 번만)</span>
+connect_kiro("--dev")   <span class="c"># 늘 쓰는 일은 묻지 않게</span>
+open_kiro()             <span class="c"># Kiro에서 실습 폴더 열기</span></pre>
+      <p style="font-size:18px; margin-top:16px">Kiro가 열리면 <strong>폴더를 믿는다</strong>를 고르고 채팅창에 입력합니다.</p>
       <div class="punch" style="margin-top:10px; font-size:17px">xray_team.py를 본보기로 my_team.py에 '복약 상담 팀'을 만들어 줘. 전문가는 두 명, 만든 뒤 질문 하나로 돌려서 확인해 줘</div>
       <p class="mini">모델은 auto로 둡니다. 무료 요금제는 한 달 50 credit이니 한 번에 할 일을 분명하게 적습니다.</p>
     </div>
@@ -774,7 +774,7 @@ cd ~/mcp-lab
         </tbody>
       </table>
       <ul class="plain" style="gap:10px; margin-top:18px">
-        <li style="font-size:17.5px">편의 기능이지 안전장치가 아닙니다<span>실습이 끝나면 <code>connect_kiro.py --dev-off</code>로 끕니다</span></li>
+        <li style="font-size:17.5px">편의 기능이지 안전장치가 아닙니다<span>실습이 끝나면 그 아래 셀의 <code>connect_kiro("--dev-off")</code>로 끕니다</span></li>
         <li style="font-size:17.5px">Kiro는 폴더의 안내 문서를 먼저 읽습니다<span><code>.kiro/steering/mcp-lab.md</code>. 내 규칙을 더하려면 이 파일을 고칩니다</span></li>
       </ul>
     </div>

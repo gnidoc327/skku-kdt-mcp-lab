@@ -225,3 +225,12 @@ def connect_kiro(*args):
     """connect_kiro.py를 실행한다. 예: connect_kiro("--team", "xray_team"). 터미널에서 실행하는 것과 같다."""
     r = subprocess.run([sys.executable, str(ROOT / "connect_kiro.py"), *args], cwd=ROOT, capture_output=True, text=True)
     print((r.stdout + r.stderr).strip())
+
+
+def open_kiro():
+    """Kiro에서 이 실습 폴더를 연다. Kiro가 "이 폴더를 믿습니까?"라고 물으면 믿는다를 고른다."""
+    r = subprocess.run(["open", "-a", "Kiro", str(ROOT)], capture_output=True, text=True)
+    if r.returncode == 0:
+        print(f"✅ Kiro에서 실습 폴더를 열었습니다: {ROOT}")
+    else:
+        print(f"❌ Kiro를 열지 못했습니다. Kiro를 직접 켜고 [File → Open Folder]에서 이 폴더를 여세요: {ROOT}")
