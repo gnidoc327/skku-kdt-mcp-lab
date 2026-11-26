@@ -109,7 +109,7 @@ def ask_expert(key: str, question: str, context: str) -> dict:
 def run_experts(keys: list, question: str, context: str, say=None) -> list:
     """고른 전문가들에게 동시에 일을 맡긴다. say에 print를 넘기면 한 명이 끝날 때마다 알려 준다."""
     say = say or (lambda *a: None)
-    say(f"⏳ 전문가 {len(keys)}명이 동시에 일하는 중입니다. 한 명에 20~40초 걸립니다.")
+    say(f"⏳ 전문가 {len(keys)}명이 동시에 일하는 중입니다. 한 명에 30초~1분쯤 걸립니다.")
     start = time.time()
     with ThreadPoolExecutor(max_workers=len(keys)) as pool:
         jobs = {pool.submit(ask_expert, k, question, context): k for k in keys}

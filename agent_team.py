@@ -137,7 +137,7 @@ class Team:
         keys = [k for k in (router or self.route_with_teacher)(question) if k in self.keys] or self.keys
         route_seconds = round(time.time() - t0, 2)
         say(f"🧭 고른 전문가: {', '.join(self.experts[k]['title'] for k in keys)}  (고르는 데 {route_seconds}초)")
-        say(f"⏳ 전문가 {len(keys)}명이 동시에 일하는 중입니다. 한 명에 20~40초 걸립니다.")
+        say(f"⏳ 전문가 {len(keys)}명이 동시에 일하는 중입니다. 한 명에 30초~1분쯤 걸립니다.")
         t1 = time.time()
         with ThreadPoolExecutor(max_workers=len(keys)) as pool:      # 고른 전문가들이 동시에 일한다
             jobs = {pool.submit(self.ask_expert, k, question, context): k for k in keys}
