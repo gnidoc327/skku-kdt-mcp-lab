@@ -609,7 +609,7 @@ r = ollama.chat(model="gemma4:e4b", format=schema,
   <footer class="foot"><div class="src">사진: <a href="https://commons.wikimedia.org/wiki/File:Rib_fracture_2347.jpg" target="_blank" rel="noopener">commons.wikimedia.org/wiki/File:Rib_fracture_2347.jpg</a></div><span>실습 2</span><span class="pg"></span></footer>
 </section>
 
-<section class="slide" data-notes="이 장이 Multi-Agent 부분의 결론. 왼쪽은 풀리는 문제, 오른쪽은 안 풀리는 문제. 차이는 정답을 도구로 확인할 수 있느냐 하나. [왼쪽] 건강검진 수치 여섯 항목을 모두 기준의 경계에 걸치게 만든 문제(47세 여성, 키 158, 몸무게 61, 공복혈당 99, 당화혈색소 5.7, 수축기혈압 140, 총콜레스테롤 200, LDL 129). 정답은 팀의 도구(기준표, 계산)로 정해짐. 모델 혼자 도구 없이 풀면 세 번 모두 2~3개만 맞히고 3~4개를 자신 있게 틀림(체질량지수 24.4를 매번 정상이라고 함. 한국 기준으로는 비만 전단계). 팀으로 나누고 도구를 주면 틀린 말이 사라짐. 다만 구성이 엉성했을 때는 지휘자가 확인된 값을 빠뜨리거나 다른 전문가의 짐작과 섞어서 2~5개 사이를 오갔음. 세 가지를 고침: 도구가 돌려준 결과를 의견보다 앞세우기, 의견이 갈리면 도구로 다시 확인하기, 자기 도구로 확인할 수 없는 것은 판정하지 않기. 고친 뒤에는 대화 없이도 6개. 모델, 전문가, 도구는 그대로. 대화를 high까지 늘려도 6개 그대로이고 token만 5배. 그래서 token을 쓸 곳은 대화의 횟수가 아니라 도구로 확인하는 일. [오른쪽] 엑스레이 네 장(늑골 골절, 심부전, 기흉, 정상)을 low와 high로 돌렸고 네 장 모두 high에서도 사람의 판독에 닿지 못함. 늑골 골절은 high에서 세 명이 모두 '골절 없음'에 동의. 모두 동의가 맞다는 뜻이 아님. 사진을 12조각으로 잘라 확대해 물으면 6조각에서 '있음'이라고 하지만 같은 방식으로 찍은 정상 사진에서도 3조각에서 '있음'이 나옴. 구성을 바꾸면 반응은 달라지지만 모델이 못 보는 것을 보게 하지는 못함. 숫자는 발표자 맥에서 한두 번씩 돌린 값이고 돌릴 때마다 달라짐(고치기 전의 high는 2개와 5개로 흔들렸음). 노트북 2-3에 두 실험이 모두 있고, 발표자 맥에는 결과가 저장돼 있어 REUSE로 바로 보여 줄 수 있음.">
+<section class="slide" data-notes="이 장이 Multi-Agent 부분의 결론. 왼쪽은 풀리는 문제, 오른쪽은 안 풀리는 문제. 차이는 정답을 도구로 확인할 수 있느냐 하나. [왼쪽] 건강검진 수치 여섯 항목을 모두 기준의 경계에 걸치게 만든 문제(47세 여성, 키 158, 몸무게 61, 공복혈당 99, 당화혈색소 5.7, 수축기혈압 140, 총콜레스테롤 200, LDL 129). 정답은 팀의 도구(기준표, 계산)로 정해짐. 모델 혼자 도구 없이 풀면 세 번 모두 2~3개만 맞히고 3~4개를 자신 있게 틀림(체질량지수 24.4를 매번 정상이라고 함. 한국 기준으로는 비만 전단계). 팀으로 나누고 도구를 주면 틀린 말이 사라짐. 다만 구성이 엉성했을 때는 지휘자가 확인된 값을 빠뜨리거나 다른 전문가의 짐작과 섞어서 2~5개 사이를 오갔음. 세 가지를 고침: 도구가 돌려준 결과를 의견보다 앞세우기, 의견이 갈리면 도구로 다시 확인하기, 자기 도구로 확인할 수 없는 것은 판정하지 않기. 고친 뒤에는 대화 없이도 두 번 모두 6개. 모델, 전문가, 도구는 그대로. 대화를 high까지 늘려도 6개 그대로이고 token만 5배. 고친 팀은 네 가지 노력으로 두 번씩 여덟 번을 돌려 일곱 번이 6개, 한 번(low)이 5개였음. 그래서 token을 쓸 곳은 대화의 횟수가 아니라 도구로 확인하는 일. [오른쪽] 엑스레이 네 장(늑골 골절, 심부전, 기흉, 정상)을 low와 high로 돌렸고 네 장 모두 high에서도 사람의 판독에 닿지 못함. 늑골 골절은 구성을 고치기 전과 뒤에 두 번씩 네 번을 돌렸고 네 번 다 못 찾음. high에서는 세 명이 모두 '골절 없음'에 동의. 모두 동의가 맞다는 뜻이 아님. 사진을 12조각으로 잘라 확대해 물으면 6조각에서 '있음'이라고 하지만 같은 방식으로 찍은 정상 사진에서도 3조각에서 '있음'이 나옴. 구성을 바꾸면 반응은 달라지지만 모델이 못 보는 것을 보게 하지는 못함. 숫자는 발표자 맥에서 한두 번씩 돌린 값이고 돌릴 때마다 달라짐(고치기 전의 high는 2개와 5개로 흔들렸음). 노트북 2-3에 두 실험이 모두 있고, 발표자 맥에는 결과가 저장돼 있어 REUSE로 바로 보여 줄 수 있음.">
   <h2>팀으로 나누면 풀리는 문제, 안 풀리는 문제</h2>
   <div class="cols" style="grid-template-columns: 1.2fr 1fr; gap:40px; margin-top:16px">
     <div>
@@ -619,8 +619,8 @@ r = ollama.chat(model="gemma4:e4b", format=schema,
         <tbody>
           <tr><td style="color:var(--ink); font-weight:400">모델 혼자, 도구 없이</td><td>2~3개</td><td>3~4개</td><td>약 400</td></tr>
           <tr><td style="color:var(--ink); font-weight:400">팀, 엉성한 구성</td><td>2~5개</td><td>0~1개</td><td>1.3만~8만</td></tr>
-          <tr><td style="color:var(--eosin); font-weight:700">팀, 구성을 고친 뒤</td><td><strong>6개</strong></td><td>0개</td><td>약 1.3만</td></tr>
-          <tr><td style="color:var(--ink); font-weight:400">고친 팀 + 대화 high</td><td>6개</td><td>0개</td><td>약 6.8만</td></tr>
+          <tr><td style="color:var(--eosin); font-weight:700">팀, 구성을 고친 뒤</td><td><strong>6개</strong> (두 번 모두)</td><td>0개</td><td>약 1.3만</td></tr>
+          <tr><td style="color:var(--ink); font-weight:400">고친 팀 + 대화 high</td><td>6개 (두 번 모두)</td><td>0개</td><td>약 6.5만</td></tr>
         </tbody>
       </table>
       <p class="mini" style="margin-top:8px">정답을 도구(기준표, 계산)로 확인할 수 있는 문제입니다. 고친 것은 세 가지: 도구 결과를 의견보다 앞세우기, 의견이 갈리면 도구로 다시 확인하기, 확인할 수 없는 것은 판정하지 않기.</p>
@@ -630,7 +630,7 @@ r = ollama.chat(model="gemma4:e4b", format=schema,
       <table class="tbl compact" style="margin-top:8px; font-size:16.5px">
         <thead><tr><th>늑골 골절 사진</th><th>low</th><th>high</th></tr></thead>
         <tbody>
-          <tr><td style="color:var(--ink); font-weight:400">쓴 token</td><td>약 1.6만</td><td>약 5.5만</td></tr>
+          <tr><td style="color:var(--ink); font-weight:400">쓴 token</td><td>약 2.0만</td><td>약 6.3만</td></tr>
           <tr><td style="color:var(--ink); font-weight:400">결론</td><td>골절 없음</td><td>골절 없음</td></tr>
           <tr><td style="color:var(--ink); font-weight:400">합의</td><td></td><td>3명 모두 동의</td></tr>
         </tbody>
@@ -639,7 +639,7 @@ r = ollama.chat(model="gemma4:e4b", format=schema,
     </div>
   </div>
   <div class="punch" style="margin-top:14px; font-size:18px">혼자 하는 AI는 그럴듯하게 틀립니다. <strong>일을 나누고 도구로 확인하게 하면</strong> 틀린 말이 사라지고, 구성을 잘 짜면 다 맞힙니다. token을 쓸 곳은 대화의 횟수가 아니라 <strong>확인하는 일</strong>입니다.</div>
-  <footer class="foot"><div class="src">발표자 맥에서 한두 번씩 돌린 값이고 돌릴 때마다 달라집니다. 노트북 2-3에서 직접 돌려 볼 수 있습니다 (<code>discuss</code>, <code>careful</code>).</div><span>실습 2</span><span class="pg"></span></footer>
+  <footer class="foot"><div class="src">발표자 맥에서 방식마다 두세 번씩 돌린 값이고 돌릴 때마다 달라집니다. 노트북 2-3에서 직접 돌려 볼 수 있습니다 (<code>discuss</code>, <code>careful</code>).</div><span>실습 2</span><span class="pg"></span></footer>
 </section>
 
 <section class="slide" data-notes="앞 장에서 꼭 나오는 질문: 그러면 사진을 잘 읽게 하려면 어떻게 하나. 값싼 방법부터 차례로 답함. (1) 입력을 좁히기: 범용 모델은 사진을 작게 줄여서 보기 때문에 가는 골절선 같은 것은 줄이는 순간 사라짐. 원본 크기를 지키고, 의심 부위를 잘라 주고, 질문을 구체적으로 하면 조금 나아짐. 돈은 안 들지만 한계가 분명함. (2) 모델을 바꾸기: 오늘 쓴 gemma4는 무엇이든 조금씩 하는 범용 모델. 의료 영상을 따로 배운 모델(구글이 공개한 MedGemma 등)이나 식약처 허가를 받은 판독 보조 제품(국내에는 루닛, 뷰노 등)은 전문의가 정답을 붙인 사진을 아주 많이 보고 배움. (3) 내 자료로 Fine-tuning: 우리 병원 장비와 환자군에 맞추려면 정답이 붙은 내 자료로 추가 학습. 여기서 오늘의 증류와 다른 점을 꼭 짚을 것: 라우팅 증류는 스승 모델의 답을 정답으로 써도 됐지만, 사진 판독은 스승이 틀리므로 정답은 반드시 사람(전문의)이 붙여야 함. (4) 재기: 어느 방법을 쓰든 정답을 아는 사진 묶음으로 얼마나 맞히고 얼마나 놓치는지 숫자로 확인하기 전에는 믿지 않음. 지난 시간의 Fine-tuning, 의료 영상 RAG 장과 연결. 마지막 한마디: 어느 방법을 써도 틀리는 경우는 남으므로 사람이 확인하는 자리는 없어지지 않음.">
