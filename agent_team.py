@@ -321,6 +321,26 @@ class Team:
             print(f"   {n:>4}  {combo}")
         return train_rows, test_rows
 
+    def show_data(self, n=6):
+        """학습 자료가 어떻게 생겼는지 보여 준다: 파일 위치와 개수, 표로 본 몇 줄, 파일에 실제로 적힌 한 줄."""
+        self._need_data()
+        read = lambda name: [json.loads(l) for l in open(self.folder / "data" / f"{name}.jsonl", encoding="utf-8")]
+        train, valid, test = read("train"), read("valid"), read("test")
+        picks = random.Random(3).sample(train, min(n, len(train)))
+        lines = [f"학습 자료는 파일 세 개입니다 (`{self.folder.relative_to(ROOT)}/data/`). 한 줄이 문제 하나입니다.", "",
+                 "| 파일 | 줄 수 | 쓰임 |", "|---|---|---|",
+                 f"| `train.jsonl` | {len(train)} | 제자가 보고 배우는 문제 |",
+                 f"| `valid.jsonl` | {len(valid)} | 학습 도중 중간 시험. 학습용과 같은 유형이지만 배우지는 않은 문제 |",
+                 f"| `test.jsonl` | {len(test)} | 처음 보는 유형의 시험. 학습에 쓰지 않은 질문 틀로 만든 문제 |", "",
+                 "**표로 보면** 문제(입력)와 정답(출력)의 짝입니다. 정답은 사람이 아니라 스승 모델이 달았습니다.", "",
+                 "| 입력: 제자에게 주는 글 | 출력: 제자가 따라 써야 할 정답 |", "|---|---|"]
+        for row in picks:
+            user, assistant = row["messages"]
+            lines.append(f"| {user['content'].replace(chr(10), '<br>')} | `{assistant['content']}` |")
+        lines += ["", "**파일에 실제로 적힌 한 줄** (JSON). `user`가 입력, `assistant`가 정답입니다.", "",
+                  "```json", json.dumps(picks[0], ensure_ascii=False, indent=2), "```"]
+        md("\n".join(lines))
+
     def _need_data(self):
         if not (self.folder / "data" / "train.jsonl").exists():
             raise SystemExit(f"❌ 학습 자료가 없습니다. 먼저 build_distill_data()를 실행해 주세요. ({self.folder})")
