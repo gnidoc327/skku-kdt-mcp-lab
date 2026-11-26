@@ -108,6 +108,7 @@ textarea{min-height:92px;resize:vertical}button{background:var(--blue);color:#ff
 .steps .n{display:inline-block;min-width:34px;font-weight:700;font-size:13px}.t{font-size:13px;color:var(--sub);font-weight:400}.steps .log{margin:4px 0 0 38px}
 #compare{margin-top:8px;background:#fff;color:var(--blue);border:1px solid var(--blue)}#compare:disabled{color:#9db0e6;border-color:#9db0e6;background:#fff}
 .help{font-size:13px;color:var(--sub);margin:6px 0 0}
+.sizes{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:10px}.sizes th,.sizes td{text-align:left;padding:4px 6px 4px 0;border-bottom:1px solid var(--line);vertical-align:top}.sizes th{color:var(--sub);font-weight:600}
 .log{font-size:14px;color:var(--sub);margin:0;padding:0;list-style:none}.log li{padding:2px 0}.log li b{color:var(--ink)}
 .who li.work{border-color:var(--blue)}.who li.work b{color:var(--blue)}
 .card{border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin-bottom:14px}.card h3{margin:0 0 6px;font-size:16px}.card.final{border-color:var(--blue);background:var(--soft)}
@@ -121,6 +122,8 @@ pre{white-space:pre-wrap;word-break:break-word;font:inherit;margin:0}.note{font-
 <label for="q">질문</label><textarea id="q">종합적으로 검토해 줘</textarea>
 <label for="router">전문가를 고르는 모델</label><select id="router"></select>
 <p class="help">질문을 보고 <b>어느 전문가를 부를지 정하는 일</b>(2단계)만 이 모델이 합니다. 전문가의 분석과 통합 답변은 어느 쪽을 골라도 큰 모델이 씁니다. 그래서 두 모델이 같은 전문가를 고르면 답의 질은 같고, 다르게 고르면 불리는 전문가가 달라집니다.</p>
+<table class="sizes" id="sizes"></table>
+<p class="help">전문가 고르기처럼 <b>답의 형태가 정해진 일</b>은 GPT나 Claude를 부르지 않아도, 이렇게 작은 모델을 직접 가르쳐 내 컴퓨터에서 돌릴 수 있습니다. 작은 모델은 배운 이 일 하나만 합니다.</p>
 <button id="go">질문하기</button>
 <button id="compare">두 모델이 고르는 전문가만 비교하기</button>
 <label>전문가</label><ul class="who" id="who"></ul>
@@ -136,6 +139,11 @@ async function init(){
   $('who').innerHTML = info.experts.map(e => `<li data-k="${e.key}"><b>${esc(e.title)}</b><br>${esc(e.role)}</li>`).join('');
   if(info.cases.length){ $('case').innerHTML = info.cases.map(c => `<option>${esc(c)}</option>`).join(''); $('case').onchange = preview; preview(); }
   else $('casebox').style.display = 'none';
+  const z = info.sizes, n = p => p ? '약 ' + Math.round(parseFloat(p) * (p.endsWith('B') ? 10 : 100)) + (p.endsWith('B') ? '억 개' : '만 개') : '?', g = v => v == null ? '?' : v + 'GB';
+  $('sizes').innerHTML = `<tr><th></th><th>파라미터</th><th>파일 크기</th><th>돌리는 곳</th></tr>`
+    + `<tr><td><b>증류한 작은 모델</b></td><td>${n(z.student.params)}</td><td>${g(z.student.file_gb)}${z.student.adapter_mb ? ' + ' + z.student.adapter_mb + 'MB' : ''}</td><td>내 컴퓨터 (메모리 1GB 안팎)</td></tr>`
+    + `<tr><td><b>큰 모델</b></td><td>${n(z.teacher.params)}</td><td>${g(z.teacher.file_gb)}</td><td>내 컴퓨터 (메모리 약 10GB)</td></tr>`
+    + `<tr><td><b>GPT, Claude 등</b></td><td>비공개</td><td>받을 수 없음</td><td>회사의 GPU 서버. 쓴 만큼 요금</td></tr>`;
   $('router').innerHTML = `<option value="teacher">큰 모델 (${esc(info.teacher)})</option>` + (info.has_student ? '<option value="student" selected>증류한 작은 모델</option>' : '<option disabled>증류한 작은 모델 (아직 학습 안 함)</option>');
 }
 function preview(){ const c = $('case').value, img = $('preview'), has = info.marked.includes(c);
@@ -204,7 +212,7 @@ async def home(request):
 
 async def info(request):
     from agent_team import EXPERT_MODEL
-    return JSONResponse({"name": TEAM.name, "goal": TEAM.goal, "cases": TEAM.cases, "teacher": EXPERT_MODEL, "has_student": TEAM.has_student(), "started": STARTED,
+    return JSONResponse({"name": TEAM.name, "goal": TEAM.goal, "cases": TEAM.cases, "teacher": EXPERT_MODEL, "has_student": TEAM.has_student(), "started": STARTED, "sizes": TEAM.sizes(),
                          "marked": [c for c in TEAM.cases if image_path(c, True)],      # 설명용(화살표) 사진이 따로 있는 검토 대상
                          "experts": [{"key": k, "title": v["title"], "role": v["role"]} for k, v in TEAM.experts.items()]})
 

@@ -350,6 +350,56 @@ class Team:
     def has_student(self):
         return (self.folder / "adapter" / "adapters.safetensors").exists()
 
+    def sizes(self, measure=False):
+        """스승(큰 모델)과 제자(증류한 작은 모델)의 크기를 숫자로 돌려준다. "작다"가 얼마나 작은지 보여 주기 위한 것이다.
+
+        measure=True면 제자를 실제로 한 번 돌려 메모리를 얼마나 쓰는지도 잰다.
+        """
+        gb = lambda n: round(n / 1e9, 2)
+        teacher = {"name": EXPERT_MODEL, "params": "", "file_gb": None, "memory_gb": None}
+        try:
+            teacher["params"] = ollama.show(EXPERT_MODEL).details.parameter_size
+            teacher["file_gb"] = next((gb(m.size) for m in ollama.list().models if m.model == EXPERT_MODEL), None)
+            teacher["memory_gb"] = next((gb(m.size) for m in ollama.ps().models if m.model == EXPERT_MODEL), None)
+        except Exception:
+            pass
+        m = re.search(r"-(\d+(?:\.\d+)?)([bm])-", STUDENT_MODEL.lower())
+        student = {"name": STUDENT_MODEL.split("/")[-1], "params": (m[1] + ("B" if m[2] == "b" else "M")) if m else "", "file_gb": None, "memory_gb": None,
+                   "adapter_mb": round((self.folder / "adapter" / "adapters.safetensors").stat().st_size / 1e6, 1) if self.has_student() else None}
+        try:
+            from huggingface_hub import snapshot_download
+            folder = Path(snapshot_download(STUDENT_MODEL, local_files_only=True))
+            student["file_gb"] = gb(sum(f.stat().st_size for f in folder.rglob("*") if f.is_file()))
+        except Exception:
+            pass
+        if measure and self.has_student():
+            import mlx.core as mx
+            self._generate("준비", True)
+            mx.reset_peak_memory()
+            self._generate("이 질문은 누구에게 보낼까?", True)
+            student["memory_gb"] = gb(mx.get_peak_memory())
+        return {"teacher": teacher, "student": student}
+
+    def show_sizes(self):
+        """스승, 제자, 그리고 인터넷 너머의 큰 모델(GPT, Claude 등)을 한 표로 비교해 보여 준다."""
+        z = self.sizes(measure=True)
+        t, st = z["teacher"], z["student"]
+        ko = lambda p: {"B": "억 개", "M": "만 개"}[p[-1]].join([str(round(float(p[:-1]) * (10 if p[-1] == "B" else 100))), ""]) if p else "?"
+        show = lambda v, unit="GB": f"{v}{unit}" if v is not None else "?"
+        md("\n".join([
+            "| | 제자 (증류한 작은 모델) | 스승 (큰 모델) | 인터넷 너머의 모델 (GPT, Claude 등) |",
+            "|---|---|---|---|",
+            f"| 모델 | `{st['name']}` + 내가 학습시킨 Adapter | `{t['name']}` | 회사가 운영 |",
+            f"| 파라미터 수 | 약 {ko(st['params'])} | 약 {ko(t['params'])} | 공개하지 않음 |",
+            f"| 파일 크기 | {show(st['file_gb'])} + Adapter {show(st['adapter_mb'], 'MB')} | {show(t['file_gb'])} | 내려받을 수 없음 |",
+            f"| 돌릴 때 쓰는 메모리 | 약 {show(st['memory_gb'])} (방금 이 컴퓨터에서 잰 값) | 약 {show(t['memory_gb'] or t['file_gb'])} | 데이터센터의 GPU 서버 여러 대 |",
+            "| 돌리는 곳 | 내 컴퓨터. 메모리 8GB인 맥에서도 됨 | 내 컴퓨터. 메모리 16GB 이상 | 그 회사의 서버. 인터넷으로 질문을 보냄 |",
+            "| 비용 | 0원 (전기 요금뿐) | 0원 (전기 요금뿐) | 쓴 만큼 요금 |",
+            "| 내 자료가 가는 곳 | 내 컴퓨터 밖으로 나가지 않음 | 내 컴퓨터 밖으로 나가지 않음 | 그 회사의 서버 |",
+            "| 할 수 있는 일 | **배운 일 하나** (전문가 고르기) | 글쓰기, 사진 읽기, 도구 쓰기 | 훨씬 어려운 일까지 |",
+        ]))
+        return z
+
     def checkpoints(self):
         """학습 도중에 저장된 중간 모델들의 반복 횟수 (예: [100, 200, 300])."""
         return sorted(int(f.name.split("_")[0]) for f in (self.folder / "adapter").glob("*_adapters.safetensors"))
