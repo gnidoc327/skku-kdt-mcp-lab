@@ -13,7 +13,7 @@
 | 준비 시간 | 없음 | 15~20분 (서버 시작, 모델 내려받기) |
 | 노트북 코드 | 그대로 | 그대로. 주소만 바꿈 |
 
-노트북 6~8은 `OLLAMA_HOST` 환경변수의 주소로 Ollama를 부릅니다. 그래서 **코드는 한 줄도 안 고치고** 스승만 바꿀 수 있습니다. 제자 학습(노트북 9)은 계속 아이맥의 MLX로 합니다.
+노트북 2-1, 2-2, 2-5는 `OLLAMA_HOST` 환경변수의 주소로 Ollama를 부릅니다. 그래서 **코드는 한 줄도 안 고치고** 스승만 바꿀 수 있습니다. 제자 학습(노트북 2-6)은 계속 아이맥의 MLX로 합니다.
 
 ## 방법 1. GPU EC2에 Ollama 띄우기
 
@@ -49,7 +49,7 @@ cd mcp-lab
 OLLAMA_HOST=http://localhost:11435 .venv/bin/python -m jupyter lab --notebook-dir=example
 ```
 
-노트북 6~8의 설정 셀에서 `EXPERT_MODEL = "gemma3:27b"`로 바꾸고 실행합니다. 출력에 `Ollama 주소: http://localhost:11435`가 보이면 서버의 GPU를 쓰는 것입니다.
+노트북 2-1, 2-2, 2-5의 설정 셀에서 `EXPERT_MODEL = "gemma3:27b"`로 바꾸고 실행합니다. 출력에 `Ollama 주소: http://localhost:11435`가 보이면 서버의 GPU를 쓰는 것입니다.
 
 **6) 끝나면 반드시 인스턴스 종료(Terminate)**. 중지(Stop)만 하면 디스크 요금이 계속 나갑니다.
 

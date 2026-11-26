@@ -1,7 +1,7 @@
 """Drug Review MCP: 신약 후보물질 검토에 쓰는 공개 데이터베이스 조회 도구를 MCP로 내놓는다.
 
 Kiro나 Claude에 연결하면, 그 AI가 지휘자(Orchestrator)가 되어 도구를 골라 부르고
-통합 리포트를 쓴다. 노트북 6~7에서 쓴 drug_tools.py를 그대로 감싼 것이다.
+통합 리포트를 쓴다. 노트북 2-1, 2-2에서 쓴 drug_tools.py를 그대로 감싼 것이다.
 교육·연구용이며 임상 판단을 대신하지 않는다.
 """
 from mcp.server.mcpserver import MCPServer

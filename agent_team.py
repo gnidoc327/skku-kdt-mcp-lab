@@ -6,7 +6,7 @@
            → team.build_distill_data(), team.train_student(), team.load_student()
   3) 서비스: team_service.py가 이 팀을 웹 화면이나 MCP 서버로 띄운다
 
-완성 예시는 xray_team.py, 설명은 example/10_my_multi_agent.ipynb 에 있다.
+완성 예시는 xray_team.py, 설명은 example/2-3_my_multi_agent.ipynb 에 있다.
 교육·연구용이며 진료나 임상 판단을 대신하지 않는다.
 """
 import itertools

@@ -433,7 +433,7 @@ bash setup.sh</pre>
     <ul class="plain" style="gap:14px">
       <li style="font-size:19px"><strong>✅만 나오고 JupyterLab이 열리면 끝</strong><span>"6/6 동작 확인" 아래에 ❌가 없어야 합니다</span></li>
       <li style="font-size:19px">❌가 나오면 손을 들어 주세요<span>폴더 안의 setup.log 파일에 이유가 적혀 있습니다</span></li>
-      <li style="font-size:19px">오늘은 노트북 6, 7, 10, 11을 씁니다<span>8, 9는 같은 방법을 한 번 더 해 보는 과제입니다</span></li>
+      <li style="font-size:19px">오늘은 노트북 2-1 ~ 2-4를 씁니다<span>2-5, 2-6은 같은 방법을 한 번 더 해 보는 과제입니다</span></li>
       <li style="font-size:19px">메모리를 많이 쓰는 앱은 닫아 주세요<span>큰 모델 하나가 메모리를 약 10GB 씁니다</span></li>
     </ul>
   </div>
@@ -444,22 +444,22 @@ bash setup.sh</pre>
   <h2>오늘 2시간 순서</h2>
   <div class="agenda">
     <div><div class="n">10분</div><b>왜 팀으로 나누나</b><span>지난 시간의 Agent 한 명에서 출발해 Multi-Agent가 무엇인지, 실제 사례 하나</span></div>
-    <div><div class="n">25분</div><b>신약 후보 검토 팀</b><span>노트북 6, 7. 도구 여섯 개, 전문가 세 명, 지휘자 한 명</span></div>
-    <div><div class="n">30분</div><b>엑스레이 팀과 내 팀</b><span>노트북 10. 완성 예시를 돌려 보고 내 주제로 팀을 만들기</span></div>
-    <div><div class="n">30분</div><b>지휘자를 증류하기</b><span>노트북 11. 큰 모델의 판단을 작은 모델에게 가르치고 시험 보기</span></div>
+    <div><div class="n">25분</div><b>신약 후보 검토 팀</b><span>노트북 2-1, 2-2. 도구 여섯 개, 전문가 세 명, 지휘자 한 명</span></div>
+    <div><div class="n">30분</div><b>엑스레이 팀과 내 팀</b><span>노트북 2-3. 완성 예시를 돌려 보고 내 주제로 팀을 만들기</span></div>
+    <div><div class="n">30분</div><b>지휘자를 증류하기</b><span>노트북 2-4. 큰 모델의 판단을 작은 모델에게 가르치고 시험 보기</span></div>
     <div><div class="n">20분</div><b>서비스로 띄우기</b><span>웹 화면으로 열고, Kiro에게 말로 시켜 계속 고치기</span></div>
     <div><div class="n">5분</div><b>정리와 과제</b><span>오늘 배운 것, 조심할 것, 집에서 해 볼 것</span></div>
   </div>
   <footer class="foot"><span>Multi-Agent와 Distillation</span><span class="pg"></span></footer>
 </section>
 
-<section class="slide" data-notes="지난 시간 복습 한 장. 노트북 5에서 로컬 LLM이 MCP 도구를 스스로 골라 쓰는 Agent를 for문 하나로 만들었음. 오늘은 그 Agent를 여러 명 두고, 누구에게 일을 줄지 정하는 지휘자를 하나 더 둠. 새로 배우는 개념은 두 개뿐: 지휘자(Orchestrator)와 증류(Distillation).">
+<section class="slide" data-notes="지난 시간 복습 한 장. 노트북 1-6에서 로컬 LLM이 MCP 도구를 스스로 골라 쓰는 Agent를 for문 하나로 만들었음. 오늘은 그 Agent를 여러 명 두고, 누구에게 일을 줄지 정하는 지휘자를 하나 더 둠. 새로 배우는 개념은 두 개뿐: 지휘자(Orchestrator)와 증류(Distillation).">
   <h2>지난 시간에는 한 명, 오늘은 팀</h2>
   <div class="split">
     <div class="later">
       <h3>지난 시간: Agent 한 명</h3>
       <ul class="plain">
-        <li>모델 하나가 질문을 받고, 도구를 골라 쓰고, 답합니다<span>노트북 5: 로컬 LLM이 Memory MCP 도구를 스스로 고름</span></li>
+        <li>모델 하나가 질문을 받고, 도구를 골라 쓰고, 답합니다<span>노트북 1-6: 로컬 LLM이 Memory MCP 도구를 스스로 고름</span></li>
         <li>도구가 몇 개일 때는 잘합니다</li>
         <li>일이 넓어지면 지시문이 길어지고, 도구를 잘못 고르기 시작합니다</li>
       </ul>
@@ -509,8 +509,8 @@ bash setup.sh</pre>
   <footer class="foot"><div class="src">출처: AWS 기술 블로그, <a href="https://aws.amazon.com/ko/blogs/tech/agentic-ai-drug-development-workflow-automation-challenge/" target="_blank" rel="noopener">Agentic AI 기반 신약 개발 워크플로 자동화: SK바이오팜 참가팀</a> (2025.11.18)</div><span>Multi-Agent와 Distillation</span><span class="pg"></span></footer>
 </section>
 
-<section class="slide" data-notes="실습 1. 노트북 6을 먼저 실행(1분): 도구 여섯 개를 하나씩 불러 보고 전문가 한 명을 만듦. 이어서 노트북 7(3~4분): 전문가 세 명과 지휘자. 두 가지 방식을 비교하게 함. '종합 분석'은 세 명 전원, '스마트 컨설팅'은 질문에 필요한 사람만. 예: '이부프로펜의 부작용은?'은 임상약리 전문가 한 명만 불림. 도구는 모두 공개 데이터베이스를 조회하며 무료. openFDA의 숫자는 자발적으로 보고된 건수이지 발생률이 아니라는 점을 짚어 줌.">
-  <h2>실습 1. 신약 후보 검토 팀 <span style="font-size:26px; color:var(--muted); font-weight:500">노트북 6, 7</span></h2>
+<section class="slide" data-notes="실습 1. 노트북 2-1을 먼저 실행(1분): 도구 여섯 개를 하나씩 불러 보고 전문가 한 명을 만듦. 이어서 노트북 2-2(3~4분): 전문가 세 명과 지휘자. 두 가지 방식을 비교하게 함. '종합 분석'은 세 명 전원, '스마트 컨설팅'은 질문에 필요한 사람만. 예: '이부프로펜의 부작용은?'은 임상약리 전문가 한 명만 불림. 도구는 모두 공개 데이터베이스를 조회하며 무료. openFDA의 숫자는 자발적으로 보고된 건수이지 발생률이 아니라는 점을 짚어 줌.">
+  <h2>실습 1. 신약 후보 검토 팀 <span style="font-size:26px; color:var(--muted); font-weight:500">노트북 2-1, 2-2</span></h2>
   <table class="tbl wide" style="margin-top:22px; font-size:18.5px">
     <thead><tr><th>전문가</th><th>보는 것</th><th>쓰는 도구</th></tr></thead>
     <tbody>
@@ -523,7 +523,7 @@ bash setup.sh</pre>
     <div class="aws"><b>종합 분석</b><span>세 명 모두에게 묻고 리포트로 합칩니다. "다음 단계로 진행해도 될까?" 같은 질문.</span></div>
     <div class="aws mac"><b>스마트 컨설팅</b><span>지휘자가 필요한 전문가만 고릅니다. "부작용은?"이면 임상약리 한 명.</span></div>
   </div>
-  <p class="mini" style="margin-top:18px">해 볼 것: 노트북 7에서 약 이름을 바꿔 보고(영문 성분명), 질문에 따라 불리는 전문가가 달라지는지 확인합니다.</p>
+  <p class="mini" style="margin-top:18px">해 볼 것: 노트북 2-2에서 약 이름을 바꿔 보고(영문 성분명), 질문에 따라 불리는 전문가가 달라지는지 확인합니다.</p>
   <footer class="foot"><span>실습 1</span><span class="pg"></span></footer>
 </section>
 
@@ -551,8 +551,8 @@ r = ollama.chat(model="gemma4:e4b", format=schema,
   <footer class="foot"><div class="src">실습 저장소의 <code>agent_team.py</code>에 세 단계가 모두 들어 있습니다. 코드는 설명을 위해 줄였습니다.</div><span>Multi-Agent와 Distillation</span><span class="pg"></span></footer>
 </section>
 
-<section class="slide" data-notes="실습 2 앞부분. 노트북 10을 실행(4~5분). 흉부 엑스레이 사진 한 장을 주면 세 명이 일함. 영상 판독 보조 전문가는 사진을 직접 다시 봄(같은 gemma4:e4b가 사진도 읽음). 유사 사례 전문가는 사람이 판독 요약을 붙여 둔 사례 아홉 건에서 비슷한 것을 찾음(지난 시간의 Embedding 검색). 문헌 전문가는 PubMed를 찾음. 종합 검토는 80초쯤 걸리고, 한 명만 부르는 질문은 25~40초. 사진은 모두 Wikimedia Commons의 공개 라이선스 자료이며 실제 환자 자료는 넣지 않았다는 점을 말해 줌.">
-  <h2>실습 2. 엑스레이 판독을 돕는 팀 <span style="font-size:26px; color:var(--muted); font-weight:500">노트북 10</span></h2>
+<section class="slide" data-notes="실습 2 앞부분. 노트북 2-3을 실행(4~5분). 흉부 엑스레이 사진 한 장을 주면 세 명이 일함. 영상 판독 보조 전문가는 사진을 직접 다시 봄(같은 gemma4:e4b가 사진도 읽음). 유사 사례 전문가는 사람이 판독 요약을 붙여 둔 사례 아홉 건에서 비슷한 것을 찾음(지난 시간의 Embedding 검색). 문헌 전문가는 PubMed를 찾음. 종합 검토는 80초쯤 걸리고, 한 명만 부르는 질문은 25~40초. 사진은 모두 Wikimedia Commons의 공개 라이선스 자료이며 실제 환자 자료는 넣지 않았다는 점을 말해 줌.">
+  <h2>실습 2. 엑스레이 판독을 돕는 팀 <span style="font-size:26px; color:var(--muted); font-weight:500">노트북 2-3</span></h2>
   <table class="tbl wide" style="margin-top:20px; font-size:18.5px">
     <thead><tr><th>전문가</th><th>맡은 일</th><th>쓰는 도구</th></tr></thead>
     <tbody>
@@ -596,7 +596,7 @@ r = ollama.chat(model="gemma4:e4b", format=schema,
   <footer class="foot"><div class="src">사진: <a href="https://commons.wikimedia.org/wiki/File:Rib_fracture_2347.jpg" target="_blank" rel="noopener">commons.wikimedia.org/wiki/File:Rib_fracture_2347.jpg</a></div><span>실습 2</span><span class="pg"></span></footer>
 </section>
 
-<section class="slide" data-notes="실습 2 뒷부분, 오늘의 중심. 노트북 10의 아래쪽에 건강검진 상담 팀 예시가 있고, 셀 하나가 my_team.py 파일을 만들어 줌. 이 파일의 세 군데만 고치면 내 주제의 팀이 됨. (1) 도구: 평범한 파이썬 함수. 설명글(docstring)이 중요함. Agent는 코드를 읽지 않고 설명글만 보고 언제 쓸지 정함. (2) 전문가: 이름, 역할, 지시문, 도구 목록. role은 지휘자가 읽는 글이므로 전문가끼리 겹치지 않게. (3) TEAM: 팀 이름과 목표. 주제 예시를 던져 줌: 복약 상담, 임상시험 찾기, 논문 읽기 모임, 병원 예약 안내. 10분 정도 직접 고쳐 보게 함. 코딩이 어려운 사람은 뒤의 Kiro 시간에 말로 시켜도 된다고 안내.">
+<section class="slide" data-notes="실습 2 뒷부분, 오늘의 중심. 노트북 2-3의 아래쪽에 건강검진 상담 팀 예시가 있고, 셀 하나가 my_team.py 파일을 만들어 줌. 이 파일의 세 군데만 고치면 내 주제의 팀이 됨. (1) 도구: 평범한 파이썬 함수. 설명글(docstring)이 중요함. Agent는 코드를 읽지 않고 설명글만 보고 언제 쓸지 정함. (2) 전문가: 이름, 역할, 지시문, 도구 목록. role은 지휘자가 읽는 글이므로 전문가끼리 겹치지 않게. (3) TEAM: 팀 이름과 목표. 주제 예시를 던져 줌: 복약 상담, 임상시험 찾기, 논문 읽기 모임, 병원 예약 안내. 10분 정도 직접 고쳐 보게 함. 코딩이 어려운 사람은 뒤의 Kiro 시간에 말로 시켜도 된다고 안내.">
   <h2>내 팀 만들기: 파일 하나에 세 가지만</h2>
   <div class="cols" style="grid-template-columns: 1.15fr 1fr; gap:44px; margin-top:22px">
     <pre class="code" style="font-size:14px"><span class="c"># my_team.py</span>
@@ -628,7 +628,7 @@ TEAM = Team(name="checkup", goal="건강검진 결과 상담 팀",
       <div class="punch" style="margin-top:22px; font-size:17.5px">주제 예시: 복약 상담, 임상시험 찾기, 검사 결과 설명, 논문 요약 모임.<br><strong>실제 환자의 이름이나 검사 결과는 넣지 마세요.</strong></div>
     </div>
   </div>
-  <footer class="foot"><div class="src">노트북 10의 셀 하나가 <code>my_team.py</code>를 만들어 줍니다. 완성 예시는 <code>xray_team.py</code>.</div><span>실습 2</span><span class="pg"></span></footer>
+  <footer class="foot"><div class="src">노트북 2-3의 셀 하나가 <code>my_team.py</code>를 만들어 줍니다. 완성 예시는 <code>xray_team.py</code>.</div><span>실습 2</span><span class="pg"></span></footer>
 </section>
 
 <section class="slide divider" data-notes="여기서부터 후반. 팀은 만들었는데 느림. 지휘자가 '누구에게 보낼까'를 정하는 데도 큰 모델을 한 번 부름. 이 판단은 어렵지 않고 답의 종류도 몇 가지뿐. 이런 일은 작은 모델에게 가르쳐서 맡길 수 있음. 그 방법이 증류.">
@@ -691,8 +691,8 @@ TEAM = Team(name="checkup", goal="건강검진 결과 상담 팀",
   <footer class="foot"><span>Multi-Agent와 Distillation</span><span class="pg"></span></footer>
 </section>
 
-<section class="slide" data-notes="실습 3. 노트북 11을 위에서부터 실행(8~9분). 맨 위의 TEAM_FILE을 'xray_team'으로 두면 완성 예시로, 'my_team'으로 바꾸면 방금 만든 내 팀으로 진행. 시간이 빠듯하면 전원 xray_team으로 통일. 학습 셀이 5~6분 걸리므로 이때 앞의 증류 슬라이드 두 장을 설명. 속도를 꼭 짚을 것: 이 맥에서는 스승도 0.1~0.3초 만에 고르므로 제자가 더 빠르지 않음. 증류의 이득은 작은 모델로도 된다는 것(메모리, 그리고 큰 모델이 유료 API일 때의 비용). 학습 전 시험이 0%로 나오는 이유: 제자가 전문가 이름(reader, cases 등)을 아직 모르기 때문. 숫자는 발표자 맥에서 세 번 돌린 범위이고 실행할 때마다 조금씩 달라짐. 컴퓨터가 뜨거워지는 것은 정상. 실행 중에 컴퓨터가 잠들면 멈추므로 화면을 가끔 건드리게 함(발표자 맥은 10분 잠들어 그만큼 늦어졌음).">
-  <h2>실습 3. 지휘자를 증류하기 <span style="font-size:26px; color:var(--muted); font-weight:500">노트북 11</span></h2>
+<section class="slide" data-notes="실습 3. 노트북 2-4를 위에서부터 실행(8~9분). 맨 위의 TEAM_FILE을 'xray_team'으로 두면 완성 예시로, 'my_team'으로 바꾸면 방금 만든 내 팀으로 진행. 시간이 빠듯하면 전원 xray_team으로 통일. 학습 셀이 5~6분 걸리므로 이때 앞의 증류 슬라이드 두 장을 설명. 속도를 꼭 짚을 것: 이 맥에서는 스승도 0.1~0.3초 만에 고르므로 제자가 더 빠르지 않음. 증류의 이득은 작은 모델로도 된다는 것(메모리, 그리고 큰 모델이 유료 API일 때의 비용). 학습 전 시험이 0%로 나오는 이유: 제자가 전문가 이름(reader, cases 등)을 아직 모르기 때문. 숫자는 발표자 맥에서 세 번 돌린 범위이고 실행할 때마다 조금씩 달라짐. 컴퓨터가 뜨거워지는 것은 정상. 실행 중에 컴퓨터가 잠들면 멈추므로 화면을 가끔 건드리게 함(발표자 맥은 10분 잠들어 그만큼 늦어졌음).">
+  <h2>실습 3. 지휘자를 증류하기 <span style="font-size:26px; color:var(--muted); font-weight:500">노트북 2-4</span></h2>
   <div class="cols" style="grid-template-columns: 1fr 1fr; gap:56px; margin-top:26px">
     <div class="steps" style="gap:18px">
       <div><div class="n">1</div><div><b>질문 만들기</b><span>질문 틀 30여 개 × 낱말 12개 → 약 260개</span></div></div>
@@ -795,14 +795,14 @@ cd ~/mcp-lab
   <footer class="foot"><span>Multi-Agent와 Distillation</span><span class="pg"></span></footer>
 </section>
 
-<section class="slide" data-notes="정리. 세 문장만 기억하게 함. 과제는 선택: 노트북 8, 9는 신약 검토 팀의 지휘자를 같은 방법으로 증류하는 것(질문 약 500개, 학습 약 5분). 발표자 맥에서는 처음 보는 유형 정답률이 68~71%로 엑스레이 팀보다 낮았음. 왜 낮은지 생각해 보게 함(질문이 더 다양하고 전문가 역할이 겹침). 또 하나의 과제는 내 팀의 질문 틀을 늘려 제자의 점수를 올려 보는 것.">
+<section class="slide" data-notes="정리. 세 문장만 기억하게 함. 과제는 선택: 노트북 2-5, 2-6은 신약 검토 팀의 지휘자를 같은 방법으로 증류하는 것(질문 약 500개, 학습 약 5분). 발표자 맥에서는 처음 보는 유형 정답률이 68~71%로 엑스레이 팀보다 낮았음. 왜 낮은지 생각해 보게 함(질문이 더 다양하고 전문가 역할이 겹침). 또 하나의 과제는 내 팀의 질문 틀을 늘려 제자의 점수를 올려 보는 것.">
   <h2>오늘 기억할 세 가지</h2>
   <div class="cols3" style="margin-top:40px">
     <div><h3>팀은 역할을 나누는 일</h3><p>전문가마다 맡은 일과 도구를 좁게 주고, 지휘자가 필요한 사람만 부릅니다. 대신 느려지고 비용이 늘어납니다.</p></div>
     <div><h3>증류는 스승이 잘하는 일만</h3><p>쉬운 판단은 작은 모델에게 가르쳐 맡기고, 큰 모델은 덜 부릅니다. 스승이 틀리는 일을 가르치면 틀린 답을 배울 뿐입니다.</p></div>
     <div><h3>마지막 확인은 사람</h3><p>AI는 사진도 글도 틀립니다. 리포트에 "사람이 꼭 확인할 것"을 남기고, 실제 환자 자료는 넣지 않습니다.</p></div>
   </div>
-  <div class="aws" style="margin-top:36px"><b>과제 (선택)</b><span>노트북 8, 9로 신약 검토 팀의 지휘자도 증류해 보세요. 발표자 맥에서는 처음 보는 유형의 정답률이 68~71%로 더 낮았습니다. 왜 낮은지, 질문 틀을 어떻게 바꾸면 오르는지 살펴봅니다.</span></div>
+  <div class="aws" style="margin-top:36px"><b>과제 (선택)</b><span>노트북 2-5, 2-6으로 신약 검토 팀의 지휘자도 증류해 보세요. 발표자 맥에서는 처음 보는 유형의 정답률이 68~71%로 더 낮았습니다. 왜 낮은지, 질문 틀을 어떻게 바꾸면 오르는지 살펴봅니다.</span></div>
   <footer class="foot"><span>Multi-Agent와 Distillation</span><span class="pg"></span></footer>
 </section>
 
@@ -810,7 +810,7 @@ cd ~/mcp-lab
   <h2>출처와 실습에 쓴 것</h2>
   <ul class="refs">
     <li>AWS 기술 블로그, Agentic AI 기반 신약 개발 워크플로 자동화: SK바이오팜 참가팀 (2025.11.18)<br><a href="https://aws.amazon.com/ko/blogs/tech/agentic-ai-drug-development-workflow-automation-challenge/" target="_blank" rel="noopener">aws.amazon.com/ko/blogs/tech/agentic-ai-drug-development-workflow-automation-challenge</a></li>
-    <li>실습 저장소 (노트북 6~11, 팀 틀, 웹 화면)<br><a href="https://github.com/gnidoc327/skku-kdt-mcp-lab" target="_blank" rel="noopener">github.com/gnidoc327/skku-kdt-mcp-lab</a></li>
+    <li>실습 저장소 (노트북 2-1 ~ 2-6, 팀 틀, 웹 화면)<br><a href="https://github.com/gnidoc327/skku-kdt-mcp-lab" target="_blank" rel="noopener">github.com/gnidoc327/skku-kdt-mcp-lab</a></li>
     <li>Strands Agents: Agent를 만드는 오픈소스 틀<br><a href="https://strandsagents.com" target="_blank" rel="noopener">strandsagents.com</a></li>
     <li>Ollama: 내 컴퓨터에서 모델을 돌리는 도구<br><a href="https://ollama.com" target="_blank" rel="noopener">ollama.com</a></li>
     <li>MLX LM: 애플 실리콘 맥에서 LoRA 학습<br><a href="https://github.com/ml-explore/mlx-lm" target="_blank" rel="noopener">github.com/ml-explore/mlx-lm</a></li>
