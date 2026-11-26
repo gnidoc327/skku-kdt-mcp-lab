@@ -37,7 +37,7 @@ def on_event(event):
         progress["events"].append({**event, "at": round(time.time() - progress["start"])})
 
 
-def run(question: str, case: str = "", router: str = "teacher", watch: bool = False, discuss: bool = False) -> dict:
+def run(question: str, case: str = "", router: str = "teacher", watch: bool = False, discuss="off") -> dict:
     def job():
         if watch:
             progress.update(events=[], draft="", start=time.time())
@@ -112,9 +112,10 @@ label.check{font-weight:400;font-size:14px;display:flex;gap:8px;align-items:flex
 .room{background:#f6f8fc}.msg{display:flex;gap:10px;margin:14px 0;align-items:flex-start}.msg .av{flex:none;width:34px;height:34px;border-radius:50%;color:#fff;font-weight:700;font-size:15px;display:flex;align-items:center;justify-content:center}
 .msg .say{min-width:0;max-width:88%}.msg .name{font-size:13px;font-weight:700;margin-bottom:3px}.msg .bubble{background:#fff;border:1px solid var(--line);border-radius:4px 14px 14px 14px;padding:10px 14px}
 .msg.me{justify-content:flex-end}.msg.me .name{text-align:right}.msg.me .bubble{background:var(--blue);color:#fff;border-color:var(--blue);border-radius:14px 4px 14px 14px}.msg.me .t{color:#dbe4ff}
-.msg.reply .bubble{background:#eefaf7;border-color:#bfe6de}.msg.final .bubble{border:2px solid var(--blue)}
+.msg.reply .bubble{background:#eefaf7;border-color:#bfe6de}.msg.r2 .bubble{background:#fff8eb;border-color:#f0dcae}.msg.r3 .bubble{background:#eef2ff;border-color:#c7d2fe}.msg.final .bubble{border:2px solid var(--blue)}
 .sys{text-align:center;font-size:12.5px;color:var(--sub);margin:12px 0}.dots{letter-spacing:4px;color:#9db0e6;animation:blink 1.2s infinite}@keyframes blink{50%{opacity:.3}}
 .talk{border-left:3px solid var(--teal);padding:6px 0 6px 12px;margin:10px 0}.talk .who2{font-size:13px;color:var(--sub);margin-bottom:2px}.talk .who2 b{color:var(--teal)}
+.usage{width:100%;border-collapse:collapse;font-size:13.5px}.usage th,.usage td{text-align:right;padding:5px 8px;border-bottom:1px solid var(--line)}.usage th:first-child,.usage td:first-child{text-align:left}.usage th{color:var(--sub);font-weight:600}.usage tr.sum td{font-weight:700;border-bottom:0}
 .sizes{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:10px}.sizes th,.sizes td{text-align:left;padding:4px 6px 4px 0;border-bottom:1px solid var(--line);vertical-align:top}.sizes th{color:var(--sub);font-weight:600}
 .log{font-size:14px;color:var(--sub);margin:0;padding:0;list-style:none}.log li{padding:2px 0}.log li b{color:var(--ink)}
 .who li.work{border-color:var(--blue)}.who li.work b{color:var(--blue)}
@@ -130,8 +131,13 @@ pre{white-space:pre-wrap;word-break:break-word;font:inherit;margin:0}.note{font-
 <label for="router">전문가를 고르는 모델</label><select id="router"></select>
 <p class="help">질문을 보고 <b>어느 전문가를 부를지 정하는 일</b>(2단계)만 이 모델이 합니다. 전문가의 분석과 통합 답변은 어느 쪽을 골라도 큰 모델이 씁니다. 그래서 두 모델이 같은 전문가를 고르면 답의 질은 같고, 다르게 고르면 불리는 전문가가 달라집니다.</p>
 <table class="sizes" id="sizes"></table>
-<p class="help">GPT와 Claude는 크기를 공개하지 않아, 성능이 가깝다고 알려진 공개 모델로 대신 가늠했습니다. 전문가 고르기처럼 <b>답의 형태가 정해진 일</b>은 그런 큰 모델을 부르지 않아도, 이렇게 작은 모델을 직접 가르쳐 내 컴퓨터에서 돌릴 수 있습니다. 작은 모델은 배운 이 일 하나만 합니다.</p>
-<label class="check"><input type="checkbox" id="discuss" checked> 전문가끼리 서로의 답을 읽고 의견 나누기 (20~40초 더 걸림)</label>
+<p class="help">아래로 갈수록 크고 똑똑한 모델입니다. 직접 돌릴 수 있는 공개 모델(gpt-oss)은 최신 GPT보다 종합 성능 지수가 훨씬 낮고, 여기서 쓰는 Gemma는 그보다도 작습니다. 그래도 전문가 고르기처럼 <b>답의 형태가 정해진 일</b>은 큰 모델을 부르지 않아도, 이렇게 작은 모델을 직접 가르쳐 내 컴퓨터에서 돌릴 수 있습니다. 작은 모델은 배운 이 일 하나만 합니다.</p>
+<label for="discuss">전문가끼리 대화하는 노력</label><select id="discuss">
+<option value="off">안 함: 각자 답하면 바로 지휘자가 합침 (가장 빠름)</option>
+<option value="low">low: 서로의 답을 읽고 한 번씩 묻고 지적</option>
+<option value="medium" selected>medium: 묻기 → 답하기 → 입장 밝히기</option>
+<option value="high">high: 모두 동의할 때까지 되풀이 (가장 오래 걸림)</option></select>
+<p class="help">노력을 올리면 서로의 답을 더 확인하지만 시간과 token이 늘어납니다. 노력을 많이 들인다고 늘 더 맞는 결론이 나오는 것은 아닙니다. 모델이 못 보는 것은 여러 번 대화해도 못 봅니다. 같은 질문을 노력만 바꿔 물어보고 결론과 token이 어떻게 달라지는지 견줘 보세요.</p>
 <button id="go">질문하기</button>
 <button id="compare">두 모델이 고르는 전문가만 비교하기</button>
 <label>전문가</label><ul class="who" id="who"></ul>
@@ -151,7 +157,7 @@ async function init(){
   $('sizes').innerHTML = `<tr><th></th><th>파라미터</th><th>파일 크기</th><th>돌리는 곳</th></tr>`
     + `<tr><td><b>증류한 작은 모델</b><br>${esc(z.student.base)} + 내가 학습시킨 Adapter</td><td>${n(z.student.params)}</td><td>${g(z.student.file_gb)}${z.student.adapter_mb ? ' + ' + z.student.adapter_mb + 'MB' : ''}</td><td>내 컴퓨터 (메모리 1GB 안팎)</td></tr>`
     + `<tr><td><b>큰 모델</b><br>${esc(z.teacher.base)}</td><td>${n(z.teacher.params)}</td><td>${g(z.teacher.file_gb)}</td><td>내 컴퓨터 (메모리 약 10GB)</td></tr>`
-    + `<tr><td><b>GPT·Claude급 공개 모델</b> (${esc(z.big.name)})</td><td>${esc(z.big.params)}</td><td>약 ${z.big.file_gb.toLocaleString()}GB</td><td>데이터센터의 GPU 서버 묶음 (80GB GPU 20장쯤)</td></tr>`;
+    + z.others.map(o => `<tr><td><b>${esc(o.name)}</b><br>${esc(o.by)}${o.index == null ? '' : '<br>종합 성능 지수 ' + o.index}</td><td>${esc(o.params)}</td><td>${o.file_gb == null ? '받을 수 없음' : '약 ' + o.file_gb + 'GB'}</td><td>${esc(o.where)}</td></tr>`).join('');
   $('router').innerHTML = `<option value="teacher">큰 모델 (${esc(z.teacher.base)})</option>` + (info.has_student ? `<option value="student" selected>증류한 작은 모델 (${esc(z.student.base)} + Adapter)</option>` : '<option disabled>증류한 작은 모델 (아직 학습 안 함)</option>');
 }
 function preview(){ const c = $('case').value, img = $('preview'), has = info.marked.includes(c);
@@ -175,8 +181,8 @@ function chat(events, draft, final){
     if(e.type === 'route') out.push(boss(`고르는 데 ${e.seconds}초`, `이 질문은 <b>${e.experts.map(k => esc(title(k))).join(', ')}</b>에게 맡기겠습니다. 각자 도구로 근거를 찾아 주세요.`));
     if(e.type === 'tool') out.push(sys(`🔧 <b style="color:${color(e.expert)}">${esc(e.title)}</b>가 도구를 씁니다: ${esc(e.name)}(${esc(e.args)})`));
     if(e.type === 'expert'){ const x = e.result; out.push(bubble(x.title, color(x.expert), esc(x.title[0]), `${x.seconds}초 · 쓴 도구 ${x.tools.map(esc).join(', ') || '없음'}`, md(x.answer))); }
-    if(e.type === 'step' && e.name === '전문가끼리 의견 나누기') out.push(sys('전문가들이 서로의 답을 읽고 의견을 나눕니다'));
-    if(e.type === 'talk') out.push(bubble(e.title, color(e.expert), esc(e.title[0]), `→ ${esc(e.to.join(', '))}에게 · ${e.seconds}초`, md(e.text), 'reply'));
+    if(e.type === 'round') out.push(sys(`<b>대화 ${e.n}</b> · 전문가들이 ${esc(e.label)}`));
+    if(e.type === 'talk') out.push(bubble(e.title, color(e.expert), esc(e.title[0]), `→ ${esc(e.to.join(', '))}에게 · ${e.seconds}초${e.tools && e.tools.length ? ' · 다시 쓴 도구 ' + e.tools.map(esc).join(', ') : ''}${e.round === 3 ? (e.agree ? ' · ⭕ 동의' : ' · ❌ 이견') : ''}`, md(e.text), 'reply r' + e.round));
     if(e.type === 'step' && e.name === '지휘자가 답을 합치기') out.push(sys('지휘자가 모든 답과 의견을 읽고 정리합니다'));
   }
   if(final) out.push(boss(final.meta, md(final.answer), 'final'));
@@ -194,6 +200,17 @@ function stepsCard(events, now, done){     // 단계별 진행: 몇 번째 단�
     + (st.state === 'done' ? `<span class="t">끝 · ${st.seconds}초${st.note ? ' · ' + esc(st.note) : ''}</span>` : st.state === 'run' ? `<span class="t">진행 중 · ${Math.max(0, now - st.from)}초째</span>` : '<span class="t">기다리는 중</span>') + '</li>';
   return `<div class="card"><h3>${done ? '단계별로 걸린 시간' : '진행 상황'} <span class="t">전체 ${now}초${done ? '' : '째'}</span></h3><ol class="steps">${steps.map(row).join('') || '<li class="run">시작하는 중…</li>'}</ol></div>`;
 }
+let liveUsage = null;                         // 서버가 0.8초마다 알려 주는, 지금까지 쓴 token
+function usageCard(events, final, now){     // 누가 token을 얼마나 썼는지와 걸린 시간
+  const u = final || liveUsage || [...events].reverse().find(e => e.type === 'usage');
+  if(!u || !u.by.length) return '';
+  const secs = {};                              // 전문가별로 일한 시간: 처음 답 + 대화에서 말한 시간
+  for(const e of events){ if(e.type === 'expert') secs[e.result.title] = (secs[e.result.title] || 0) + e.result.seconds; if(e.type === 'talk') secs[e.title] = (secs[e.title] || 0) + e.seconds; }
+  const num = n => n.toLocaleString(), row = x => `<tr><td>${esc(x.who)}</td><td>${x.calls}</td><td>${num(x.in)}</td><td>${num(x.out)}</td><td>${secs[x.who] ? Math.round(secs[x.who]) + '초' : ''}</td></tr>`;
+  return `<div class="card"><h3>쓴 token과 시간 <span class="t">${final ? '' : '지금까지 (쓰고 있는 글은 어림으로 셉니다)'}</span></h3><table class="usage"><tr><th>누가</th><th>모델을 부른 횟수</th><th>보낸 token</th><th>받은 token</th><th>일한 시간</th></tr>${u.by.map(row).join('')}`
+    + `<tr class="sum"><td>합계</td><td>${u.total.calls}</td><td>${num(u.total.in)}</td><td>${num(u.total.out)}</td><td>전체 ${now}초</td></tr></table>`
+    + `<p class="help">token은 모델에게 보낸 글과 받은 글의 양입니다. 이 컴퓨터에서는 0원이지만, 인터넷 너머의 모델이라면 이만큼 요금을 냅니다. 전문가들은 동시에 일하므로 일한 시간을 더하면 전체 시간보다 깁니다. 대화하는 노력을 올리면 이 숫자가 얼마나 늘어나는지 견줘 보세요.</p></div>`;
+}
 function mark(events){                    // 왼쪽 전문가 목록에 일하는 사람과 끝난 사람을 표시한다
   for(const e of events){
     if(e.type === 'route') e.experts.forEach(k => { const li = document.querySelector(`#who li[data-k="${k}"]`); if(!li.classList.contains('on')) li.classList.add('work'); });
@@ -203,25 +220,25 @@ function mark(events){                    // 왼쪽 전문가 목록에 일하�
 function live(events, draft, now){
   mark(events);
   const box = $('out'), stick = window.innerHeight + window.scrollY >= document.body.scrollHeight - 80;
-  box.innerHTML = stepsCard(events, now, false) + chat(events, draft, null);
+  box.innerHTML = stepsCard(events, now, false) + usageCard(events, null, now) + chat(events, draft, null);
   if(stick) window.scrollTo(0, document.body.scrollHeight);     // 맨 아래를 보고 있었다면 새 말풍선을 따라 내려간다
 }
 $('go').onclick = async () => {
   const btn = $('go'); btn.disabled = true; const t0 = Date.now();
   const tick = setInterval(() => btn.textContent = `전문가들이 일하는 중… ${Math.round((Date.now()-t0)/1000)}초`, 500);
   document.querySelectorAll('#who li').forEach(li => li.classList.remove('on', 'work'));
-  asked = {q: $('q').value, c: info.cases.length ? $('case').value : ''};
+  asked = {q: $('q').value, c: info.cases.length ? $('case').value : ''}; liveUsage = null;
   const events = []; let watching = true, draft = ''; const sec = () => Math.round((Date.now() - t0) / 1000); live(events, draft, 0);
-  const pull = async () => { const p = await (await fetch('progress?since=' + events.length)).json(); events.push(...p.events); draft = p.draft; };
+  const pull = async () => { const p = await (await fetch('progress?since=' + events.length)).json(); events.push(...p.events); draft = p.draft; liveUsage = p.usage; };
   const watch = (async () => { while(watching){ await new Promise(r => setTimeout(r, 800)); if(!watching) break; try{ await pull(); if(watching) live(events, draft, sec()); }catch(e){} } })();
   try{
-    const res = await fetch('ask', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({question: asked.q, case: asked.c, router: $('router').value, discuss: $('discuss').checked})});
+    const res = await fetch('ask', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({question: asked.q, case: asked.c, router: $('router').value, discuss: $('discuss').value})});
     const r = await res.json(); watching = false;
     if(r.error) throw new Error(r.error);
     try{ await pull(); }catch(e){}
     mark(events); document.querySelectorAll('#who li').forEach(li => li.classList.remove('work'));
     const meta = `${r.seconds}초 · 전문가 ${r.experts.length}명 · 고른 모델: ${r.router === 'student' ? '증류한 작은 모델' : '큰 모델'} (${r.route_seconds}초)`;
-    $('out').innerHTML = stepsCard(events, r.seconds, true) + chat(events, '', {meta, answer: r.answer})
+    $('out').innerHTML = stepsCard(events, r.seconds, true) + usageCard(events, r.usage, r.seconds) + chat(events, '', {meta, answer: r.answer})
       + (r.context ? `<div class="card"><h3>모든 전문가에게 준 기초 자료</h3><pre>${esc(r.context)}</pre></div>` : '');
   }catch(e){ $('out').innerHTML = `<div class="card"><h3>실패했습니다</h3><pre>${esc(e.message)}\n\nOllama 앱이 켜져 있는지 확인하고 다시 눌러 주세요.</pre></div>`; }
   watching = false; clearInterval(tick); btn.disabled = false; btn.textContent = '질문하기';
@@ -285,7 +302,8 @@ async def route_view(request):
 async def progress_view(request):
     """지금 처리 중인 질문의 진행 소식. since번째 뒤의 소식과, 쓰고 있는 통합 답변을 돌려준다."""
     since = int(request.query_params.get("since", 0))
-    return JSONResponse({"events": progress["events"][since:], "draft": progress["draft"]})
+    from lab_ui import usage_summary
+    return JSONResponse({"events": progress["events"][since:], "draft": progress["draft"], "usage": usage_summary()})
 
 
 async def ask(request):
@@ -294,7 +312,7 @@ async def ask(request):
     if not question:
         return JSONResponse({"error": "질문이 비어 있습니다."})
     try:
-        return JSONResponse(await run_in_threadpool(run, question, str(body.get("case", "")), body.get("router", "teacher"), True, bool(body.get("discuss", True))))
+        return JSONResponse(await run_in_threadpool(run, question, str(body.get("case", "")), body.get("router", "teacher"), True, str(body.get("discuss", "medium"))))
     except BaseException as e:      # 팀 코드의 SystemExit도 화면에 보여 준다
         return JSONResponse({"error": str(e)})
 

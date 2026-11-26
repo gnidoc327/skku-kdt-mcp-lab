@@ -15,6 +15,79 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 
 logging.getLogger("strands").setLevel(logging.ERROR)     # "reasoningContent is not supported" 같은 알림 줄을 숨긴다
+USAGE = []      # 이번 질문을 처리하며 쓴 token을 적어 둔다: {"who", "in", "out", "calls", "live"}
+                # live는 모델이 지금 쓰고 있는 글의 token을 어림으로 센 값이다. 그 호출이 끝나면 정확한 값으로 바뀐다
+
+
+def count_tokens(who, response=None, tokens_in=None, tokens_out=None):
+    """모델을 한 번 부른 뒤 쓴 token을 적어 둔다. who는 누가 불렀는지(전문가 이름, 지휘자 등).
+
+    response에는 ollama.chat의 응답을 그대로 넘기면 된다.
+    """
+    try:
+        if tokens_in is None and response is not None:
+            tokens_in, tokens_out = response.prompt_eval_count or 0, response.eval_count or 0
+        USAGE.append({"who": who, "in": int(tokens_in or 0), "out": int(tokens_out or 0), "calls": 1, "live": 0})
+    except Exception:
+        pass                                            # 세지 못해도 하던 일은 계속한다
+
+
+def watch_tokens(agent, who):
+    """Strands Agent가 쓰는 token을 실시간으로 센다.
+
+    모델이 글이나 도구 호출을 쓰는 동안에는 조각 수로 어림하고, 모델 호출 하나가 끝날 때마다 그 호출의 정확한 값을 더한다.
+    일이 다 끝난 뒤 settle_tokens(agent)를 부르면 Agent가 집계한 값으로 한 번 더 맞춘다.
+    """
+    row = {"who": who, "in": 0, "out": 0, "calls": 0, "live": 0}
+    USAGE.append(row)
+
+    def on_stream(**kw):
+        event = kw.get("event")
+        usage = event.get("metadata", {}).get("usage") if isinstance(event, dict) and "metadata" in event else None
+        if usage:                                       # 모델 호출 하나가 끝났다: 그 호출이 쓴 정확한 값
+            row["in"] += usage.get("inputTokens", 0)
+            row["out"] += usage.get("outputTokens", 0)
+            row["calls"] += 1
+            row["live"] = 0
+        elif kw.get("data") or (isinstance(event, dict) and "contentBlockDelta" in event):
+            row["live"] += 1                            # 글이나 도구 호출의 조각 하나가 대략 token 하나다
+    agent.callback_handler = on_stream
+    agent._token_row = row
+    return agent
+
+
+def settle_tokens(agent):
+    """Agent가 일을 마친 뒤, Agent가 스스로 집계한 token 수로 맞춘다 (실시간으로 센 값이 빠졌을 때를 대비한다)."""
+    row, usage = getattr(agent, "_token_row", None), agent.event_loop_metrics.accumulated_usage
+    if row is not None and usage.get("inputTokens", 0) >= row["in"]:
+        row.update({"in": usage.get("inputTokens", 0), "out": usage.get("outputTokens", 0), "live": 0})
+        row["calls"] = max(row["calls"], 1)
+
+
+def chat_counted(who, think=None, **kw):
+    """ollama.chat을 부르되, 글을 쓰는 동안 token을 실시간으로 센다. 다 쓴 글을 돌려준다."""
+    import ollama
+    row = {"who": who, "in": 0, "out": 0, "calls": 1, "live": 0}
+    USAGE.append(row)
+    text = ""
+    for chunk in (ollama.chat(stream=True, think=think, **kw) if think is not None else ollama.chat(stream=True, **kw)):
+        text += chunk.message.content or ""
+        row["live"] += 1
+        if chunk.done:
+            row.update({"in": chunk.prompt_eval_count or 0, "out": chunk.eval_count or 0, "live": 0})
+    return text.strip()
+
+
+def usage_summary():
+    """지금까지 쓴 token을 누가 썼는지별로 더한다. 쓰고 있는 중인 글도 어림으로 넣는다."""
+    by = {}
+    for u in list(USAGE):
+        row = by.setdefault(u["who"], {"who": u["who"], "in": 0, "out": 0, "calls": 0})
+        row["in"] += u["in"]; row["out"] += u["out"] + u.get("live", 0); row["calls"] += u.get("calls", 1)
+    rows = list(by.values())
+    return {"by": rows, "total": {"in": sum(r["in"] for r in rows), "out": sum(r["out"] for r in rows), "calls": sum(r["calls"] for r in rows)}}
+
+
 _events = queue.Queue()      # 다른 thread에서 생긴 소식을 모아 두었다가, 화면에는 한곳에서만 찍는다
 
 
@@ -41,25 +114,42 @@ def md(text):
 
 
 class Status:
-    """한 줄짜리 진행 표시. 노트북에서는 같은 줄을 고쳐 쓴다. 터미널에서는 끝났을 때만 한 줄 찍는다."""
+    """한 줄짜리 진행 표시. 노트북에서는 같은 줄을 고쳐 쓴다. 터미널에서는 끝났을 때만 한 줄 찍는다.
+
+    글 안에 "12/420"처럼 "한 것/전체"가 들어 있으면 진행 막대와 남은 시간을 함께 그린다.
+    """
 
     def __init__(self, text="⏳ 시작합니다"):
         self.start, self.handle = time.time(), None
         if in_notebook():
             from IPython.display import display
-            self.handle = display({"text/plain": text}, raw=True, display_id=True)
+            self.handle = display(self._bundle(text), raw=True, display_id=True)
         else:
             print(text)
 
     def seconds(self):
         return time.time() - self.start
 
+    def _bundle(self, text, finished=False):
+        """화면에 그릴 것을 만든다: 진행 막대가 있는 HTML과, HTML을 못 그리는 곳을 위한 글."""
+        import html
+        import re
+        m = None if finished else re.search(r"(\d[\d,]*)/(\d[\d,]*)", text)
+        bar = ""
+        if m:
+            done, total = int(m[1].replace(",", "")), int(m[2].replace(",", ""))
+            if 0 <= done <= total and total > 0:
+                left = f" · 남은 시간 약 {self.seconds() * (total - done) / done:.0f}초" if 0 < done < total and self.seconds() > 2 else ""
+                bar = (f'<progress value="{done}" max="{total}" style="width:240px;height:14px;vertical-align:middle"></progress> '
+                       f'<b>{done / total:.0%}</b>{left}<br>')
+        return {"text/plain": text, "text/html": f'<div style="font-family:var(--jp-code-font-family,monospace);font-size:13px;line-height:1.7">{bar}{html.escape(text)}</div>'}
+
     def update(self, text):
         if self.handle:
-            self.handle.update({"text/plain": text}, raw=True)
+            self.handle.update(self._bundle(text), raw=True)
 
     def done(self, text):
-        self.update(text) if self.handle else print(text)
+        self.handle.update(self._bundle(text, finished=True), raw=True) if self.handle else print(text)
 
 
 def note(text):
@@ -104,7 +194,7 @@ def run_together(jobs, on_done=None):
                 if on_done and futures[n].exception() is None:
                     on_done(n, futures[n].result())
             if left:
-                status.update(f"⏳ {status.seconds():.0f}초째 일하는 중: {', '.join(left)}")
+                status.update(f"⏳ {status.seconds():.0f}초째 일하는 중: {', '.join(left)}" + (f"  (끝난 사람 {len(names) - len(left)}/{len(names)})" if len(names) > 1 else ""))
                 time.sleep(0.5)
     _print_notes()
     status.done(f"✅ {', '.join(names)}: 끝  ({status.seconds():.0f}초)")
@@ -122,12 +212,15 @@ def stream_answer(model, messages, who="지휘자", temperature=0.2):
     status = Status(f"⏳ {who}가 답을 준비하는 중입니다")
     if not in_notebook():
         r = ollama.chat(model=model, messages=messages, options={"temperature": temperature})
+        count_tokens(f"{who} (답 합치기)", r)
         status.done(f"✅ {who}가 답을 썼습니다  ({status.seconds():.0f}초)")
         return r["message"]["content"].strip()
     from IPython.display import Markdown, display
     box, text, shown = None, "", 0.0
     for chunk in ollama.chat(model=model, messages=messages, options={"temperature": temperature}, stream=True):
         text += chunk.message.content or ""
+        if chunk.done:
+            count_tokens(f"{who} (답 합치기)", chunk)
         if not text.strip():        # 답을 쓰기 전에 속으로 생각하는 모델도 있다
             status.update(f"🤔 {who}가 생각하는 중입니다  ({status.seconds():.0f}초)")
             continue

@@ -28,7 +28,8 @@ import ollama
 from strands import Agent, tool
 from strands.hooks import BeforeToolCallEvent
 
-from lab_ui import Status, md, run_together, stream_answer, tool_log, wait_for
+from lab_ui import (USAGE, Status, chat_counted, count_tokens, md, run_together, settle_tokens, stream_answer, tool_log,
+                    usage_summary, wait_for, watch_tokens)
 from strands.models.ollama import OllamaModel
 
 ROOT = Path(__file__).resolve().parent
@@ -63,14 +64,20 @@ def fill(template, word):
 STUDENT_BASE = "Google Gemma 3 1B"      # 제자의 바탕 모델. 이 위에 LoRA Adapter만 학습해 얹는다 (바탕 모델은 고치지 않는다)
 TEACHER_BASE = "Google Gemma 4 E4B"     # 스승
 
-# GPT나 Claude는 크기를 공개하지 않으므로, 성능이 그에 가깝다고 알려진 공개 모델을 비교 기준으로 쓴다 (2026년 11월 기준).
-BIG_OPEN_MODEL = {
-    "name": "Kimi K3", "by": "Moonshot AI, 2026년 7월 공개",
-    "params": "약 2조 8천억 개", "file_gb": 1560,
-    "memory": "파일 전체를 올려야 해서 약 1,500GB. 80GB짜리 GPU로 20장쯤 (파일 크기로 계산한 값)",
-    "where": "데이터센터의 GPU 서버 묶음. 개인 컴퓨터로는 실용적인 속도가 나오지 않음",
-    "note": "이 모델의 성능 수치는 만든 회사가 발표한 것이고, 메모리는 파일 크기에서 계산한 어림값입니다.",
-}
+# 견줄 기준이 되는 모델들 (2026년 11월 기준). 위에서 아래로 갈수록 큰 모델이다.
+#   index : Artificial Analysis의 종합 성능 지수(Intelligence Index). 여러 시험 점수를 합친 값으로, 높을수록 어려운 일을 잘한다.
+#           같은 표에서 확인한 값만 적었고, 찾지 못한 모델은 None이다.
+#   price : 남의 서버에서 빌려 쓸 때 100만 token당 달러 (입력, 출력). 직접 내려받아 돌리는 모델은 None
+OPEN_MODELS = [
+    {"name": "gpt-oss-20b", "by": "OpenAI가 공개한 모델 (내려받아 직접 돌림)", "params": "약 210억 개", "file_gb": 14, "index": None, "price": None,
+     "memory": "약 16GB", "where": "메모리 16GB 이상인 컴퓨터"},
+    {"name": "gpt-oss-120b", "by": "OpenAI가 공개한 모델 (내려받아 직접 돌림)", "params": "약 1,170억 개", "file_gb": 65, "index": 4, "price": None,
+     "memory": "약 80GB", "where": "80GB짜리 GPU 한 장 (데이터센터용)"},
+    {"name": "GPT-6 Luna", "by": "OpenAI의 최신 모델 가운데 가장 싼 것", "params": "공개하지 않음", "file_gb": None, "index": 28, "price": (0.10, 0.50),
+     "memory": "공개하지 않음", "where": "OpenAI의 서버. 쓴 만큼 요금"},
+    {"name": "GPT-6.1 Terra", "by": "OpenAI의 최신 모델 가운데 싼 축", "params": "공개하지 않음", "file_gb": None, "index": 51, "price": (1, 5),
+     "memory": "공개하지 않음", "where": "OpenAI의 서버. 쓴 만큼 요금"},
+]
 
 
 def free_gpu():
@@ -135,16 +142,20 @@ class Team:
     def _sorted(self, picked):
         return sorted(set(picked), key=self.keys.index)
 
-    def route_with_teacher(self, question):
-        """큰 모델이 필요한 전문가를 고른다. 답은 정해진 형식(JSON)으로만 받는다."""
+    def route_with_teacher(self, question, model=None):
+        """큰 모델이 필요한 전문가를 고른다. 답은 정해진 형식(JSON)으로만 받는다.
+
+        model에 다른 Ollama 모델 이름을 주면 그 모델에게 같은 지시문으로 시킨다 (학습 없이 지시문만으로 시키는 방식).
+        """
         schema = {"type": "object", "required": ["experts"], "properties": {"experts": {
             "type": "array", "minItems": 1, "maxItems": len(self.keys), "items": {"type": "string", "enum": self.keys}}}}
-        kw = dict(model=EXPERT_MODEL, format=schema, options={"temperature": 0},
+        kw = dict(model=model or EXPERT_MODEL, format=schema, options={"temperature": 0},
                   messages=[{"role": "system", "content": self.router_prompt}, {"role": "user", "content": question}])
         try:
             r = ollama.chat(think=False, **kw)     # 생각 과정을 끄면 빨라진다
         except Exception:
             r = ollama.chat(**kw)
+        count_tokens("지휘자 (전문가 고르기)", r)
         return self._sorted(json.loads(r["message"]["content"])["experts"])
 
     def ask_expert(self, key, question, context="", quiet=True, on_event=None):
@@ -152,6 +163,7 @@ class Team:
         spec = self.experts[key]
         agent = Agent(model=OllamaModel(host=OLLAMA_HOST, model_id=EXPERT_MODEL, temperature=0.2),
                       system_prompt=spec["prompt"] + self.rules, tools=spec["tools"], callback_handler=None)
+        watch_tokens(agent, spec["title"])      # 쓰는 token을 실시간으로 센다
         if not quiet:
             tool_log(agent, spec["title"])      # 도구를 부를 때마다 화면에 한 줄 알려 준다
         if on_event:                            # 웹 화면에도 같은 소식을 보낸다
@@ -161,9 +173,11 @@ class Team:
         used = lambda: [b["toolUse"]["name"] for m in agent.messages for b in m.get("content", []) if "toolUse" in b]
         start = time.time()
         try:
-            text = str(agent((f"[기초 자료]\n{context}\n\n" if context else "") + f"[질문]\n{question}")).strip()
+            out = agent((f"[기초 자료]\n{context}\n\n" if context else "") + f"[질문]\n{question}")
             if not used():      # 도구 없이 기억만으로 답했으면 한 번 더 시킨다
-                text = str(agent("도구를 한 번도 쓰지 않았다. 먼저 도구를 불러 근거를 찾고, 그 결과만으로 다시 답하라.")).strip()
+                out = agent("도구를 한 번도 쓰지 않았다. 먼저 도구를 불러 근거를 찾고, 그 결과만으로 다시 답하라.")
+            text = str(out).strip()
+            settle_tokens(agent)
         except Exception as e:
             text = f"(분석 실패: {e})"
         return {"expert": key, "title": spec["title"], "answer": text, "tools": used(), "seconds": round(time.time() - start, 1)}
@@ -181,20 +195,71 @@ class Team:
         start = time.time()
         try:
             try:
-                r = ollama.chat(think=False, **kw)
+                text = chat_counted(mine["title"], think=False, **kw)
             except Exception:
-                r = ollama.chat(**kw)
-            text = r["message"]["content"].strip()
+                text = chat_counted(mine["title"], **kw)
         except Exception as e:
             text = f"(의견을 받지 못함: {e})"
         return {"expert": key, "title": mine["title"], "to": [r["title"] for r in results if r["expert"] != key],
-                "text": text, "seconds": round(time.time() - start, 1)}
+                "text": text, "seconds": round(time.time() - start, 1), "round": 1, "tools": []}
+
+    def reply(self, key, question, context, results, talks, quiet=True, on_event=None):
+        """전문가 한 명이 다른 전문가들에게 받은 질문과 지적에 답한다. 필요하면 자기 도구를 다시 써서 확인한다."""
+        spec, mine = self.experts[key], next(r for r in results if r["expert"] == key)
+        said = "\n\n".join(f"[{t['title']}가 한 말]\n{t['text']}" for t in talks if t["expert"] != key)
+        agent = Agent(model=OllamaModel(host=OLLAMA_HOST, model_id=EXPERT_MODEL, temperature=0.2),
+                      system_prompt=spec["prompt"] + self.rules, tools=spec["tools"], callback_handler=None)
+        watch_tokens(agent, spec["title"])      # 쓰는 token을 실시간으로 센다
+        if not quiet:
+            tool_log(agent, spec["title"])
+        if on_event:
+            agent.hooks.add_callback(BeforeToolCallEvent, lambda e: on_event(
+                {"type": "tool", "expert": key, "title": spec["title"], "name": e.tool_use.get("name"),
+                 "args": ", ".join(f"{k}={str(v)[:50]!r}" for k, v in (e.tool_use.get("input") or {}).items())}))
+        used = lambda: [b["toolUse"]["name"] for m in agent.messages for b in m.get("content", []) if "toolUse" in b]
+        start = time.time()
+        try:
+            out = agent((f"[기초 자료]\n{context}\n\n" if context else "") + f"[질문]\n{question}\n\n[네가 처음 한 답]\n{mine['answer'][:900]}\n\n"
+                             f"아래는 지금까지 다른 전문가들이 한 말이다. 이 가운데 너({spec['title']})에게 한 질문과 지적, "
+                             f"그리고 '남은 것'으로 적힌 쟁점 가운데 네 도구로 확인할 수 있는 것에 답하라. 이미 답한 것은 되풀이하지 않는다.\n{said[-3500:]}\n\n"
+                             "답하는 법: 확인이 필요하면 네 도구를 한 번만 더 써서 확인한다(꼭 필요할 때만). 질문한 전문가의 이름을 부르며 한 명당 두세 문장으로 답한다. "
+                             "네 처음 답을 고쳐야 하면 고친다고 말한다. 확인하지 못한 것은 확인하지 못했다고 쓴다. 한국어로 쓴다.")
+            text = str(out).strip()
+            settle_tokens(agent)
+        except Exception as e:
+            text = f"(답을 받지 못함: {e})"
+        return {"expert": key, "title": spec["title"], "to": [r["title"] for r in results if r["expert"] != key],
+                "text": text, "seconds": round(time.time() - start, 1), "round": 2, "tools": used()}
+
+    def stance(self, key, question, results, talks):
+        """대화를 다 읽은 뒤 전문가 한 명이 마지막 입장을 밝힌다: 합의하는지, 팀의 결론은 무엇인지, 남은 쟁점은 무엇인지."""
+        mine = next(r for r in results if r["expert"] == key)
+        log = "\n\n".join(f"[{t['title']}]\n{t['text'][:700]}" for t in talks)
+        prompt = (f"너는 {self.goal}의 {mine['title']}다. 아래는 같은 질문을 두고 전문가들이 주고받은 대화다.\n"
+                  "대화를 읽고 마지막 입장을 세 줄로 쓴다.\n"
+                  "첫 줄: 다른 전문가들과 결론이 같으면 '동의', 다르면 '이견' 한 낱말만.\n"
+                  "둘째 줄: '결론: ' 뒤에 팀이 내릴 결론을 한 문장으로.\n"
+                  "셋째 줄: '남은 것: ' 뒤에 아직 풀리지 않은 쟁점이나 사람이 꼭 확인할 것을 한 문장으로.\n"
+                  "대화에 없는 사실은 지어내지 않는다. 한국어로 쓴다.\n\n"
+                  f"[질문]\n{question}\n\n[네가 처음 한 답]\n{mine['answer'][:600]}\n\n[대화]\n{log}")
+        kw = dict(model=EXPERT_MODEL, messages=[{"role": "user", "content": prompt}], options={"temperature": 0.2})
+        start = time.time()
+        try:
+            try:
+                text = chat_counted(mine["title"], think=False, **kw)
+            except Exception:
+                text = chat_counted(mine["title"], **kw)
+        except Exception as e:
+            text = f"(입장을 받지 못함: {e})"
+        return {"expert": key, "title": mine["title"], "to": [r["title"] for r in results if r["expert"] != key], "text": text,
+                "seconds": round(time.time() - start, 1), "round": 3, "tools": [], "agree": text.lstrip("*# ").startswith("동의")}
 
     def synthesize(self, question, context, results, quiet=True, on_text=None, talks=()):
         """지휘자가 전문가들의 답을 모아 하나로 쓴다. quiet=False면 쓰는 대로 화면에 보여 준다."""
         parts = "\n\n".join(f"### {r['title']}의 분석\n{r['answer']}" for r in results)
         if talks:
-            parts += "\n\n### 전문가끼리 주고받은 의견\n" + "\n".join(f"- {t['title']}: {t['text']}" for t in talks)
+            parts += ("\n\n### 전문가끼리 주고받은 대화 (뒤로 갈수록 나중에 한 말이다. 처음 분석과 다르면 대화에서 고친 내용을 따른다)\n"
+                      + "\n".join(f"- [{t['round']}차] {t['title']}: {t['text'][:600]}" for t in talks))
         prompt = (f"너는 {self.goal}의 지휘자다. 아래 전문가 분석만 근거로 한국어 통합 답변을 쓴다.\n"
                   f"형식: {self.report}. 전문가 분석에 없는 내용은 쓰지 않는다. 전문가끼리 말이 다르면 다르다고 적는다. 전체 12줄 이내.\n\n"
                   + (f"[기초 자료]\n{context}\n\n" if context else "") + f"[질문]\n{question}\n\n{parts}")
@@ -206,25 +271,33 @@ class Team:
             for chunk in ollama.chat(model=EXPERT_MODEL, messages=messages, options={"temperature": 0.2}, stream=True):
                 text += chunk.message.content or ""
                 on_text(text)
+                if chunk.done:
+                    count_tokens("지휘자 (답 합치기)", chunk)
             return text.strip()
         r = ollama.chat(model=EXPERT_MODEL, messages=messages, options={"temperature": 0.2})
+        count_tokens("지휘자 (답 합치기)", r)
         return r["message"]["content"].strip()
 
-    def ask(self, question, case="", router=None, quiet=False, on_event=None, discuss=True):
+    def ask(self, question, case="", router=None, quiet=False, on_event=None, discuss="medium"):
         """질문 하나를 처음부터 끝까지 처리한다.
 
         case   : 검토 대상 (예: 사진 파일 이름). prepare 함수가 있을 때만 쓴다
         router : 질문을 받아 전문가 키 목록을 돌려주는 함수. 비워 두면 큰 모델이 고른다.
                  증류한 작은 모델로 바꾸려면 router=team.load_student()
         on_event : 진행 소식을 받을 함수 (웹 화면이 쓴다). 사진 읽기, 고른 전문가, 도구 호출, 끝난 전문가의 답, 쓰고 있는 통합 답변
-        discuss : True면 전문가들이 각자 답한 뒤 서로의 답을 읽고 의견을 주고받는다 (20~40초 더 걸린다). False면 건너뛴다
+        discuss : 전문가들이 각자 답한 뒤 서로 얼마나 깊이 대화할지.
+                  "low"    서로의 답을 읽고 한 번씩 묻고 지적한다
+                  "medium" 묻기 → 받은 질문에 답하기(도구를 다시 쓸 수 있다) → 입장 밝히기
+                  "high"   답하기와 입장 밝히기를 모두 동의할 때까지 되풀이한다 (많아야 세 바퀴. 가장 오래 걸린다)
+                  False    대화하지 않고 바로 지휘자에게 넘긴다
         """
         tell = on_event or (lambda e: None)
         say = (lambda *a: None) if quiet else print
         start = time.time()
         names = ((["기초 자료 만들기"] if self.prepare else []) + ["전문가 고르기", "전문가들이 일하기"]
-                 + (["전문가끼리 의견 나누기"] if discuss else []) + ["지휘자가 답을 합치기"])
+                 + (["전문가끼리 의견 나누기"] if discuss not in (False, 0, "off") else []) + ["지휘자가 답을 합치기"])
         steps = []                              # 단계마다 걸린 시간을 적어 둔다
+        USAGE.clear()                           # 이번 질문에서 쓴 token을 처음부터 다시 센다
 
         def step(name):
             """단계를 시작한다고 알리고, 끝났을 때 부를 함수를 돌려준다."""
@@ -235,6 +308,7 @@ class Team:
             def done(note=""):
                 steps.append({"n": n, "name": name, "seconds": round(time.time() - t, 1), "note": note})
                 tell({"type": "step_done", **steps[-1]})
+                tell({"type": "usage", **usage_summary()})
             return done
 
         say(f"👤 질문: {question}" + (f"   (대상: {case})" if case else ""))
@@ -267,24 +341,47 @@ class Team:
                                     for k in keys}, on_done=show)
         done(f"{len(keys)}명")
 
+        depth = {False: "", 0: "", "off": "", 1: "low", "low": "low", True: "medium", 3: "medium", "medium": "medium", "high": "high"}.get(discuss, "medium")
         talks = []
-        if discuss:                             # 각자 답한 뒤, 서로의 답을 읽고 의견을 주고받는다
+        if depth:                             # 각자 답한 뒤 대화한다: 묻고 지적하기 → 답하기(도구를 다시 쓸 수 있다) → 마지막 입장
             done = step("전문가끼리 의견 나누기")
             if len(results) < 2:
                 say("전문가가 한 명이라 의견을 나눌 상대가 없습니다.")
                 done("전문가가 한 명이라 건너뜀")
-            elif quiet:
-                def speak(k):
-                    t = self.comment(k, question, results)
-                    tell({"type": "talk", **t})
-                    return t
-                with ThreadPoolExecutor(max_workers=len(keys)) as pool:
-                    talks = list(pool.map(speak, keys))
-                done(f"{len(talks)}명이 말함")
             else:
-                heard = lambda name, t: md(f"**💬 {t['title']}** → {', '.join(t['to'])}  ({t['seconds']}초)\n\n{t['text']}")
-                talks = run_together({self.experts[k]["title"]: (lambda k=k: self.comment(k, question, results)) for k in keys}, on_done=heard)
-                done(f"{len(talks)}명이 말함")
+                heard = lambda name, t: md(f"**💬 {t['title']}** → {', '.join(t['to'])}  ({t['seconds']}초"
+                                           + (f", 도구: {' → '.join(t['tools'])}" if t["tools"] else "") + f")\n\n{t['text']}")
+                ask_each = ("서로의 답을 읽고 묻고 지적합니다", lambda k: self.comment(k, question, results))
+                answer_each = ("받은 질문과 남은 쟁점에 답합니다 (필요하면 도구를 다시 씁니다)",
+                               lambda k: self.reply(k, question, context, results, talks, quiet=quiet, on_event=on_event))
+                stand = ("대화를 읽고 지금의 입장을 밝힙니다", lambda k: self.stance(k, question, results, talks))
+                # 깊이에 따라 대화의 길이가 달라진다. high는 모두 동의할 때까지(많아야 세 바퀴) 답하기와 입장 밝히기를 되풀이한다
+                plan = {"low": [ask_each], "medium": [ask_each, answer_each, stand],
+                        "high": [ask_each, answer_each, stand, answer_each, stand, answer_each, stand]}[depth]
+                n = 0
+                for label, speak in plan:
+                    last = [t for t in talks if t["round"] == 3][-len(keys):]
+                    if depth == "high" and speak is answer_each[1] and n >= 5 and last and all(t.get("agree") for t in last):
+                        say("\n  → 모두 같은 결론에 동의해서 대화를 마칩니다.")
+                        break                   # 두 바퀴를 돌았고 모두 동의하면 더 묻지 않는다
+                    n += 1
+                    say(f"\n  대화 {n}: {label}")
+                    tell({"type": "round", "n": n, "label": label})
+                    if quiet:
+                        def one(k, speak=speak):
+                            t = speak(k)
+                            tell({"type": "talk", **t})
+                            return t
+                        with ThreadPoolExecutor(max_workers=len(keys)) as pool:
+                            said = list(pool.map(one, keys))
+                    else:
+                        said = run_together({self.experts[k]["title"]: (lambda k=k, speak=speak: speak(k)) for k in keys}, on_done=heard)
+                    talks += said               # 다음 차례의 전문가들은 여기까지의 대화를 모두 읽는다
+                last = [t for t in talks if t["round"] == 3][-len(keys):]
+                agree = [t for t in last if t.get("agree")]
+                note = (f"대화 {n}차례, {len(agree)}/{len(last)}명이 같은 결론에 동의" if last else f"대화 {n}차례")
+                say(f"\n  → {note}")
+                done(note)
 
         done = step("지휘자가 답을 합치기")
         if len(results) > 1:
@@ -297,9 +394,15 @@ class Team:
             done("전문가가 한 명이라 건너뜀")
         answer += "\n\n" + self.disclaimer
         seconds = round(time.time() - start)
+        usage = usage_summary()
         say(f"\n{self.disclaimer}\n\n⏱️ 전체 {seconds}초  (" + ", ".join(f"{x['name']} {x['seconds']}초" for x in steps) + ")")
+        if not quiet:
+            md("\n".join(["**쓴 token** (모델에게 보낸 글과 받은 글의 양. 인터넷 너머의 모델이라면 이만큼 요금을 냅니다)", "",
+                          "| 누가 | 모델을 부른 횟수 | 보낸 token | 받은 token |", "|---|---|---|---|"]
+                         + [f"| {u['who']} | {u['calls']} | {u['in']:,} | {u['out']:,} |" for u in usage["by"]]
+                         + [f"| **합계** | {usage['total']['calls']} | **{usage['total']['in']:,}** | **{usage['total']['out']:,}** |"]))
         return {"question": question, "case": case, "context": context, "experts": keys, "route_seconds": route_seconds,
-                "results": results, "talks": talks, "answer": answer, "seconds": seconds, "steps": steps}
+                "results": results, "talks": talks, "answer": answer, "seconds": seconds, "steps": steps, "usage": usage}
 
     # ---------- 2) 증류: "전문가 고르기"를 작은 모델에게 가르치기 ----------
     @property
@@ -407,6 +510,8 @@ class Team:
         for old in adapter.glob("*_adapters.safetensors"):      # 지난 학습의 중간 모델은 지운다
             old.unlink()
         shutil.rmtree(self.folder / "checkpoints", ignore_errors=True)
+        for old in self.folder.glob("compare_*.json"):          # 지난 모델로 재 둔 비교 결과도 지운다
+            old.unlink()
         cmd = [sys.executable, "-m", "mlx_lm", "lora", "--model", STUDENT_MODEL, "--train", "--data", str(self.folder / "data"),
                "--iters", str(iters), "--batch-size", "8", "--num-layers", "8", "--learning-rate", str(learning_rate),
                "--adapter-path", str(adapter), "--steps-per-report", "10", "--steps-per-eval", "100", "--save-every", "100", "--mask-prompt"]
@@ -458,7 +563,7 @@ class Team:
             self._generate("이 질문은 누구에게 보낼까?", True)
             student["memory_gb"] = gb(mx.get_peak_memory())
         teacher["base"], student["base"] = TEACHER_BASE, STUDENT_BASE
-        return {"teacher": teacher, "student": student, "big": BIG_OPEN_MODEL}
+        return {"teacher": teacher, "student": student, "others": OPEN_MODELS}
 
     def show_sizes(self):
         """스승, 제자, 그리고 인터넷 너머의 큰 모델(GPT, Claude 등)을 한 표로 비교해 보여 준다."""
@@ -466,20 +571,15 @@ class Team:
         t, st = z["teacher"], z["student"]
         ko = lambda p: {"B": "억 개", "M": "만 개"}[p[-1]].join([str(round(float(p[:-1]) * (10 if p[-1] == "B" else 100))), ""]) if p else "?"
         show = lambda v, unit="GB": f"{v}{unit}" if v is not None else "?"
-        big = BIG_OPEN_MODEL
-        times = f"제자의 약 {big['file_gb'] / st['file_gb']:,.0f}배" if st["file_gb"] else ""
-        md("\n".join([
-            f"| | 제자 (증류한 작은 모델) | 스승 (큰 모델) | GPT·Claude급으로 알려진 공개 모델 ({big['name']}) |",
-            "|---|---|---|---|",
-            f"| 모델 | **{STUDENT_BASE}** (`{st['name']}`) + 내가 학습시킨 Adapter | **{TEACHER_BASE}** (`{t['name']}`) | {big['name']} ({big['by']}) |",
-            f"| 파라미터 수 | 약 {ko(st['params'])} | 약 {ko(t['params'])} | {big['params']} |",
-            f"| 파일 크기 | {show(st['file_gb'])} + Adapter {show(st['adapter_mb'], 'MB')} | {show(t['file_gb'])} | 약 {big['file_gb']:,}GB ({times}) |",
-            f"| 돌릴 때 쓰는 메모리 | 약 {show(st['memory_gb'])} (방금 이 컴퓨터에서 잰 값) | 약 {show(t['memory_gb'] or t['file_gb'])} | {big['memory']} |",
-            f"| 돌리는 곳 | 내 컴퓨터. 메모리 8GB인 맥에서도 됨 | 내 컴퓨터. 메모리 16GB 이상 | {big['where']} |",
-            "| 할 수 있는 일 | **배운 일 하나** (전문가 고르기) | 글쓰기, 사진 읽기, 도구 쓰기 | 긴 코드 작성 같은 훨씬 어려운 일까지 |",
-            "",
-            f"GPT와 Claude는 모델 크기와 필요한 장비를 공개하지 않습니다. 그래서 성능이 그에 가깝다고 알려진 공개 모델 {big['name']}로 대신 가늠했습니다. {big['note']}",
-        ]))
+        price = lambda p: f"100만 token당 ${p[0]} / ${p[1]}" if p else "0원 (전기 요금뿐)"
+        rows = [f"| **제자** (증류한 작은 모델) | **{STUDENT_BASE}** + 내가 학습시킨 Adapter | 약 {ko(st['params'])} | {show(st['file_gb'])} + {show(st['adapter_mb'], 'MB')} | 약 {show(st['memory_gb'])} (방금 잰 값). 내 컴퓨터 | 지수 없음. **배운 일 하나만** 함 | 0원 (전기 요금뿐) |",
+                f"| **스승** (큰 모델) | **{TEACHER_BASE}** | 약 {ko(t['params'])} | {show(t['file_gb'])} | 약 {show(t['memory_gb'] or t['file_gb'])}. 내 컴퓨터 | 찾지 못함 | 0원 (전기 요금뿐) |"]
+        for o in OPEN_MODELS:
+            size = "내려받을 수 없음" if o["file_gb"] is None else f"약 {o['file_gb']}GB" + (f" (제자의 약 {o['file_gb'] / st['file_gb']:,.0f}배)" if st["file_gb"] else "")
+            rows.append(f"| {o['by']} | {o['name']} | {o['params']} | {size} | {o['where']} | {'찾지 못함' if o['index'] is None else o['index']} | {price(o['price'])} |")
+        md("\n".join(["| | 모델 | 파라미터 수 | 파일 크기 | 돌리는 곳과 메모리 | 종합 성능 지수 | 비용 |", "|---|---|---|---|---|---|---|"] + rows + ["",
+            "종합 성능 지수는 Artificial Analysis가 여러 시험 점수를 합쳐 매긴 값입니다(2026년 11월에 본 값. 높을수록 어려운 일을 잘함). "
+            "지수가 13배라고 해서 13배 똑똑하다는 뜻은 아니지만, 최신 모델과 직접 돌릴 수 있는 공개 모델 사이의 차이가 크다는 것은 보여 줍니다."]))
         return z
 
     def show_cost(self, prices=None, computer_usd=600, years=3, watts_idle=7, watts_busy=30, kwh_usd=0.12):
@@ -533,6 +633,85 @@ class Team:
         md("\n".join(lines))
         return {"tokens_in": tok_in, "tokens_out": tok_out, "student_seconds": round(sec, 3), "own_per_call": own_call, "own_per_day": own_day, "rows": rows}
 
+    def _saved(self, name, reuse, show):
+        """reuse=True이고 전에 저장해 둔 결과가 있으면 그것을 보여 주고 돌려준다. 없으면 None."""
+        path = self.folder / f"{name}.json"
+        if reuse and path.exists() and not getattr(self, "_rebuilt", False):
+            rows = json.loads(path.read_text(encoding="utf-8"))
+            print(f"✅ 전에 재 둔 결과를 그대로 보여 줍니다. 다시 재지 않습니다.  ({path.relative_to(ROOT)})")
+            show(rows)
+            return rows
+        return None
+
+    def compare_models(self, models=("llama3.2:3b", "gemma3:4b"), n=30, reuse=False):
+        """같은 시험을 세 가지 방식으로 보게 해서 비교한다.
+
+          1) 학습하지 않은 범용 모델에게 지시문만 주고 시키기 (models에 적은 것 가운데 이 컴퓨터에 받아 둔 모델)
+          2) 증류하기 전의 제자 (바탕 모델 그대로)
+          3) 증류한 제자
+        점수는 "스승과 같은 전문가 조합을 고른 비율"이다. 사람이 단 정답이 아니라 스승의 답이 기준이라는 점에 주의한다.
+        시간을 아끼려고 유형마다 n문제만 뽑아 시험한다. reuse=True면 전에 재 둔 결과가 있을 때 그것을 보여 준다.
+        """
+        self._need_data()
+
+        def show(rows):
+            lines = ["| 방식 | 모델 | 파라미터 | 파일 크기 | 본 유형 | 처음 보는 유형 | 질문 하나에 |", "|---|---|---|---|---|---|---|"]
+            for r in rows:
+                lines.append(f"| {r['how']} | {r['model']} | {r['params']} | {r['file_gb']}GB | {r['valid']:.0%} | {r['test']:.0%} | {r['seconds']}초 |")
+            lines += ["", f"점수는 스승({TEACHER_BASE})과 같은 전문가 조합을 고른 비율입니다(유형마다 {rows[0].get('n', '?')}문제). "
+                          "스승의 답이 기준이므로, 다른 모델이 스승과 다르게 골랐다고 해서 꼭 틀린 것은 아닙니다."]
+            md("\n".join(lines))
+        saved = self._saved("compare_models", reuse, show)
+        if saved:
+            return saved
+        read = lambda name: [(u["content"].split("질문: ", 1)[1], a["content"]) for u, a in
+                             (json.loads(l)["messages"] for l in open(self.folder / "data" / f"{name}.jsonl", encoding="utf-8"))]
+        pick = lambda items: random.Random(5).sample(items, min(n, len(items)))
+        valid, test = pick(read("valid")), pick(read("test"))
+        try:
+            have = {m.model: m for m in ollama.list().models}
+        except Exception:
+            have = {}
+        rows = []
+        for name in models:
+            if name not in have:
+                print(f"   (건너뜀) {name}: 이 컴퓨터에 받아 둔 모델이 아닙니다. 해 보려면 터미널에서 ollama pull {name}")
+                continue
+            status, scores, start = Status(f"⏳ {name}에게 지시문만 주고 시험을 보게 합니다"), [], time.time()
+            for kind, items in (("valid", valid), ("test", test)):
+                ok = 0
+                for i, (q, answer) in enumerate(items, 1):
+                    try:
+                        ok += ",".join(self.route_with_teacher(q, model=name)) == answer
+                    except Exception:
+                        pass                    # 형식에 맞지 않는 답은 틀린 것으로 센다
+                    status.update(f"⏳ {name}: {'본 유형' if kind == 'valid' else '처음 보는 유형'} {i}/{len(items)}문제  ({status.seconds():.0f}초)")
+                scores.append(ok / len(items))
+            n = len(valid) + len(test)
+            status.done(f"✅ {name}: 시험 끝  ({status.seconds():.0f}초)")
+            try:
+                params = ollama.show(name).details.parameter_size
+            except Exception:
+                params = "?"
+            rows.append({"how": "지시문만 (학습 없음)", "model": name, "params": params, "file_gb": round(have[name].size / 1e9, 1), "n": len(test),
+                         "valid": scores[0], "test": scores[1], "seconds": round((time.time() - start) / n, 2)})
+            try:
+                ollama.generate(model=name, prompt="", keep_alive=0)      # 다 쓴 모델은 메모리에서 내린다
+            except Exception:
+                pass
+        z = self.sizes()["student"]
+        score = lambda items, trained: sum(self._generate(q, trained) == a for q, a in items) / len(items)
+        for how, trained in (("증류 전 (바탕 모델 그대로)", False), ("**증류한 제자**", True)):
+            if trained and not self.has_student():
+                continue
+            t0 = time.time()
+            v, t = score(valid, trained), score(test, trained)
+            rows.append({"how": how, "model": STUDENT_BASE + (" + 내 Adapter" if trained else ""), "params": z["params"], "file_gb": z["file_gb"], "n": len(test),
+                         "valid": v, "test": t, "seconds": round((time.time() - t0) / (len(valid) + len(test)), 2)})
+        (self.folder / "compare_models.json").write_text(json.dumps(rows, ensure_ascii=False), encoding="utf-8")
+        show(rows)
+        return rows
+
     def checkpoints(self):
         """학습 도중에 저장된 중간 모델들의 반복 횟수 (예: [100, 200, 300])."""
         return sorted(int(f.name.split("_")[0]) for f in (self.folder / "adapter").glob("*_adapters.safetensors"))
@@ -555,7 +734,10 @@ class Team:
         model, tokenizer = self._student[trained]
         prompt = tokenizer.apply_chat_template([{"role": "user", "content": self.instruction + question}],
                                                add_generation_prompt=True, tokenize=False)
-        return generate(model, tokenizer, prompt=prompt, max_tokens=16, verbose=False).split("<")[0].strip().lower().replace(" ", "")
+        text = generate(model, tokenizer, prompt=prompt, max_tokens=16, verbose=False)
+        if trained is True:     # 증류한 제자가 쓴 token도 센다 (작은 모델이라 몇 개 안 된다)
+            count_tokens("지휘자 (전문가 고르기, 증류한 제자)", tokens_in=len(tokenizer.encode(prompt)), tokens_out=len(tokenizer.encode(text)))
+        return text.split("<")[0].strip().lower().replace(" ", "")
 
     def load_student(self):
         """증류한 작은 모델로 전문가를 고르는 함수를 돌려준다. team.ask(..., router=이 함수)로 쓴다."""
@@ -568,38 +750,46 @@ class Team:
         route_with_student("준비")                            # 모델을 미리 메모리에 올려 둔다
         return route_with_student
 
-    def compare_checkpoints(self):
+    def compare_checkpoints(self, reuse=False):
         """학습을 100번, 200번, ... 했을 때의 모델을 같은 시험으로 비교한다. 표와 그래프로 보여 준다.
 
         "학습을 얼마나 해야 충분한가"를 눈으로 보기 위한 것이다. 0번은 학습 전의 모델이다.
+        reuse=True면 전에 재 둔 결과가 있을 때 그것을 보여 준다.
         """
         self._need_data()
+
+        def show(rows):
+            print("\n   반복 횟수    본 유형    처음 보는 유형")
+            for r in rows:
+                print(f"   {str(r['iters']) + '번':>8}    {r['valid']:>6.0%}    {r['test']:>10.0%}" + ("   (학습 전)" if r["iters"] == 0 else ""))
+            try:
+                import matplotlib.pyplot as plt
+                plt.rcParams["font.family"], plt.rcParams["axes.unicode_minus"] = "AppleGothic", False
+                fig, ax = plt.subplots(figsize=(7, 3.4))
+                xs = [r["iters"] for r in rows]
+                ax.plot(xs, [r["valid"] * 100 for r in rows], marker="o", color="#1F4ED8", label="본 유형")
+                ax.plot(xs, [r["test"] * 100 for r in rows], marker="o", color="#0E8A74", label="처음 보는 유형")
+                ax.set(xlabel="학습 반복 횟수", ylabel="스승과 같은 답 (%)", ylim=(0, 105), xticks=xs)
+                ax.grid(alpha=0.3), ax.legend(loc="lower right"), ax.spines[["top", "right"]].set_visible(False)
+                plt.show()
+            except Exception:
+                pass                             # 그래프를 못 그려도 표는 이미 보여 줬다
+        saved = self._saved("compare_checkpoints", reuse, show)
+        if saved:
+            return saved
         points = self.checkpoints()
         if not points:
             raise SystemExit("❌ 저장된 중간 모델이 없습니다. 먼저 train_student()로 학습해 주세요.")
         rows, status = [], Status(f"⏳ 학습 전과 {', '.join(map(str, points))}번 시점의 모델에게 같은 시험을 보게 합니다")
         for n in [0] + points:
-            status.update(f"⏳ {n}번 반복 시점의 모델이 시험 보는 중  ({status.seconds():.0f}초)")
+            status.update(f"⏳ {n}번 반복 시점의 모델이 시험 보는 중: 모델 {len(rows)}/{len(points) + 1}  ({status.seconds():.0f}초)")
             which = False if n == 0 else n
             rows.append({"iters": n, "valid": self.exam("valid", trained=which, quiet=True), "test": self.exam("test", trained=which, quiet=True)})
             if n:
                 self._student.pop(n, None)      # 다 쓴 중간 모델은 메모리에서 내린다
         status.done(f"✅ 모델 {len(rows)}개의 시험이 끝났습니다  ({status.seconds():.0f}초)")
-        print("\n   반복 횟수    본 유형    처음 보는 유형")
-        for r in rows:
-            print(f"   {str(r['iters']) + '번':>8}    {r['valid']:>6.0%}    {r['test']:>10.0%}" + ("   (학습 전)" if r["iters"] == 0 else ""))
-        try:
-            import matplotlib.pyplot as plt
-            plt.rcParams["font.family"], plt.rcParams["axes.unicode_minus"] = "AppleGothic", False
-            fig, ax = plt.subplots(figsize=(7, 3.4))
-            xs = [r["iters"] for r in rows]
-            ax.plot(xs, [r["valid"] * 100 for r in rows], marker="o", color="#1F4ED8", label="본 유형")
-            ax.plot(xs, [r["test"] * 100 for r in rows], marker="o", color="#0E8A74", label="처음 보는 유형")
-            ax.set(xlabel="학습 반복 횟수", ylabel="스승과 같은 답 (%)", ylim=(0, 105), xticks=xs)
-            ax.grid(alpha=0.3), ax.legend(loc="lower right"), ax.spines[["top", "right"]].set_visible(False)
-            plt.show()
-        except Exception:
-            pass                                 # 그래프를 못 그려도 표는 이미 보여 줬다
+        (self.folder / "compare_checkpoints.json").write_text(json.dumps(rows), encoding="utf-8")
+        show(rows)
         return rows
 
     def exam(self, split="test", trained=True, show=0, quiet=False):

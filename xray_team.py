@@ -18,6 +18,7 @@ import ollama
 
 import drug_tools as dt
 from agent_team import EXPERT_MODEL, Team
+from lab_ui import count_tokens
 
 XRAY_DIR = Path(__file__).resolve().parent / "data" / "xray"
 VISION_MODEL = os.getenv("VISION_MODEL", EXPERT_MODEL)      # gemma4:e4b는 사진도 볼 수 있다
@@ -34,6 +35,7 @@ def _look(path, prompt):
         r = ollama.chat(think=False, **kw)
     except Exception:
         r = ollama.chat(**kw)
+    count_tokens("사진 읽기 (큰 모델이 사진을 봄)", r)
     return r["message"]["content"].strip()
 
 
