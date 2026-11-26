@@ -419,16 +419,17 @@ a:focus-visible, button:focus-visible { outline: 3px solid var(--eosin); outline
 
 <section class="slide" data-notes="수업 전에 안내한 준비가 끝났는지 먼저 확인. 안 한 사람은 지금 바로 실행. 새로 받는 것이 있으면 15~40분 걸리므로, 그동안 옆 사람 화면을 같이 보게 함. '6/6 동작 확인' 아래에 ❌ 없이 ✅만 나오고 JupyterLab이 열리면 준비 끝. ❌가 나오면 폴더의 setup.log를 보여 달라고 함. Ollama 앱이 꺼져 있는 경우가 가장 흔함(메뉴 막대의 라마 아이콘 확인).">
   <h2>시작 전에: 준비가 끝났는지 확인</h2>
-  <p class="small" style="margin-top:4px; font-size:18.5px">지난 시간에 만든 <strong>mcp-lab</strong> 폴더를 그대로 씁니다. 새 실습 파일을 받고 동작을 확인하는 데 세 줄이면 됩니다.</p>
+  <p class="small" style="margin-top:4px; font-size:18.5px">지난 시간에 만든 <strong>mcp-lab</strong> 폴더를 그대로 씁니다. 새 실습 파일을 받고 동작을 확인하는 데 네 줄이면 됩니다.</p>
   <div class="cols" style="grid-template-columns:1fr 1fr; margin-top:22px; gap:44px; flex:none">
     <div>
       <pre class="code"><span class="c"># 1. Ollama 앱이 켜져 있는지 확인 (메뉴 막대의 라마 아이콘)</span>
 
 <span class="c"># 2. 터미널에 그대로 붙여 넣기</span>
 cd ~/mcp-lab
+git checkout .
 git pull
 bash setup.sh</pre>
-      <p class="mini">지난 시간에 받은 모델 외에 약 10GB를 더 받습니다. 15~40분 걸립니다.<br>지난 시간에 준비를 못 했다면 약 16GB, 20~60분입니다.</p>
+      <p class="mini"><code>git checkout .</code>은 지난 시간의 실행 흔적을 지웁니다. 노트북 파일 이름이 바뀌어서 필요합니다.<br>지난 시간에 받은 모델 외에 약 10GB를 더 받습니다. 15~40분 걸립니다.<br>지난 시간에 준비를 못 했다면 약 16GB, 20~60분입니다.</p>
     </div>
     <ul class="plain" style="gap:14px">
       <li style="font-size:19px"><strong>✅만 나오고 JupyterLab이 열리면 끝</strong><span>"6/6 동작 확인" 아래에 ❌가 없어야 합니다</span></li>
