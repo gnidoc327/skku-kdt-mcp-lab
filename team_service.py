@@ -123,7 +123,7 @@ pre{white-space:pre-wrap;word-break:break-word;font:inherit;margin:0}.note{font-
 <label for="router">전문가를 고르는 모델</label><select id="router"></select>
 <p class="help">질문을 보고 <b>어느 전문가를 부를지 정하는 일</b>(2단계)만 이 모델이 합니다. 전문가의 분석과 통합 답변은 어느 쪽을 골라도 큰 모델이 씁니다. 그래서 두 모델이 같은 전문가를 고르면 답의 질은 같고, 다르게 고르면 불리는 전문가가 달라집니다.</p>
 <table class="sizes" id="sizes"></table>
-<p class="help">전문가 고르기처럼 <b>답의 형태가 정해진 일</b>은 GPT나 Claude를 부르지 않아도, 이렇게 작은 모델을 직접 가르쳐 내 컴퓨터에서 돌릴 수 있습니다. 작은 모델은 배운 이 일 하나만 합니다.</p>
+<p class="help">GPT와 Claude는 크기를 공개하지 않아, 성능이 가깝다고 알려진 공개 모델로 대신 가늠했습니다. 전문가 고르기처럼 <b>답의 형태가 정해진 일</b>은 그런 큰 모델을 부르지 않아도, 이렇게 작은 모델을 직접 가르쳐 내 컴퓨터에서 돌릴 수 있습니다. 작은 모델은 배운 이 일 하나만 합니다.</p>
 <button id="go">질문하기</button>
 <button id="compare">두 모델이 고르는 전문가만 비교하기</button>
 <label>전문가</label><ul class="who" id="who"></ul>
@@ -143,7 +143,7 @@ async function init(){
   $('sizes').innerHTML = `<tr><th></th><th>파라미터</th><th>파일 크기</th><th>돌리는 곳</th></tr>`
     + `<tr><td><b>증류한 작은 모델</b></td><td>${n(z.student.params)}</td><td>${g(z.student.file_gb)}${z.student.adapter_mb ? ' + ' + z.student.adapter_mb + 'MB' : ''}</td><td>내 컴퓨터 (메모리 1GB 안팎)</td></tr>`
     + `<tr><td><b>큰 모델</b></td><td>${n(z.teacher.params)}</td><td>${g(z.teacher.file_gb)}</td><td>내 컴퓨터 (메모리 약 10GB)</td></tr>`
-    + `<tr><td><b>GPT, Claude 등</b></td><td>비공개</td><td>받을 수 없음</td><td>회사의 GPU 서버. 쓴 만큼 요금</td></tr>`;
+    + `<tr><td><b>GPT·Claude급 공개 모델</b> (${esc(z.big.name)})</td><td>${esc(z.big.params)}</td><td>약 ${z.big.file_gb.toLocaleString()}GB</td><td>데이터센터의 GPU 서버 묶음 (80GB GPU 20장쯤)</td></tr>`;
   $('router').innerHTML = `<option value="teacher">큰 모델 (${esc(info.teacher)})</option>` + (info.has_student ? '<option value="student" selected>증류한 작은 모델</option>' : '<option disabled>증류한 작은 모델 (아직 학습 안 함)</option>');
 }
 function preview(){ const c = $('case').value, img = $('preview'), has = info.marked.includes(c);

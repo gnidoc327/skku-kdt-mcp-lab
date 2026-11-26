@@ -59,6 +59,16 @@ def fill(template, word):
     return re.sub(r"\{d\}(가|와|를|는|로)(?=[\s,?.]|$)", josa, template).replace("{d}", word)
 
 
+# GPT나 Claude는 크기를 공개하지 않으므로, 성능이 그에 가깝다고 알려진 공개 모델을 비교 기준으로 쓴다 (2026년 11월 기준).
+BIG_OPEN_MODEL = {
+    "name": "Kimi K3", "by": "Moonshot AI, 2026년 7월 공개",
+    "params": "약 2조 8천억 개", "file_gb": 1560,
+    "memory": "파일 전체를 올려야 해서 약 1,500GB. 80GB짜리 GPU로 20장쯤 (파일 크기로 계산한 값)",
+    "where": "데이터센터의 GPU 서버 묶음. 개인 컴퓨터로는 실용적인 속도가 나오지 않음",
+    "note": "이 모델의 성능 수치는 만든 회사가 발표한 것이고, 메모리는 파일 크기에서 계산한 어림값입니다.",
+}
+
+
 def free_gpu():
     """Ollama가 메모리에 올려 둔 모델을 내린다. 학습과 큰 모델이 GPU를 함께 쓰면 학습이 멈출 수 있다."""
     try:
@@ -378,7 +388,7 @@ class Team:
             mx.reset_peak_memory()
             self._generate("이 질문은 누구에게 보낼까?", True)
             student["memory_gb"] = gb(mx.get_peak_memory())
-        return {"teacher": teacher, "student": student}
+        return {"teacher": teacher, "student": student, "big": BIG_OPEN_MODEL}
 
     def show_sizes(self):
         """스승, 제자, 그리고 인터넷 너머의 큰 모델(GPT, Claude 등)을 한 표로 비교해 보여 준다."""
@@ -386,17 +396,19 @@ class Team:
         t, st = z["teacher"], z["student"]
         ko = lambda p: {"B": "억 개", "M": "만 개"}[p[-1]].join([str(round(float(p[:-1]) * (10 if p[-1] == "B" else 100))), ""]) if p else "?"
         show = lambda v, unit="GB": f"{v}{unit}" if v is not None else "?"
+        big = BIG_OPEN_MODEL
+        times = f"제자의 약 {big['file_gb'] / st['file_gb']:,.0f}배" if st["file_gb"] else ""
         md("\n".join([
-            "| | 제자 (증류한 작은 모델) | 스승 (큰 모델) | 인터넷 너머의 모델 (GPT, Claude 등) |",
+            f"| | 제자 (증류한 작은 모델) | 스승 (큰 모델) | GPT·Claude급으로 알려진 공개 모델 ({big['name']}) |",
             "|---|---|---|---|",
-            f"| 모델 | `{st['name']}` + 내가 학습시킨 Adapter | `{t['name']}` | 회사가 운영 |",
-            f"| 파라미터 수 | 약 {ko(st['params'])} | 약 {ko(t['params'])} | 공개하지 않음 |",
-            f"| 파일 크기 | {show(st['file_gb'])} + Adapter {show(st['adapter_mb'], 'MB')} | {show(t['file_gb'])} | 내려받을 수 없음 |",
-            f"| 돌릴 때 쓰는 메모리 | 약 {show(st['memory_gb'])} (방금 이 컴퓨터에서 잰 값) | 약 {show(t['memory_gb'] or t['file_gb'])} | 데이터센터의 GPU 서버 여러 대 |",
-            "| 돌리는 곳 | 내 컴퓨터. 메모리 8GB인 맥에서도 됨 | 내 컴퓨터. 메모리 16GB 이상 | 그 회사의 서버. 인터넷으로 질문을 보냄 |",
-            "| 비용 | 0원 (전기 요금뿐) | 0원 (전기 요금뿐) | 쓴 만큼 요금 |",
-            "| 내 자료가 가는 곳 | 내 컴퓨터 밖으로 나가지 않음 | 내 컴퓨터 밖으로 나가지 않음 | 그 회사의 서버 |",
-            "| 할 수 있는 일 | **배운 일 하나** (전문가 고르기) | 글쓰기, 사진 읽기, 도구 쓰기 | 훨씬 어려운 일까지 |",
+            f"| 모델 | `{st['name']}` + 내가 학습시킨 Adapter | `{t['name']}` | {big['name']} ({big['by']}) |",
+            f"| 파라미터 수 | 약 {ko(st['params'])} | 약 {ko(t['params'])} | {big['params']} |",
+            f"| 파일 크기 | {show(st['file_gb'])} + Adapter {show(st['adapter_mb'], 'MB')} | {show(t['file_gb'])} | 약 {big['file_gb']:,}GB ({times}) |",
+            f"| 돌릴 때 쓰는 메모리 | 약 {show(st['memory_gb'])} (방금 이 컴퓨터에서 잰 값) | 약 {show(t['memory_gb'] or t['file_gb'])} | {big['memory']} |",
+            f"| 돌리는 곳 | 내 컴퓨터. 메모리 8GB인 맥에서도 됨 | 내 컴퓨터. 메모리 16GB 이상 | {big['where']} |",
+            "| 할 수 있는 일 | **배운 일 하나** (전문가 고르기) | 글쓰기, 사진 읽기, 도구 쓰기 | 긴 코드 작성 같은 훨씬 어려운 일까지 |",
+            "",
+            f"GPT와 Claude는 모델 크기와 필요한 장비를 공개하지 않습니다. 그래서 성능이 그에 가깝다고 알려진 공개 모델 {big['name']}로 대신 가늠했습니다. {big['note']}",
         ]))
         return z
 
