@@ -141,10 +141,10 @@ async function init(){
   else $('casebox').style.display = 'none';
   const z = info.sizes, n = p => p ? '약 ' + Math.round(parseFloat(p) * (p.endsWith('B') ? 10 : 100)) + (p.endsWith('B') ? '억 개' : '만 개') : '?', g = v => v == null ? '?' : v + 'GB';
   $('sizes').innerHTML = `<tr><th></th><th>파라미터</th><th>파일 크기</th><th>돌리는 곳</th></tr>`
-    + `<tr><td><b>증류한 작은 모델</b></td><td>${n(z.student.params)}</td><td>${g(z.student.file_gb)}${z.student.adapter_mb ? ' + ' + z.student.adapter_mb + 'MB' : ''}</td><td>내 컴퓨터 (메모리 1GB 안팎)</td></tr>`
-    + `<tr><td><b>큰 모델</b></td><td>${n(z.teacher.params)}</td><td>${g(z.teacher.file_gb)}</td><td>내 컴퓨터 (메모리 약 10GB)</td></tr>`
+    + `<tr><td><b>증류한 작은 모델</b><br>${esc(z.student.base)} + 내가 학습시킨 Adapter</td><td>${n(z.student.params)}</td><td>${g(z.student.file_gb)}${z.student.adapter_mb ? ' + ' + z.student.adapter_mb + 'MB' : ''}</td><td>내 컴퓨터 (메모리 1GB 안팎)</td></tr>`
+    + `<tr><td><b>큰 모델</b><br>${esc(z.teacher.base)}</td><td>${n(z.teacher.params)}</td><td>${g(z.teacher.file_gb)}</td><td>내 컴퓨터 (메모리 약 10GB)</td></tr>`
     + `<tr><td><b>GPT·Claude급 공개 모델</b> (${esc(z.big.name)})</td><td>${esc(z.big.params)}</td><td>약 ${z.big.file_gb.toLocaleString()}GB</td><td>데이터센터의 GPU 서버 묶음 (80GB GPU 20장쯤)</td></tr>`;
-  $('router').innerHTML = `<option value="teacher">큰 모델 (${esc(info.teacher)})</option>` + (info.has_student ? '<option value="student" selected>증류한 작은 모델</option>' : '<option disabled>증류한 작은 모델 (아직 학습 안 함)</option>');
+  $('router').innerHTML = `<option value="teacher">큰 모델 (${esc(z.teacher.base)})</option>` + (info.has_student ? `<option value="student" selected>증류한 작은 모델 (${esc(z.student.base)} + Adapter)</option>` : '<option disabled>증류한 작은 모델 (아직 학습 안 함)</option>');
 }
 function preview(){ const c = $('case').value, img = $('preview'), has = info.marked.includes(c);
   img.onerror = () => { img.style.display = 'none'; $('previewcap').textContent = ''; };

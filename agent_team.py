@@ -59,6 +59,10 @@ def fill(template, word):
     return re.sub(r"\{d\}(가|와|를|는|로)(?=[\s,?.]|$)", josa, template).replace("{d}", word)
 
 
+# 실습에 쓰는 두 모델의 정식 이름. 둘 다 Google이 가중치를 공개한 Gemma 계열이다.
+STUDENT_BASE = "Google Gemma 3 1B"      # 제자의 바탕 모델. 이 위에 LoRA Adapter만 학습해 얹는다 (바탕 모델은 고치지 않는다)
+TEACHER_BASE = "Google Gemma 4 E4B"     # 스승
+
 # GPT나 Claude는 크기를 공개하지 않으므로, 성능이 그에 가깝다고 알려진 공개 모델을 비교 기준으로 쓴다 (2026년 11월 기준).
 BIG_OPEN_MODEL = {
     "name": "Kimi K3", "by": "Moonshot AI, 2026년 7월 공개",
@@ -388,6 +392,7 @@ class Team:
             mx.reset_peak_memory()
             self._generate("이 질문은 누구에게 보낼까?", True)
             student["memory_gb"] = gb(mx.get_peak_memory())
+        teacher["base"], student["base"] = TEACHER_BASE, STUDENT_BASE
         return {"teacher": teacher, "student": student, "big": BIG_OPEN_MODEL}
 
     def show_sizes(self):
@@ -401,7 +406,7 @@ class Team:
         md("\n".join([
             f"| | 제자 (증류한 작은 모델) | 스승 (큰 모델) | GPT·Claude급으로 알려진 공개 모델 ({big['name']}) |",
             "|---|---|---|---|",
-            f"| 모델 | `{st['name']}` + 내가 학습시킨 Adapter | `{t['name']}` | {big['name']} ({big['by']}) |",
+            f"| 모델 | **{STUDENT_BASE}** (`{st['name']}`) + 내가 학습시킨 Adapter | **{TEACHER_BASE}** (`{t['name']}`) | {big['name']} ({big['by']}) |",
             f"| 파라미터 수 | 약 {ko(st['params'])} | 약 {ko(t['params'])} | {big['params']} |",
             f"| 파일 크기 | {show(st['file_gb'])} + Adapter {show(st['adapter_mb'], 'MB')} | {show(t['file_gb'])} | 약 {big['file_gb']:,}GB ({times}) |",
             f"| 돌릴 때 쓰는 메모리 | 약 {show(st['memory_gb'])} (방금 이 컴퓨터에서 잰 값) | 약 {show(t['memory_gb'] or t['file_gb'])} | {big['memory']} |",
@@ -416,12 +421,14 @@ class Team:
         """전문가 고르기를 "싼 클라우드 모델에 지시문으로 시킬 때"와 "증류한 제자를 내 컴퓨터에서 돌릴 때"의 비용을 비교한다.
 
         질문 하나의 token 수와 제자가 답하는 시간은 이 컴퓨터에서 실제로 잰다. 나머지는 가정이므로 바꿔서 다시 계산해 본다.
-          prices       : {모델 이름: (입력, 출력)} 100만 token당 달러. 비워 두면 2026년 11월에 알려진 요금 세 가지
+          prices       : {모델 이름: (입력, 출력)} 100만 token당 달러. 비워 두면 2026년 11월에 알려진 요금 네 가지.
+                         첫 줄은 실습의 스승과 같은 모델을 남의 서버에서 token당 요금으로 빌려 쓸 때의 값이다
           computer_usd : 제자를 돌릴 컴퓨터 값 (기본값: 메모리 16GB 맥 미니 정도)
           years        : 그 컴퓨터를 몇 년 쓰고 바꾸는지 (부품은 수명이 있으므로 값을 이 기간에 나눠 낸다고 본다)
           watts_idle, watts_busy : 쉴 때와 일할 때 쓰는 전력(W).  kwh_usd : 전기 1kWh 요금(달러)
         """
-        prices = prices or {"GPT-6 Luna (가장 싼 축)": (0.10, 0.50), "GPT-6.1 Terra": (1, 5), "Claude Opus 5.5": (4, 20)}
+        prices = prices or {"Gemma 4 E4B 호스팅 (실습의 스승과 같은 모델, Fireworks)": (0.20, 0.20),
+                            "GPT-6 Luna (가장 싼 축)": (0.10, 0.50), "GPT-6.1 Terra": (1, 5), "Claude Opus 5.5": (4, 20)}
         question = "이 질문은 누구에게 보내야 할까?"
         # 1) 질문 하나에 token이 몇 개 드는지: 큰 모델에게 지시문과 함께 물어서 센다
         schema = {"type": "object", "required": ["experts"], "properties": {"experts": {
